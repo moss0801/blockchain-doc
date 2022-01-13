@@ -147,16 +147,91 @@ http://www.bchainledger.com/2020/03/whats-new-in-hyperledger-fabric-v20.html
   * 사용자는 다른 컨테이너 런타임 또는 쿠버네티스와 같은 프레임워크 사용 할 수 없음.
 * v2.x에서는 External Chaincode Launcher 기능을 통해 보완.
 
-### Private Data Enhancement :: Read-Write access control on collections
-* v1.x 에서는 체인코드가 적절한 접근제한 없이 작성되었다면 임의의 채널 맴버가 collection에 읽기 쓰기를 할 수 있다.
+#### Chaincode Launcher in v1.x -- Drawbacks
+* Chaincode launcher was part of the peer implementation
+  * Language specific builder
+  * Difficult to extend or customize
+* Required docker to be part of the deployment environment
+  * Privileged access is required to start a peer
+* User cannot run the chaincode outside container
+* User cannot use a diffrent container runtime or a framework such as Kubernetes
 
+#### Chaincode Launcher in v2.0 - External Builder
+* A new config option in core.yaml for the extenrnal chaincode builder
+```
+chaincode:
+  eternalbuilders:
+  - name: my-golang-builder
+    path: /builders/golang
+    environmentWhitelist:
+    - GOPROXY
+    - GONOPROXY
+    - GOSUMDB
+    - GONOSUMDB
+  - name: noop-builder
+    path: /builders/binary
+```
+* /builder/golang/bin should have the following four executables
+  1. detect : Determine whether or not this buildpack should be used to the chaincode package and launch it.
+  2. build : Transform the chaincode package into executable chaincode.
+  3. release : Provide metadata to the peer about the chaincode.
+  4. run : Run the chaincode.
+* Chaincode package
+```
+$ tar xvfz myccpackage.tgz
+metadata.json
+code.tar.gz
+```
+
+bin/detect CHAINCODE_SOURCE_DIR CHAINCODE_METADATA_DIR  
+bin/build CHAINCODE_SOURCE_DIR CHAINCODE_METADATA_DIR BUILD_OUTPUT_DIR  
+bin/release BUILD_OUTPUT_DIR RELEASE_OUTPUT_DIR  
+bin/run BUILD_OUTPUT_DIR RUN_METADATA_DIR
+
+#### Chaincode Launcher in v2.0 - CC(ChainCode) as an External Service
+
+connection.json to be passed in the chaincode package and placed in the RELEASE_OUTPUT_DIR
+```
+{
+  "address": "your.chaincode.host.com:9999",
+  "dial_timeout": "10s",
+  "tls_required": "true",
+  "client_auth_required": "true",
+  "client_key": "-----BEGIN EC PRIVATE KEY----- ... ----END EC PRIVATE KEY-----",
+  "client_cert": "-----BEGIN CERTIFICATE----- ... -----END CERTIFICATE-----",
+  "root_cert": "-----BEGIN CERTIFICATE----- ... -----END CERTIFICATE-----"
+}
+```
+
+```
+func main() {
+  // The ccid is assigned to the chaincode on install (using the "peer lifecylce ch)
+  ccid := "mycc:fcbf8724572d42e859a7dd9a7cd8e2efb84058292017df6e3d89178b64e6c831"
+
+  server := &shim.ChaincodeServer{
+                  CCID: ccid,
+                  Address: "myhost:9999",  // Chaincode should be started as a service with listen address
+                  CC: new(SimpleChainCode),
+                  TLSProps: shim.TLSProperties{  // Shim.ChaincodeServer is supported only in go shim
+                          Disabled: true,
+                  }
+          }
+  err := server.Start()
+  if err != nil {
+          fmt.Printf("Error starting Simple chaincode: %s", err)
+  }
+}
+```
+
+### Private Data Enhancement :: Read-Write access control on collections
+* v1.x 에서는 체인코드가 적절한 접근제한 없이 작성되었다면 임의의 채널 맴버가 collection에 읽기 쓰기를 할 수 있다.  
 ![Read-Write Access Control on Collections v1.x](./imgs/HyperledgerFabric/read-write-access-control-on-collections-v1.png)
 
 * v2.x에서는 collection 설정에 다음 설정을 포함한다.
+  ![Read-Write Access Control on Collections v2.x](./imgs/HyperledgerFabric/read-write-access-control-on-collections-v2.png)
   * Bool: memberOnlyRead
-  * Bool: memberOnlyWrite
+  * Bool: memberOnlyWrite  
 
-![Read-Write Access Control on Collections v2.x](./imgs/HyperledgerFabric/read-write-access-control-on-collections-v2.png)
 
 ### Private Date Enhancement :: Sharing and verifying private date & Implicit Collection
 * 신규 chaincode API - GetPrivateDataHash()
@@ -165,6 +240,15 @@ http://www.bchainledger.com/2020/03/whats-new-in-hyperledger-fabric-v20.html
 * 조직별 묵시적 collection (Implicit collection per organization)
   * Pirvate data collection with membership = own organization  
   ![Implicity Collection](./imgs/HyperledgerFabric/implicit-collection.png)
+
+### Security and performance improvements
+* Cache for StateDB - CouchDB
+  * Endorsement 중에 getState() 함수 호출하는 경우 캐싱
+  * MVCC 중에 Cache Hit 발생
+  * 10% 성능 향상
+* Alpine Linux for Docker Images
+  * A Security-oriented, lightweight Linux distribution
+  * 보안 취약점 감소
 
 
 ## 하이퍼레저 패브릭, 개선된 버전 2.0 출시
@@ -186,6 +270,9 @@ https://www.tvcc.kr/article/view/7156
 하지만 이번 업그레이트를 통해 스마트컨트랙스 거버넌스가 변경된다. 이전에 제안을 수용하거나 거절하고 진행 중인 거래에서 나가는 두 가지 옵션밖에 주어지지 않았던 참여자에게 스마트컨트랙트 변수를 제안하고 수정할 수 있는 탈중앙화된 거버넌스 옵션을 제공할 예정이다.
 
 또한 제안자가 마음대로 신규 변수를 활성화하는 대신, 결정에 필요한 정원이 변경사항을 승인해야 하는 기능도 추가로 지원한다. 이를 통해 전체적인 성능과 데이터 프라이버시를 개선하고 보안과 유용성을 더욱 높일 계획이다.
+
+# Glossary
+* shim: Package shim provides APIs for the chaincode to access its state variables, transaction context and call other chaincodes. https://pkg.go.dev/github.com/hyperledger/fabric-chaincode-go/shim
 
 # Reference
 * Hyperledger Fabric: https://www.hyperledger.org/use/fabric
