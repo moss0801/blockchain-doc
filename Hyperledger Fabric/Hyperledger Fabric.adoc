@@ -1,0 +1,137 @@
+## 엔터프라이즈 블록체인 요구사항
+* 참여자들이 식별/식별 가능해야 함
+* 허가형이어야 하는 네트워크
+* 높은 트랜잭션 처리 성능
+* 낮은 트랜잭션 확정 지연 시간
+* 트랜잭션의 개인정보 보호와 기밀성, 그리고 비지니스 트랜잭션에 담긴 데이터
+
+## 개요
+하이퍼레저 패브릭은 다른 유명한 분산 원장이나 블록체인 플랫폼을 넘는 차별화된 핵심 능력을 전달하는, 엔터프라이즈 용도로 디자인된, 오픈 소스 엔터프라이즈급 허가형 분산 원장 기술 (DLT: Distributed Ledger Technology)입니다.
+
+Hyperledger Fabric은 IBM이 주도하고 있다.
+
+### 주요 특성 (Key Characteristics)
+* 고성능 (High-performance)
+* 보안 (secure)
+* 허가된 블록체인 네트워크 (permissioned blockchain network)
+* Go 언어로 개발 (Code written in Go)
+* 체인코드(스마트 컨트랙트)를 Go, javascript, Java로 개발가능 (chaincode (smart contracts) in Go, Javascript, or Java)
+* SDK를 Node.js, Java, Go, REST 및 Python로 제공 (SDKs in Node.js, Java, Go, REST and Python.)
+
+## Permissiond Blockchain (허가형 블록체인)
+Membership Service Provider를 통해 허가된 참여자만 접근을 허용
+
+참여자들의 신원에 기대서 허가형 블록체인은 값비싼 채굴(PoW)대신 크래시 장애 내성(CFT: Crash fault tolerant) 또는 비잔틴 장애 내성 (BFT: byzantine fault tolerant) 합의 포로토콜을 사용할 수 있습니다.
+
+사고 발생시 거버넌스 모델의 규정에 따라 처리됩니다.
+
+### 모듈성(Modularity)
+* ordering service - 트랜잭션 순서 합의 및 피어로 블록 브로드캐스트
+* membership service provider - 네트워크 내 개체들과 암호학적 ID를 연결
+* peer-to-peer(P2P) gossip service - ordering service로부터 peer로 블록 전파
+* smart contract(chaincode) - 컨테이너 환경(예: docker)에서 격리되어 실행. 표준 프로그래밍 언어로 작성될 수 있으나, 원장 상태에 직접 접근할 수 없음.
+* legder(원장)가 다양한 DBMS를 지원하도록 설정 가능
+* 애플리케이션 별로 독립적으로 설정 가능한 플러그인 가능한 보증 및 검증 정책 시행
+
+###  허가형 블록체인
+
+비허가형 블록체인에서는 사실상 누구나 참여할 수 있고 모든 참여자가 익명입니다.
+
+믿음의 부재를 줄이기 위해서, 비허가형 블록체인은 "작업 증명(PoW: proof of work)"에 기초한 비잔틴 장애 허용 합의의 형식으로 참여하는 엄청난 비용을 줄이기 위해 일반적으로 "채굴된" 네이티브 암호화폐나 경제적인 인센티브를 제공하기 위한 트랜잭션 수수료를 도입합니다.
+
+**허가형** 블록체인은 어느 정도 신뢰를 인정하는 거버넌스 모델 하에서 운영하는 서로 알고 있는, 신원 확인된, 그리고 대개 심사를 거친 참여자 사이에서 블록체인을 운영합니다. 허가형 블록체인은 같은 목표를 갖지만 서로를 완전히 믿을 수는 없는 개체들의 그룹 내에서의 상호 소통을 안전하게 하기 위한 방법을 제공합니다. 참여자들의 신원에 기대서 허가형 블록체인은 값비싼 채굴이 필요하지 않은 이전에 더 많이 쓰던 크래시 장애 내성(CFT: Crash fault tolerant) 또는 비잔틴 장애 내성 (BFT: byzantine fault tolerant) 합의 포로토콜을 사용할 수 있습니다.
+
+
+
+### 스마트 컨트랙트
+Fabric에서는 chaincode라 부른다.
+
+보안/신용을 블록체인과 피어들 간의 합의 하에서 얻는 신뢰되는 분산 애플리케이션으로 기능한다.
+
+블록체인 애플리케이션의 비즈니스 로직이다.
+
+스마트 컨트랙스에 적용되는 세가지 키 포인트
+* 많은 스마트 컨트랙트가 동시에 네트워크 내에서 실행되고,
+* 그들은 (누가나 많은 경웨) 동적으로 배포될 수 있고,
+* 애플리케이션 코드는 신뢰하지 않는 것처럼, 잠재적으로 악성인 것처럼 처리되어야 합니다.
+
+대부분의 스마트-컨트랙트를 사용 가능한 블록체인 플랫폼은 합의 프로토콜 내에 **정렬-실행(order-execute)** 아키텍처를 따름
+* 트랜잭션의 유효성을 검사하고, 순서를 정한 후, 모든 피어 노드에 그들을 전파하고,
+* 각 피어들은 그럼 트랜잭션을 순서대로 실행합니다.
+
+정렬-실행 아키텍처로 운영하는 블록체인 내에서 실행하는 스마트 컨트랙트는 반드시 **결정적(deterministic)**이여야 합니다; 아니면 합의에 이르지 못할 수 있습니다. 이더리움은 이를 해결하기 위해서 스마트 컨트랙트를 결정적 언어인 Solidity로 작성합니다. 이는 스마트 컨트랙트를 작성하는 개발자들이 새로운 언어를 배워야 하고, 프로그래밍 에러로 이끌 수 있어서 광범위한 도입을 가로막습니다.
+
+게다가, 모든 트랜잭션을 모든 노드가 순서대로 실행해야 하기 때문에 성능과 확장이 제한됩니다. 스마트 컨트랙트 코드가 시스템 내의 모든 노드에서 실행된다는 사실은 전체 시스템의 복구성를 보장하기 위해 잠재적 악성 컨트랙트로부터 전체 시스템을 막기 위해 복잡한 조치를 취해야 함을 필요로 합니다.
+
+### 새로운 접근법
+
+Fabric은 **실행-정렬-유효성 검증(execute-order-validate)** 새로운 아키텍처 도입 +
+정렬-실행 모델이 직면하는 복구성, 유연성, 확장성, 성능과 보안 문제를 트랜잭션 흐름을 세가지 단계로 나누는 방법으로 처리
+
+* 실행(excute): 트랜잭션을 실행 및 정확성을 검사 후, 보증
+* 정렬(order): 트랜잭션을 (플러그인 가능한) 합의 프로토콜을 통해 정렬
+* 유효성 검증(validate): 원장에 트랜잭션을 커밋하기 전에 애플리케이션별 보증 정책(application-specific endorsement policy)에 맞는지 유효성을 검증
+
+Fabric에서 애플리케이션별 보증 정책은 주어진 스마트 컨트랙트의 정확한 실행을 위해서 피어 노드 중 어느 것이, 또는 얼마나 많이,  어느 것이, 얼마나 많이, 보장할 필요가 있는지를 정합니다. +
+각 트랜잭션은 승인 정책에 만족하기 위해 필요한 피어 노드만으로 실행(보증)이 돼야 합니다. +
+이로인해 시스템의 규모 및 성능을 증가시키기 위한 병렬 실행을 할 수 있습니다. +
+이 첫번째 단계를 통해서 정렬 전에 모순된 결과를 제거함으로서, 비결정성을 제거합니다.
+
+비결정성을 제거함으로 Fabric은 **표준 프로그래밍 언어를 사용할 수 있는** 최초의 블록체인 기술
+
+### 개인정보호와 기밀 유지(Privacy and Confidentiality)
+**합의 모델로 PoW를 이용하는 공개 비허가형 블록체인 네트워크**에서는 트랜잭션을 모든 노드가 실행합니다. 이는 컨트랙트 자체도 그리고 그들이 처리하는 트랜잭션 데이터 모두 기밀성을 줄 수 없음을 뜻합니다. 모든 트랜잭션 그리고 그를 구현하는 코드는 네트워크 내의 모든 노드가 볼 수 있습니다. 이 경우, **컨트랙트와 데이터의 기밀성을 PoW에 의해 달성되는 비잔틴 장애 허용 합의와 맞바꾼 겁니다**.
+
+기밀성의 부족은 많은 비지니스/엔터프라이즈 유스 케이스에 문제가 될 수 있습니다.
+
+**데이터 암호화**는 기밀성을 제공하는 한 방법입니다; 그러나 그 합의로 PoW를 사용하는 비허가형 네트워크 내에서 암호화된 데이터는 모든 노드에 상주합니다. **충분한 시간과 컴퓨팅 자원이 주어지면, 그 암호화는 깨질 수 있습니다**. 많은 엔터프라이즈 유스 케이스들에서 그들의 정보가 위태롭게 될 위험은 용납할 수 없습니다.
+
+**영지식 증명(ZKP: Zero knowledge proofs)**은 이 문제를 해결하기 위해 탐구되고 있는 또다른 연구 영역입니다. 영지식 증명의 현재 트레이드 오프는 영지식 증명의 계산이 상당한 시간과 컴퓨팅 자원을 요구한다는 겁니다. 그래서 이런 경우에 **기밀성에 대해 성능울 맞바꾸게 됩니다**.
+
+허가형 플랫폼인 하이퍼레저 패브릭은 그 **채널** 아키텍처와 **비공개 데이터(private data)** 기능을 통해 **기밀성을 제공**합니다. **채널 내에서 패브릭 네트워크 참여자들은 채널의 멤버만 특정 트랜잭션들을 볼 수 있는 서브 네트워크를 만듭니다**. 그래서 채널 내에 참여한 노드만 스마트 컨트랙트(체인코드)와 트랜잭션되는 데이터에 대해 개인정보보호와 기밀성 모두를 지키는 접근 권한을 갖습니다. **비공개 데이터(private data)는 채널 상의 멤버들 간에 분리 채널을 만들거나 관리하는 오버해드 없이 채널과 같이 보호할 수 있는 컬렉션(collection)을 만들 수 있습니다**.
+
+### 플러그인 가능한 합의(Pluggable Consensus)
+
+**트랜잭션의 정렬**은 트랜잭션은 실행하고 원장을 관리하는 피어로부터 논리적으로 결합되지 않은 합의를 위해 모듈화된 요소, 명확히는 **정렬 서비스(ordering service)에게 위임**됩니다. +
+합의가 모듈화되어 있기 때문에, 그 구현은 특정 배포 혹은 해결책의 신뢰 가정에 맞춰질 수 있습니다. +
+이 모듈화 아키텍처는 플랫폼이 크래스 장애 허용 (CFT: crash fault-toleran) 또는 비잔틴 장애 허용(BFT: byzantine fault-tolerant) 정렬를 위한 안정적인 툴킷에 의존할 수 있게 합니다.
+
+Fabric은 현재 **Raft** 프로토콜의 etcd 라이브러리에 기반한 **CFT 정렬** 구현을 제공합니다. +
+link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/orderer/ordering_service.html[Ordering service 개념]
+
+Fabric 네트워크는 여러개를 정렬 서비스를 가질 수 있습니다.
+
+### 성능과 확장성(Performance and Scalability)
+블록체인 플랫폼의 성능은 트랜잭션 크기, 블록 크기, 네트워크 크기 뿐만 아니라 하드웨어의 제약 등과 같은 여러 가변요소에 영향을 받을 수 있습니다. +
+하이퍼레저 패브릭 link:https://wiki.hyperledger.org/display/PSWG/Performance+and+Scale+Working+Group[Performance and Scale Working Group]은 현재 link:https://wiki.hyperledger.org/display/caliper[하이퍼레저 캘리퍼(Hyperledger Caliper)]라 불리는 벤치마킹 프레임워크 상에서 작업합니다.
+
+하이퍼레저 패브릭의 최신 성능 연구 논문은 link:https://arxiv.org/abs/1901.00910[FastFabric: Scaling Hyperledger Fabric to 20,000 Transactions per Second] 입니다.
+
+
+# 국내
+## 루니버스
+블록체인 개발 업체인 람다256(Lambda 256)이 개발, 운영하는 엔터프라이즈 블록체인 클라우드 서비스 플랫폼 - https://luniverse.io/?lang=ko
+
+하이퍼레저 패브릭 및 여러 블록체인을 BaaS(Blockchain as a Service)로 서비스
+
+람다256(lambda 256)은 업비트를 운영하는 두나무(주)의 블록체인 연구소.
+
+발표영상: UDC 2021 DAY 1 - Enterprise Blockchain and Reg tech : https://youtu.be/hRzPR2jQSaY
+
+# Glossary
+* shim: Package shim provides APIs for the chaincode to access its state variables, transaction context and call other chaincodes. https://pkg.go.dev/github.com/hyperledger/fabric-chaincode-go/shim
+
+# Reference
+* Hyperledger Fabric: https://www.hyperledger.org/use/fabric
+* Document: https://hyperledger-fabric.readthedocs.io/en/latest/
+* Code: https://github.com/hyperledger/fabric#releases
+* Wiki: https://wiki.hyperledger.org/display/fabric
+* IBM - Hyperledger Fabric이란?: https://www.ibm.com/kr-ko/topics/hyperledger
+* Awesome Blockchain Kor - 모두를 위한 블록체인: https://github.com/yunho0130/awesome-blockchain-kor
+* What’s new in Hyperledger Fabric v2.x: https://hyperledger-fabric.readthedocs.io/en/latest/whatsnew.html
+* [Hyperledger Fabric v2.x] #1. 소개 + 실습 환경 구성: https://namho46.tistory.com/19
+* Raft
+** link:https://suckzoo.github.io/tech/2018/01/03/raft-1.html[Raft Algorithm(1)- Desing of Raft]
+
+
+① ② ③ ④ ⑤ ⑥ ⑦ ⑧ ⑨ ⑩ ⑪ ⑫ ⑬ ⑭ ⑮
