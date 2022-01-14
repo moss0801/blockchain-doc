@@ -5,7 +5,7 @@ Linux Foundation의 오픈소스 프로젝트인 Hyperledger Fabric은 엔터프
 
 Hyperledger Fabric은 IBM이 주도하고 있다.
 
-# 주요 특성 (Key Haracteristics)
+# 주요 특성 (Key Characteristics)
 * 고성능 (High-performance)
 * 보안 (secure)
 * 허가된 블록체인 네트워크 (permissioned blockchain network)
@@ -30,7 +30,8 @@ https://pt.slideshare.net/hlkug/hyperledger-fabric-v20
 ||② docker container로만 관리|외부 런처도 사용 가능하도록 변경<br />(external service)|
 ||③ shim package 포함|github dir 이동<br />github.com/hyperledger/fabric-chaincode-go/shim|
 |golang|④ version 1.11.x 이상|version 1.13.4로 업데이트|
-|orderer|⑤ 'olo, Kafka, Raft' 합의 알고리즘 존재|'Raft' 합의 알고리즘만 사용 가능|
+|orderer|⑤ 'Solo, Kafka, Raft' 합의 알고리즘 존재|'Raft' 합의 알고리즘만 사용 가능|
+
 출처 - 어다희님, Hyperledger Korea User Group
 
 ③ ccenv 빌드 이미지에 더 이상 shim이 포함되지 않음
