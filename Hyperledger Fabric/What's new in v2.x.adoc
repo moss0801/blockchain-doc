@@ -485,7 +485,7 @@ image::./imgs/HyperledgerFabric/read-write-access-control-on-collections-v2.png[
 ** private 데이터가 on-chain hash와 일치하는지 검증
 ** private data를 다른 collection으로 이동
 * 조직별 묵시적 collection (Implicit collection per organization)
-** Pirvate data collection with membership = own organization
+** Private data collection with membership = own organization
 +
 image::./imgs/HyperledgerFabric/implicit-collection.png[Implicity Collection]
 
