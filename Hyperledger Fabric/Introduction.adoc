@@ -72,6 +72,7 @@ image::./imgs/performance-2.1-go-create asset.png[]
 ** **MSP**(Membership Service Provider)를 통해 허가된 참여자만 접근을 허용하고, 접근 권한을 제어할 수 있다.
 * **Privacy** 지원
 ** 특정 멤버간의 채널이라는 분할된 네트워크로 정보보호 지원.
+** 채널 내 특정 멤버간 데이터 공유를 위한 'private data collection' 제공
 * **모듈러 아키텍처**
 ** ordering service - 트랜잭션 순서 합의 및 피어로 블록 브로드캐스트
 ** membership service provider - 네트워크 내 개체들과 암호학적 ID를 연결
