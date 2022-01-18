@@ -62,6 +62,12 @@ Hyperledger Fabric is an open source **enterprise-grade permissioned distributed
 ## 특징
 * 고성능 (High-performance)
 ** 20,000 TPS - link:https://arxiv.org/abs/1901.00910[FastFabric: Scaling Hyperledger Fabric to 20,000 Transactions per Second]
+** link:https://hyperledger.github.io/caliper-benchmarks/fabric/performance/2.1.0/goContract/nodeSDK/submit/create-asset/[Fabric Create, v2.1.0, Go, Create Asset] +
++
+image::https://hyperledger.github.io/caliper-benchmarks/fabric/diagrams/TransactionRoute_Submit.png[]
++
+image::./imgs/performance-2.1-go-create asset.png[]
+
 * 허가된 블록체인 네트워크 (permissioned blockchain network)
 ** **MSP**(Membership Service Provider)를 통해 허가된 참여자만 접근을 허용하고, 접근 권한을 제어할 수 있다.
 * **Privacy** 지원
