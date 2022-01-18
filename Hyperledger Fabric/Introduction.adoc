@@ -153,13 +153,13 @@ image::./imgs/workflow for Netowrk Formation.png[]
 패브릭 네트워크의 각 조직들은 자신의 신원을 관리하고 각 조직에 속한 사용자들을 인증하기 위해 CA(Certificate Authority)를 운영합니다. **CA는 조직과 사용자들에게 디지털 증명서(Digital Certificate)를 발급**하는 역할을 합니다.
 패브릭 네트워크에 참여하는 각 조직들은 모두 개별 CA를 이용합니다.
 3. **피어 (Peer)**
-피어 노드는 **오더러가 만든 블록을 검증하고 그 블록을 바탕으로 원장을 저장하고 유지하는 노드**입니다.
-또한 **클라이언트의 요청에 의해 발생하는 체인코드의 실행**을 담당하며 **체인코드 실행 결과를 트랜잭션으로 만들어 오더러에게 전달**합니다.
+피어 노드는 **정렬자가 만든 블록을 검증하고 그 블록을 바탕으로 원장을 저장하고 유지하는 노드**입니다.
+또한 **클라이언트의 요청에 의해 발생하는 체인코드의 실행**을 담당하며 **체인코드 실행 결과를 트랜잭션으로 만들어 정렬자에게 전달**합니다.
 보통 각 조직별로 일정 개수의 피어 노드를 구성하여 네트워크에 참여합니다.
-4. **오더러 (Orderer, Ordering service)**
-**오더러 노드는 패브릭 네트워크에서 블록 내의 트랜잭션 순서를 결정**하는 역할을 담당합니다.
-일반적으로 알려진 여러 공개형 블록체인들의 합의 모델과 달리 하이퍼레저 패브릭의 신뢰 모델은 오더러와 체인코드 보증 정책을 통해 이루어집니다. 체인코드의 보증 정책에 따라, 하나 내지 여러 피어에게 같은 입력에 대한 체인 코드 실행 결과가 동일함을 보증받는 것이 첫 번째 신뢰 단계이고, 체인코드가 생성한 트랜잭션들이 오더러에 의해 한 블록 내에서 같은 순서로 취합되는 것이 두 번째 신뢰 단계입니다.
-한 조직이 전담해서 오더링 서비스 노드를 구성하거나, 여러 조직이 나눠서 오더링 서비스를 구성하는 등 여러가지 방식으로 오더러 노드를 구성할 수 있습니다. 현재 **공식적으로 지원되는 합의 방식은 Raft 방식**이며 기존의 kafka 방식은 하이퍼레저 패브릭 2.0 부터 지원이 종료되었습니다.
+4. **정렬자 (Orderer, Ordering service)**
+**정렬자 노드는 패브릭 네트워크에서 블록 내의 트랜잭션 순서를 결정**하는 역할을 담당합니다.
+일반적으로 알려진 여러 공개형 블록체인들의 합의 모델과 달리 하이퍼레저 패브릭의 신뢰 모델은 정렬자와 체인코드 보증 정책을 통해 이루어집니다. 체인코드의 보증 정책에 따라, 하나 내지 여러 피어에게 같은 입력에 대한 체인 코드 실행 결과가 동일함을 보증받는 것이 첫 번째 신뢰 단계이고, 체인코드가 생성한 트랜잭션들이 정렬자에 의해 한 블록 내에서 같은 순서로 취합되는 것이 두 번째 신뢰 단계입니다.
+한 조직이 전담해서 오더링 서비스 노드를 구성하거나, 여러 조직이 나눠서 오더링 서비스를 구성하는 등 여러가지 방식으로 정렬자 노드를 구성할 수 있습니다. 현재 **공식적으로 지원되는 합의 방식은 Raft 방식**이며 기존의 kafka 방식은 하이퍼레저 패브릭 2.0 부터 지원이 종료되었습니다.
 5. **채널 (Channel)**
 채널은 **하나의 원장을 나타내는 논리적 개념**입니다. **하나의 패브릭 네트워크 안에 여러 개의 채널을 만들 수 있으며 각 채널별로 별도의 접근 권한을 설정할 수 있습니다**. 따라서 중요한 정보를 별도의 채널을 구성하여 저장하고 그 채널의 접근 권한을 제어하면, 패브릭 네트워크 사용자라고 하더라도 쉽게 접근할 수 없도록 제한할 수 있습니다.
 각 피어 노드는 자신이 저장하고 유지할 채널을 선택하여 서비스 할 수 있으며, 여러 개의 채널을 하나의 피어 노드에서 서비스 할 수도 있습니다. **같은 채널을 서비스하는 피어 노드들은 결국 모두 동일한 원장을 가지게 됩니다**.
@@ -170,13 +170,13 @@ image::./imgs/workflow for Netowrk Formation.png[]
 참조: 정렬 노드(ordering node)가 부스트랩되면서 정렬 서비스(ordering service)에 의해서 채널이 실행되는 "시스템 채널(system channel)"이 없는 네트워크 구조 (v2.3 부터 시스템 채널 없이 정렬자 채널 관리 가능.)
 
 
-* R: 조직(Organization)(= Member)
+* R: 조직(Organization)(= 멤버, Member)
 * CA: 인증 기관(Cettificate authority)
 * P: 피어(Peer)
 * O: 정렬자(Orderder)
 * C: 채널(Channel)
 * L: 원장(Ledger)(= Blockchain + State Database) - Orderer는 Blockchain만 가짐
-* S: 체인 코드(Chaincode)(=Smart Contract)
+* S: 체인 코드(Chaincode)(= 스마트 컨트랙트, Smart Contract)
 * CC: 채널 구성(Channel Configuration)
 * A: 응용프로그램(Application)
 
@@ -451,6 +451,18 @@ image::https://hyperledger-fabric.readthedocs.io/en/release-2.4/_images/step6.pn
 
 image::https://hyperledger-fabric.readthedocs.io/en/release-2.4/_images/flow-4.png[]
 
+## Raft
+link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/glossary.html#raft[Glossary - Raft]
+
+New for v1.4.1, Raft is a crash fault tolerant (CFT) ordering service implementation based on the etcd library of the Raft protocol. Raft follows a “leader and follower” model, where a leader node is elected (per channel) and its decisions are replicated by the followers. Raft ordering services should be easier to set up and manage than Kafka-based ordering services, and their design allows organizations to contribute nodes to a distributed ordering service.
+
+link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/orderer/ordering_service.html#raft[Ordering Service - Raft]
+
+For information on how to customize the orderer.yaml file that determines the configuration of an ordering node, check out the Checklist for a production ordering node.
+
+The go-to ordering service choice for production networks, the Fabric implementation of the established Raft protocol uses a “leader and follower” model, in which a leader is dynamically elected among the ordering nodes in a channel (this collection of nodes is known as the “consenter set”), and that leader replicates messages to the follower nodes. Because the system can sustain the loss of nodes, including leader nodes, as long as there is a majority of ordering nodes (what’s known as a “quorum”) remaining, Raft is said to be “crash fault tolerant” (CFT). In other words, if there are three nodes in a channel, it can withstand the loss of one node (leaving two remaining). If you have five nodes in a channel, you can lose two nodes (leaving three remaining nodes). This feature of a Raft ordering service is a factor in the establishment of a high availability strategy for your ordering service. Additionally, in a production environment, you would want to spread these nodes across data centers and even locations. For example, by putting one node in three different data centers. That way, if a data center or entire location becomes unavailable, the nodes in the other data centers continue to operate.
+
+
 ## Refenrece
 * link:https://www.hyperledger.org/learn/white-papers[Hyperledger Whitepaper]
 * link:https://docs.google.com/presentation/d/1-7Zu1CrekZcbLS1GyxyPQGChb3FZZxn5sY8HjIQx6o4/edit#slide=id.g7f5ba6bfaf_1_271[2020 Q1 Hyperledger Update]
@@ -466,3 +478,5 @@ image::https://hyperledger-fabric.readthedocs.io/en/release-2.4/_images/flow-4.p
 * link:https://medium.com/@yjw113080/hyperledger-fabric-architecture-4-%ED%8A%B8%EB%9E%9C%EC%9E%AD%EC%85%98-4e204a30a84c[Hyperledger Fabric Architecture: 4 트랜잭션]
 * link:https://docs.luniverse.io/docs/environment/hyperledger-febric/hyperledger-fabric[Hyperledger Fabric이란? - Luniverse]
 * link:https://miiingo.tistory.com/86[Hyperledger Whitepaper]
+* Raft
+** link:https://suckzoo.github.io/tech/2018/01/03/raft-1.html[Raft Algorithm(1)- Desing of Raft]
