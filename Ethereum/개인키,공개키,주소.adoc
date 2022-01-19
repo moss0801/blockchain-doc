@@ -1,0 +1,111 @@
+
+## 요약
+
+* 이더리움은 전자서명을 위해 SECP-256k1를 활용한 ECDSA를 사용
+* 개인키: [1, secp256k1n - 1] 범위의 임의의 256bit 양의 정수
+** secp256k1n = 115792089237316195423570985008687907852837564279074904382605163141518161494337
+* 공개키: ECDSA over SECP-256k1로 계산된 개인키의 공개키
+* 주소: 공개키의 Keccak-256 결과의 오른쪽 160bit (40자리 16진수)
+
+## 개인키 (private key)
+
+이더리움은 트랜잭션 전자서명을 위해서 link:https://www.secg.org/sec2-v2.pdf[SECP-256k1 curve]를 활용한 복구가능한 ECDSA 서명(recoverable ECDSA signature)을 사용한다.
+
+개인 키(private key)는 256bit의 양의 정수로 표현되고 [1, secp256k1n - 1]의 범위여야 한다.
+
+secp256k1n = 115792089237316195423570985008687907852837564279074904382605163141518161494337
+
+## 공개키 (public key)
+이더리움 공개키는 타원 곡선에 있는 **점(point)**으로 타원 곡선 방정식을 만족하는 x와 y 좌표의 집합을 의미한다.
+
+무작위로 생성한 숫자
+
+## secp256k1
+recommended 256-bit elliptic curve domain parameters over stem:[\mathbb{F}_p]
+
+* __sec__: **S**tandards for **E**fficient **C**ryptography
+* __p__: stem:[\mathbb{F}_p] 의 파라미터
+* __256__: stem:[p]의 필드 크기가 256 bit
+* __k__: Koblitz curve
+* __1__: 순차적인 번호
+
+elliptic curve domain parameters over stem:[\mathbb{F}_p] are a sextuple:
+stem:[T = (p,a,b,G,n,h)]
+
+consisting of an integer stem:[p] specifying the finite field stem:[\mathbb{F}_p],
+two elements stem:[a,b \in \mathbb{F}_p] specifying an elliptic curve stem:[E(\mathbb{F}_p)] defined by the equation:
+
+stem:[E : y^2 \equiv x^3 + ax + b\ (mod p)],
+
+a base point stem:[G = (x_G, y_G)] on stem:[E(\mathbb{F}_p)], a prime stem:[n] which is the order of stem:[G],
+and an integer stem:[h] which is the cofactor stem:[h = #(E(\mathbb{F}_p)) / n]
+
+====
+참고: The number of points on stem:[E(\mathbb{F}_p)] is denoted by stem:[#E(\mathbb{F}_p)].
+====
+
+
+
+유한체(finite field)내 stem:[\mathbb{F}_p]의 6가지 요소(sextuple) stem:[T = (p,a,b,G,n,h)]
+
+stem:[p = FFFFFFFF\ FFFFFFFF\ FFFFFFFF\ FFFFFFFF\ FFFFFFFF\ FFFFFFFF\ FFFFFFFE\ FFFFFC2F]
+stem:[= 2^256 − 2^32 − 2^9 − 2^8 − 2^7 − 2^6 − 2^4 − 1]
+
+The curve stem:[E]: stem:[y^2 = x^3 + ax + b\ over\ \mathbb{F}_p] is defined by:
+
+stem:[a = 00000000\ 00000000\ 00000000\ 00000000\ 00000000\ 00000000\ 00000000\ 00000000]
+stem:[b = 00000000\ 00000000\ 00000000\ 00000000\ 00000000\ 00000000\ 00000000\ 00000007]
+
+The base point stem:[G] in compressed form is:
+
+stem:[G = 02\ 79BE667E\ F9DCBBAC\ 55A06295\ CE870B07\ 029BFCDB\ 2DCE28D9\ 59F2815B\ 16F81798]
+
+and in uncompressed form is:
+
+stem:[G = 04\ 79BE667E\ F9DCBBAC\ 55A06295\ CE870B07\ 029BFCDB\ 2DCE28D9\ 59F2815B\ 16F81798\ 483ADA77\ 26A3C465\ 5DA4FBFC\ 0E1108A8\ FD17B448\ A6855419\ 9C47D08F\ FB10D4B8]
+
+Finally the order stem:[n] of stem:[G] and the cofactor are:
+
+stem:[n = FFFFFFFF\ FFFFFFFF\ FFFFFFFF\ FFFFFFFE\ B\A\AEDCE6\ AF48A03B\ BFD25E8C\ D0364141]
+stem:[h = 01]
+
+## Why is s in transaction signature limited to n/2+1
+
+The restriction that __s < n/2 + 1__ is not a requirement of ECDSA, but is specified in EIP-2
+
+====
+All transaction signatures whose s-value is greater than secp256k1n)/2 are now considered invalid.
+The ECDSA recover precompiled contract remains unchanged and will keep accepting high s-values;
+this is useful e.g. if a contract recovers old Bitcoin signatures.
+====
+
+The reasoning is
+
+====
+Allowing transactions with any s value with 0 < s < secp256k1n, as is currently the case, opens a transaction malleability concern, as one can take any transaction, flip the s value from s to secp256k1n - s, flip the v value (27 -> 28, 28 -> 27), and the resulting signature would still be valid. This is not a serious security flaw, especially since Ethereum uses addresses and not transaction hashes as the input to an ether value transfer or other transaction, but it nevertheless creates a UI inconvenience as an attacker can cause the transaction that gets confirmed in a block to have a different hash from the transaction that any user sends, interfering with user interfaces that use transaction hashes as tracking IDs. Preventing high s values removes this problem.
+====
+
+This trick works because the __r__ value does not uniquely determine a point, but determines a point __+-R__ up to sign, while the __v__ determines the sign.
+
+When we do ECDSA recovery, we note that
+
+```
+s = k^-1(z+rd)
+```
+
+So the public key dG is given by
+
+```
+dG = r^-1(sR - zG)
+```
+
+If we flip the sign on __s__, and also on __R__ then __(-s)(-R) = sR__, so the new signature gives the same public key.
+
+
+## Reference
+* link:https://github.com/ethereumbook/ethereumbook/blob/develop/04keys-addresses.asciidoc[Mastering Ethereum : 04 keys addresses]
+* link:https://ethereum.github.io/yellowpaper/paper.pdf[Ethereum Yellow Paper - APPENDIX F. SIGNING TRANSACTIONS]
+* link:https://www.secg.org/sec2-v2.pdf[SEC 2: Recommended Elliptic Curve Domain Parameters]
+* link:https://ethereum.stackexchange.com/questions/55245/why-is-s-in-transaction-signature-limited-to-n-21[Why is s in transaction signature limited to n/2+1]
+* link:https://github.com/ethereum/EIPs/blob/master/EIPS/eip-2.md[EIP-2 Homestead]
+* link:https://www.ams.org/journals/mcom/1987-48-177/S0025-5718-1987-0866109-5/S0025-5718-1987-0866109-5.pdf[Elliptic Curve Cryptosystems by Neal Koblitz]
