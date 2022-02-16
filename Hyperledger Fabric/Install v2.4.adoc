@@ -1,0 +1,884 @@
+## 개요
+Hyperledger Fabric v2.4 환경구성 및 설치
+
+## Ubuntu 20.04
+multipass 또는 VirtualBox 같은 툴을 이용해서 Ubuntu 20.04를 설치하고 실행한다.
+
+### multipass 사용법
+* multipass 다운받아서 설치 https://multipass.run/
+* 재시작
+* 명령 프롬프트에서 launch 명령어로 실행 +
+multipass launch --name {이름} {버전} +
+multipass launch --name fabric 20.04
+* 시스템 아이콘에서 Open Shell 실행 +
++
+image::./imgs/install/multipass icon.png[multipass icon]
+
+image::./imgs/install/multipass cmd.png[multipass cmd]
+
+## git, cURL, docker, docker-compose, jq 설치
+
+* git: 버전 관리 시스템
+* cURL: URL로 데이터를 전송할 수 있는 도구
+* docker: 컨테이너 기반 가상화 시스템
+* docker-compose: 여러 개의 도커 컨테이너를 정의하고 실행하는 개발자 편의 도구
+* jq : 커맨드 라인 JSON processor (튜토리얼의 '채널 설정 트랜잭션'을 위해서 사용)
+
+```
+$ sudo apt-get update && sudo apt-get upgrade
+$ sudo apt-get install git
+$ sudo apt-get install curl
+$ sudo apt-get -y install docker-compose
+$ sudo apt-get -y install jq
+```
+
+설치한 버전 확인 및 docker daemon 시작
+```
+$ git --version
+git version 2.25.1
+$ curl --version
+curl 7.68.0 (x86_64-pc-linux-gnu) libcurl/7.68.0 OpenSSL/1.1.1f zlib/1.2.11 brotli/1.0.7 libidn2/2.2.0 libpsl/0.21.0 (+libidn2/2.2.0) libssh/0.9.3/openssl/zlib nghttp2/1.40.0 librtmp/2.3
+Release-Date: 2020-01-08
+Protocols: dict file ftp ftps gopher http https imap imaps ldap ldaps pop3 pop3s rtmp rtsp scp sftp smb smbs smtp smtps telnet tftp
+Features: AsynchDNS brotli GSS-API HTTP2 HTTPS-proxy IDN IPv6 Kerberos Largefile libz NTLM NTLM_WB PSL SPNEGO SSL TLS-SRP UnixSockets
+$ docker --version
+Docker version 29.10.7, build 20.10.7-0ubuntu5~20.042
+$ docker-compose --version
+docker-compose version 1.25.0, build unknown
+$ jq --version
+jq-1.6
+
+$ sudo systemctl start docker
+```
+
+docker 명령어 수행을 위해서 사용자를 docker group에 추가 +
+/var/run.docker.sock access denied 에러 발생 시, 사용자를 docker group에 추가하는 것이다.
+
+```
+$ sudo usermod -a -G docker <username>
+$ sudo usermod -a -G docker $USER
+# 재시작 또는 재접속 필요
+```
+
+docker 권한 에러 메시지
+```
+$ docker container ls
+Got permission denied while trying to connect to the Docker ademon socket at unix:///var/run/docker.sock: Get http://%2Fvar%2Frun%2Fdocker.sock/v1.24/containers/json?all=1: dial unix /var/run/docker.sock: connect: permission denied
+```
+image::./imgs/install/docker permission error.png[docker permission error]
+
+
+시스템 시작시 docker를 실행시키고 싶다면 아래 명령어 실행
+```
+$ sudo systemctl enable docker
+```
+
+## go 설치
+go 언어로 chaincode 또는 SDK Application을 개발하는 경우 설치 필요
+
+아래 주소에서 최신 버전 go 버전 확인 +
+https://golang.org/dl/
+
+
+```
+$ cd /usr/local
+$ sudo wget https://go.dev/dl/go1.17.7.linux-amd64.tar.gz
+$ sudo tar -C /usr/local -xzf go1.17.7.linux-amd64.tar.gz
+```
+
+PATH, GOPATH 지정 +
+GOPATH: Go 프로그래밍 개발 시 필요한 작업 공간. 외부 라이브러리나 패키지, 툴, 소스 등을 받아오는 위치
+```
+$ echo 'export PATH=$PATH:/usr/local/go/bin' | sudo tee -a /etc/profile && \
+> echo 'export GOPATH=$HOME/go' | tee -a $HOME/.bashrc && \
+> echo 'export PATH=$PATH:$GOROOT/bin:$GOPATH/bin' | tee -a $HOME/.bashrc && \
+> mkdir -p $HOME/go/{src,pkg,bin}
+```
+
+우분투 재부팅
+```
+$ sudo reboot
+```
+
+go 버전 확인
+```
+$ go version
+go version go1.17.7 linux/amd64
+```
+
+## pyhton3 설치 확인
+Node.js 16 버전 설치를 위해서 pyhton3가 설치되어 있어야 한다.
+
+```
+$ pyhton3 --version
+Python 3.8.10
+```
+
+## Node.js, npm 설치
+
+```
+curl -fsSL https://deb.nodesource.com/setup_16.x | sudo bash -
+```
+
+Node.js 최신 버전은 아래에서 확인한다.
+
+https://nodejs.org/ko/download/
+
+
+
+
+NVM(Node Version Manager)를 설치해서 Node.js를 설치한다.
+```
+$ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+...
+## Run `sudo apt-get install -y nodejs` to install Node.js 16.x and npm
+## You may also need development tools to build native addons:
+     sudo apt-get install gcc g++ make
+## To install the Yarn package manager, run:
+     curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | gpg --dearmor | sudo tee /usr/share/keyrings/yarnkey.gpg >/dev/null
+     echo "deb [signed-by=/usr/share/keyrings/yarnkey.gpg] https://dl.yarnpkg.com/debian stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+     sudo apt-get update && sudo apt-get install yarn
+$ sudo apt-get install -y nodejs
+```
+
+node, npm 버전 확인
+```
+$ node -v
+v16.14.0
+$ npm -v
+8.3.1
+```
+
+## Java JDK 설치
+
+```
+sudo apt-get install openjdk-11-jdk
+```
+
+java 버전 확인
+```
+$ java -version
+openjdk version "11.0.13" 2021-10-19
+OpenJDK Runtime Environment (build 11.0.13+8-Ubuntu-0ubuntu1.20.04)
+OpenJDK 64-Bit Server VM (build 11.0.13+8-Ubuntu-0ubuntu1.20.04, mixed mode, sharing
+```
+
+## Fabric, Fabric Samples 설치
+### 폴더 생성 및 이동
+폴더 생성 및 이동
+
+```
+$ mkdir -p $HOME/go/src/github.com/<your_github_userid>
+$ cd $HOME/go/src/github.com/<your_github_userid>
+```
+
+```
+$ mkdir -p $HOME/go/src/github.com/moss0801
+$ cd $HOME/go/src/github.com/moss0801
+```
+
+### 다운로드 Fabric samples, docker images, binaries
+
+
+```
+$ curl -sSL https://bit.ly/2ysbOFE | bash -s
+```
+
+버전을 지정하고 싶으면 아래 명령어 이용
+```
+$ curl -sSL https://bit.ly/2ysbOFE | bash -s -- <fabric_version> <fabric-ca_version>
+$ curl -sSL https://bit.ly/2ysbOFE | bash -s -- 2.4.2 1.5.2
+```
+
+실행 결과
+```
+$ curl -sSL https://bit.ly/2ysbOFE | bash -s
+
+Clone hyperledger/fabric-samples repo
+
+===> Changing directory to fabric-samples
+fabric-samples v2.4.2 does not exist, defaulting to main. fabric-samples main branch is intended to work with recent versions of fabric.
+
+Pull Hyperledger Fabric binaries
+
+===> Downloading version 2.4.2 platform specific fabric binaries
+===> Downloading:  https://github.com/hyperledger/fabric/releases/download/v2.4.2/hyperledger-fabric-linux-amd64-2.4.2.tar.gz
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   680  100   680    0     0   1937      0 --:--:-- --:--:-- --:--:--  1937
+100 76.7M  100 76.7M    0     0   582k      0  0:02:14  0:02:14 --:--:-- 18.3M
+==> Done.
+===> Downloading version 1.5.2 platform specific fabric-ca-client binary
+===> Downloading:  https://github.com/hyperledger/fabric-ca/releases/download/v1.5.2/hyperledger-fabric-ca-linux-amd64-1.5.2.tar.gz
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   683  100   683    0     0   1991      0 --:--:-- --:--:-- --:--:--  1991
+100 25.4M  100 25.4M    0     0  5068k      0  0:00:05  0:00:05 --:--:-- 5670k
+==> Done.
+
+Pull Hyperledger Fabric docker images
+
+FABRIC_IMAGES: peer orderer ccenv tools baseos
+===> Pulling fabric Images
+====> hyperledger/fabric-peer:2.4.2
+2.4.2: Pulling from hyperledger/fabric-peer
+97518928ae5f: Pull complete
+42bd03df3e1a: Pull complete
+3182c3c96871: Pull complete
+44ae96fc98a2: Pull complete
+2b2d34b5ab5c: Pull complete
+eff95e52b961: Pull complete
+650bde1fc3f7: Pull complete
+Digest: sha256:5eaad9fd093fdfb449310ae851912ab2cf6cd5b634380497404b9cb8bf91dcd2
+Status: Downloaded newer image for hyperledger/fabric-peer:2.4.2
+docker.io/hyperledger/fabric-peer:2.4.2
+====> hyperledger/fabric-orderer:2.4.2
+2.4.2: Pulling from hyperledger/fabric-orderer
+97518928ae5f: Pull complete
+42bd03df3e1a: Pull complete
+a565d10714cf: Pull complete
+cf01ceab4d02: Pull complete
+641b37dc6c30: Pull complete
+a4f70ee0bbbe: Pull complete
+3a78beab9d5d: Pull complete
+Digest: sha256:fc9fbf6d8c88ef7cff09835c5bf978388897a191ed9c9cf1ba33bc131a50799b
+Status: Downloaded newer image for hyperledger/fabric-orderer:2.4.2
+docker.io/hyperledger/fabric-orderer:2.4.2
+====> hyperledger/fabric-ccenv:2.4.2
+2.4.2: Pulling from hyperledger/fabric-ccenv
+97518928ae5f: Pull complete
+b78c28b3bbf7: Pull complete
+248309d37e25: Pull complete
+8f893ed93684: Pull complete
+60b34f272e36: Pull complete
+bde889820d2b: Pull complete
+759d90edbc0f: Pull complete
+81a0619aeb06: Pull complete
+fc7be8cce065: Pull complete
+Digest: sha256:bd2fa8d04b7bb74f422c34b03cfce62750fc7d99f78410c6f4dd7ce4eaf5f594
+Status: Downloaded newer image for hyperledger/fabric-ccenv:2.4.2
+docker.io/hyperledger/fabric-ccenv:2.4.2
+====> hyperledger/fabric-tools:2.4.2
+2.4.2: Pulling from hyperledger/fabric-tools
+97518928ae5f: Pull complete
+b78c28b3bbf7: Pull complete
+248309d37e25: Pull complete
+8f893ed93684: Pull complete
+60b34f272e36: Pull complete
+fb1c258a462f: Pull complete
+cddf115ada33: Pull complete
+24ea6585952d: Pull complete
+Digest: sha256:c3c4cdf3c73877c9d3dba1fcbbd59e152ecd23876a1ccb9f9bc9c4bed69824e7
+Status: Downloaded newer image for hyperledger/fabric-tools:2.4.2
+docker.io/hyperledger/fabric-tools:2.4.2
+====> hyperledger/fabric-baseos:2.4.2
+2.4.2: Pulling from hyperledger/fabric-baseos
+Digest: sha256:bdf4646cc0e98ab4cfab4a8cb109ebba5424ae5c84c799d5ec0f5eb7ae2ae2ca
+Status: Image is up to date for hyperledger/fabric-baseos:2.4.2
+docker.io/hyperledger/fabric-baseos:2.4.2
+===> Pulling fabric ca Image
+====> hyperledger/fabric-ca:1.5.2
+1.5.2: Pulling from hyperledger/fabric-ca
+a0d0a0d46f8b: Pull complete
+ac8258c0aeb1: Pull complete
+6c802cf1fa97: Pull complete
+Digest: sha256:faa3b743d9ed391c30f518a7cc1168160bf335f3bf60ba6aaaf1aa49c1ed023e
+Status: Downloaded newer image for hyperledger/fabric-ca:1.5.2
+docker.io/hyperledger/fabric-ca:1.5.2
+===> List out hyperledger docker images
+hyperledger/fabric-tools     2.4       eb40f70b1174   2 weeks ago    473MB
+hyperledger/fabric-tools     2.4.2     eb40f70b1174   2 weeks ago    473MB
+hyperledger/fabric-tools     latest    eb40f70b1174   2 weeks ago    473MB
+hyperledger/fabric-peer      2.4       43b970f84604   2 weeks ago    62.3MB
+hyperledger/fabric-peer      2.4.2     43b970f84604   2 weeks ago    62.3MB
+hyperledger/fabric-peer      latest    43b970f84604   2 weeks ago    62.3MB
+hyperledger/fabric-orderer   2.4       5edf6bdb4489   2 weeks ago    37.3MB
+hyperledger/fabric-orderer   2.4.2     5edf6bdb4489   2 weeks ago    37.3MB
+hyperledger/fabric-orderer   latest    5edf6bdb4489   2 weeks ago    37.3MB
+hyperledger/fabric-ccenv     2.4       e377a02242aa   2 weeks ago    517MB
+hyperledger/fabric-ccenv     2.4.2     e377a02242aa   2 weeks ago    517MB
+hyperledger/fabric-ccenv     latest    e377a02242aa   2 weeks ago    517MB
+hyperledger/fabric-baseos    2.4       4cfe0148d657   2 weeks ago    6.94MB
+hyperledger/fabric-baseos    2.4.2     4cfe0148d657   2 weeks ago    6.94MB
+hyperledger/fabric-baseos    latest    4cfe0148d657   2 weeks ago    6.94MB
+hyperledger/fabric-ca        1.5       4ea287b75c63   5 months ago   69.8MB
+hyperledger/fabric-ca        1.5.2     4ea287b75c63   5 months ago   69.8MB
+hyperledger/fabric-ca        latest    4ea287b75c63   5 months ago   69.8MB
+```
+
+## fabric-samples 실행
+
+### test-network 실행
+폴더 이동
+```
+$ cd fabric-samples/test-network
+```
+
+실행 파일인 network.sh의 도움말 확인
+```
+$ ./network.hs -h
+Using docker and docker-compose
+Usage:
+  network.sh <Mode> [Flags]
+    Modes:
+      up - Bring up Fabric orderer and peer nodes. No channel is created
+      up createChannel - Bring up fabric network with one channel
+      createChannel - Create and join a channel after the network is created
+      deployCC - Deploy a chaincode to a channel (defaults to asset-transfer-basic)
+      down - Bring down the network
+
+    Flags:
+    Used with network.sh up, network.sh createChannel:
+    -ca <use CAs> -  Use Certificate Authorities to generate network crypto material
+    -c <channel name> - Name of channel to create (defaults to "mychannel")
+    -s <dbtype> - Peer state database to deploy: goleveldb (default) or couchdb
+    -r <max retry> - CLI times out after certain number of attempts (defaults to 5)
+    -d <delay> - CLI delays for a certain number of seconds (defaults to 3)
+    -verbose - Verbose mode
+
+    Used with network.sh deployCC
+    -c <channel name> - Name of channel to deploy chaincode to
+    -ccn <name> - Chaincode name.
+    -ccl <language> - Programming language of the chaincode to deploy: go, java, javascript, typescript
+    -ccv <version>  - Chaincode version. 1.0 (default), v2, version3.x, etc
+    -ccs <sequence>  - Chaincode definition sequence. Must be an integer, 1 (default), 2, 3, etc
+    -ccp <path>  - File path to the chaincode.
+    -ccep <policy>  - (Optional) Chaincode endorsement policy using signature policy syntax. The default policy requires an endorsement from Org1 and Org2
+    -cccg <collection-config>  - (Optional) File path to private data collections configuration file
+    -cci <fcn name>  - (Optional) Name of chaincode initialization function. When a function is provided, the execution of init will be requested and the function will be invoked.
+
+    -h - Print this message
+
+ Possible Mode and flag combinations
+   up -ca -r -d -s -verbose
+   up createChannel -ca -c -r -d -s -verbose
+   createChannel -c -r -d -verbose
+   deployCC -ccn -ccl -ccv -ccs -ccp -cci -r -d -verbose
+
+ Examples:
+   network.sh up createChannel -ca -c mychannel -s couchdb
+   network.sh createChannel -c channelName
+   network.sh deployCC -ccn basic -ccp ../asset-transfer-basic/chaincode-javascript/ -ccl javascript
+   network.sh deployCC -ccn mychaincode -ccp ./user/mychaincode -ccv 1 -ccl javascript
+
+```
+
+test-network 디렉토리에서 실행되고 있는 containers or artifacts는 아래 명령어로 제거 할수 있다.
+
+```
+$ ./network.sh down
+```
+
+test-network 디렉토리에 아래 명령어로 실행할 수 있다.
+```
+$ ./network.sh up
+```
+이 명령어는 peer node 2개, ordering node 1개로 구성된 Fabric Network를 생성한다. 다만 channel은 생성하지 않는다.
+
+성공 로그
+```
+Using docker and docker-compose
+Starting nodes with CLI timeout of '5' tries and CLI delay of '3' seconds and using database 'leveldb' with crypto from 'cryptogen'
+LOCAL_VERSION=2.4.2
+DOCKER_IMAGE_VERSION=2.4.2
+/home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/../bin/cryptogen
+Generating certificates using cryptogen tool
+Creating Org1 Identities
++ cryptogen generate --config=./organizations/cryptogen/crypto-config-org1.yaml --output=organizations
+org1.example.com
++ res=0
+Creating Org2 Identities
++ cryptogen generate --config=./organizations/cryptogen/crypto-config-org2.yaml --output=organizations
+org2.example.com
++ res=0
+Creating Orderer Org Identities
++ cryptogen generate --config=./organizations/cryptogen/crypto-config-orderer.yaml --output=organizations
++ res=0
+Generating CCP files for Org1 and Org2
+Creating network "fabric_test" with the default driver
+Creating volume "compose_orderer.example.com" with default driver
+Creating volume "compose_peer0.org1.example.com" with default driver
+Creating volume "compose_peer0.org2.example.com" with default driver
+Creating peer0.org1.example.com ... done
+Creating orderer.example.com    ... done
+Creating peer0.org2.example.com ... done
+Creating cli                    ... done
+CONTAINER ID   IMAGE                               COMMAND             CREATED         STATUS                  PORTS                                                                                                                             NAMES
+89e98fe96a5e   hyperledger/fabric-tools:latest     "/bin/bash"         1 second ago    Up Less than a second                                                                                                                                     cli
+9203c1db39c5   hyperledger/fabric-peer:latest      "peer node start"   2 seconds ago   Up Less than a second   0.0.0.0:9051->9051/tcp, :::9051->9051/tcp, 7051/tcp, 0.0.0.0:9445->9445/tcp, :::9445->9445/tcp                                    peer0.org2.example.com
+e300a7762baa   hyperledger/fabric-peer:latest      "peer node start"   2 seconds ago   Up Less than a second   0.0.0.0:7051->7051/tcp, :::7051->7051/tcp, 0.0.0.0:9444->9444/tcp, :::9444->9444/tcp                                              peer0.org1.example.com
+8eb92519df67   hyperledger/fabric-orderer:latest   "orderer"           2 seconds ago   Up Less than a second   0.0.0.0:7050->7050/tcp, :::7050->7050/tcp, 0.0.0.0:7053->7053/tcp, :::7053->7053/tcp, 0.0.0.0:9443->9443/tcp, :::9443->9443/tcp   orderer.example.com
+```
+### 채널 생성
+
+아래 명령를 통해서 채널을 생성한다. 채널명을 지정하지 않는 경우 채널명은 'mychannel'이다
+
+```
+$ ./network.sh createChannel
+```
+채널명 지정하는 경우
+```
+$ ./network.sh createChannel -c {채널명}
+$ ./network.sh createChannel -c channel1
+```
+채널명은 아래 제약사항을 가진다.
+
+* contains only lower case ASCII alphanumerics, dots ‘.’, and dashes ‘-‘
+* is shorter than 250 characters
+* starts with a letter
+
+네트워크 생성과 함께 채널을 생성하려는 경우는 아래 명령어를 사용한다.
+```
+./network.sh up createChannel
+```
+
+
+
+채널 생성 성공 로그
+```
+Using docker and docker-compose
+Creating channel 'mychannel'.
+If network is not up, starting nodes with CLI timeout of '5' tries and CLI delay of '3' seconds and using database 'leveldb
+Using docker and docker-compose
+Generating channel genesis block 'mychannel.block'
+/home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/../bin/configtxgen
++ configtxgen -profile TwoOrgsApplicationGenesis -outputBlock ./channel-artifacts/mychannel.block -channelID mychannel
+2022-02-17 00:08:29.013 KST 0001 INFO [common.tools.configtxgen] main -> Loading configuration
+2022-02-17 00:08:29.019 KST 0002 INFO [common.tools.configtxgen.localconfig] completeInitialization -> orderer type: etcdraft
+2022-02-17 00:08:29.020 KST 0003 INFO [common.tools.configtxgen.localconfig] completeInitialization -> Orderer.EtcdRaft.Options unset, setting to tick_interval:"500ms" election_tick:10 heartbeat_tick:1 max_inflight_blocks:5 snapshot_interval_size:16777216
+2022-02-17 00:08:29.020 KST 0004 INFO [common.tools.configtxgen.localconfig] Load -> Loaded configuration: /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/configtx/configtx.yaml
+2022-02-17 00:08:29.021 KST 0005 INFO [common.tools.configtxgen] doOutputBlock -> Generating genesis block
+2022-02-17 00:08:29.021 KST 0006 INFO [common.tools.configtxgen] doOutputBlock -> Creating application channel genesis block
+2022-02-17 00:08:29.021 KST 0007 INFO [common.tools.configtxgen] doOutputBlock -> Writing genesis block
++ res=0
+Creating channel mychannel
+Using organization 1
++ osnadmin channel join --channelID mychannel --config-block ./channel-artifacts/mychannel.block -o localhost:7053 --ca-file /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem --client-cert /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.crt --client-key /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.key
++ res=0
+Status: 201
+{
+        "name": "mychannel",
+        "url": "/participation/v1/channels/mychannel",
+        "consensusRelation": "consenter",
+        "status": "active",
+        "height": 1
+}
+
+Channel 'mychannel' created
+Joining org1 peer to the channel...
+Using organization 1
++ peer channel join -b ./channel-artifacts/mychannel.block
++ res=0
+2022-02-17 00:08:35.282 KST 0001 INFO [channelCmd] InitCmdFactory -> Endorser and orderer connections initialized
+2022-02-17 00:08:35.323 KST 0002 INFO [channelCmd] executeJoin -> Successfully submitted proposal to join channel
+Joining org2 peer to the channel...
+Using organization 2
++ peer channel join -b ./channel-artifacts/mychannel.block
++ res=0
+2022-02-17 00:08:38.362 KST 0001 INFO [channelCmd] InitCmdFactory -> Endorser and orderer connections initialized
+2022-02-17 00:08:38.465 KST 0002 INFO [channelCmd] executeJoin -> Successfully submitted proposal to join channel
+Setting anchor peer for org1...
+Using organization 1
+Fetching channel config for channel mychannel
+Using organization 1
+Fetching the most recent configuration block for the channel
++ peer channel fetch config config_block.pb -o orderer.example.com:7050 --ordererTLSHostnameOverride orderer.example.com -c mychannel --tls --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
+2022-02-16 15:08:38.577 UTC 0001 INFO [channelCmd] InitCmdFactory -> Endorser and orderer connections initialized
+2022-02-16 15:08:38.579 UTC 0002 INFO [cli.common] readBlock -> Received block: 0
+2022-02-16 15:08:38.579 UTC 0003 INFO [channelCmd] fetch -> Retrieving last config block: 0
+2022-02-16 15:08:38.580 UTC 0004 INFO [cli.common] readBlock -> Received block: 0
+Decoding config block to JSON and isolating config to Org1MSPconfig.json
++ configtxlator proto_decode --input config_block.pb --type common.Block --output config_block.json
++ jq '.data.data[0].payload.data.config' config_block.json
+Generating anchor peer update transaction for Org1 on channel mychannel
++ jq '.channel_group.groups.Application.groups.Org1MSP.values += {"AnchorPeers":{"mod_policy": "Admins","value":{"anchor_peers": [{"host": "peer0.org1.example.com","port": 7051}]},"version": "0"}}' Org1MSPconfig.json
++ configtxlator proto_encode --input Org1MSPconfig.json --type common.Config --output original_config.pb
++ configtxlator proto_encode --input Org1MSPmodified_config.json --type common.Config --output modified_config.pb
++ configtxlator compute_update --channel_id mychannel --original original_config.pb --updated modified_config.pb --output config_update.pb
++ configtxlator proto_decode --input config_update.pb --type common.ConfigUpdate --output config_update.json
++ jq .
+++ cat config_update.json
++ echo '{"payload":{"header":{"channel_header":{"channel_id":"mychannel", "type":2}},"data":{"config_update":{' '"channel_id":' '"mychannel",' '"isolated_data":' '{},' '"read_set":' '{' '"groups":' '{' '"Application":' '{' '"groups":' '{' '"Org1MSP":' '{' '"groups":' '{},' '"mod_policy":' '"",' '"policies":' '{' '"Admins":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '},' '"Endorsement":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '},' '"Readers":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '},' '"Writers":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '}' '},' '"values":' '{' '"MSP":' '{' '"mod_policy":' '"",' '"value":' null, '"version":' '"0"' '}' '},' '"version":' '"0"' '}' '},' '"mod_policy":' '"",' '"policies":' '{},' '"values":' '{},' '"version":' '"0"' '}' '},' '"mod_policy":' '"",' '"policies":' '{},' '"values":' '{},' '"version":' '"0"' '},' '"write_set":' '{' '"groups":' '{' '"Application":' '{' '"groups":' '{' '"Org1MSP":' '{' '"groups":' '{},' '"mod_policy":' '"Admins",' '"policies":' '{' '"Admins":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '},' '"Endorsement":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '},' '"Readers":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '},' '"Writers":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '}' '},' '"values":' '{' '"AnchorPeers":' '{' '"mod_policy":' '"Admins",' '"value":' '{' '"anchor_peers":' '[' '{' '"host":' '"peer0.org1.example.com",' '"port":' 7051 '}' ']' '},' '"version":' '"0"' '},' '"MSP":' '{' '"mod_policy":' '"",' '"value":' null, '"version":' '"0"' '}' '},' '"version":' '"1"' '}' '},' '"mod_policy":' '"",' '"policies":' '{},' '"values":' '{},' '"version":' '"0"' '}' '},' '"mod_policy":' '"",' '"policies":' '{},' '"values":' '{},' '"version":' '"0"' '}' '}}}}'
++ configtxlator proto_encode --input config_update_in_envelope.json --type common.Envelope --output Org1MSPanchors.tx
+2022-02-16 15:08:38.787 UTC 0001 INFO [channelCmd] InitCmdFactory -> Endorser and orderer connections initialized
+2022-02-16 15:08:38.795 UTC 0002 INFO [channelCmd] update -> Successfully submitted channel update
+Anchor peer set for org 'Org1MSP' on channel 'mychannel'
+Setting anchor peer for org2...
+Using organization 2
+Fetching channel config for channel mychannel
+Using organization 2
+Fetching the most recent configuration block for the channel
++ peer channel fetch config config_block.pb -o orderer.example.com:7050 --ordererTLSHostnameOverride orderer.example.com -c mychannel --tls --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/organizations/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
+2022-02-16 15:08:38.934 UTC 0001 INFO [channelCmd] InitCmdFactory -> Endorser and orderer connections initialized
+2022-02-16 15:08:38.937 UTC 0002 INFO [cli.common] readBlock -> Received block: 1
+2022-02-16 15:08:38.937 UTC 0003 INFO [channelCmd] fetch -> Retrieving last config block: 1
+2022-02-16 15:08:38.938 UTC 0004 INFO [cli.common] readBlock -> Received block: 1
+Decoding config block to JSON and isolating config to Org2MSPconfig.json
++ configtxlator proto_decode --input config_block.pb --type common.Block --output config_block.json
++ jq '.data.data[0].payload.data.config' config_block.json
+Generating anchor peer update transaction for Org2 on channel mychannel
++ jq '.channel_group.groups.Application.groups.Org2MSP.values += {"AnchorPeers":{"mod_policy": "Admins","value":{"anchor_peers": [{"host": "peer0.org2.example.com","port": 9051}]},"version": "0"}}' Org2MSPconfig.json
++ configtxlator proto_encode --input Org2MSPconfig.json --type common.Config --output original_config.pb
++ configtxlator proto_encode --input Org2MSPmodified_config.json --type common.Config --output modified_config.pb
++ configtxlator compute_update --channel_id mychannel --original original_config.pb --updated modified_config.pb --output config_update.pb
++ configtxlator proto_decode --input config_update.pb --type common.ConfigUpdate --output config_update.json
++ jq .
+++ cat config_update.json
++ echo '{"payload":{"header":{"channel_header":{"channel_id":"mychannel", "type":2}},"data":{"config_update":{' '"channel_id":' '"mychannel",' '"isolated_data":' '{},' '"read_set":' '{' '"groups":' '{' '"Application":' '{' '"groups":' '{' '"Org2MSP":' '{' '"groups":' '{},' '"mod_policy":' '"",' '"policies":' '{' '"Admins":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '},' '"Endorsement":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '},' '"Readers":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '},' '"Writers":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '}' '},' '"values":' '{' '"MSP":' '{' '"mod_policy":' '"",' '"value":' null, '"version":' '"0"' '}' '},' '"version":' '"0"' '}' '},' '"mod_policy":' '"",' '"policies":' '{},' '"values":' '{},' '"version":' '"0"' '}' '},' '"mod_policy":' '"",' '"policies":' '{},' '"values":' '{},' '"version":' '"0"' '},' '"write_set":' '{' '"groups":' '{' '"Application":' '{' '"groups":' '{' '"Org2MSP":' '{' '"groups":' '{},' '"mod_policy":' '"Admins",' '"policies":' '{' '"Admins":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '},' '"Endorsement":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '},' '"Readers":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '},' '"Writers":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '}' '},' '"values":' '{' '"AnchorPeers":' '{' '"mod_policy":' '"Admins",' '"value":' '{' '"anchor_peers":' '[' '{' '"host":' '"peer0.org2.example.com",' '"port":' 9051 '}' ']' '},' '"version":' '"0"' '},' '"MSP":' '{' '"mod_policy":' '"",' '"value":' null, '"version":' '"0"' '}' '},' '"version":' '"1"' '}' '},' '"mod_policy":' '"",' '"policies":' '{},' '"values":' '{},' '"version":' '"0"' '}' '},' '"mod_policy":' '"",' '"policies":' '{},' '"values":' '{},' '"version":' '"0"' '}' '}}}}'
++ configtxlator proto_encode --input config_update_in_envelope.json --type common.Envelope --output Org2MSPanchors.tx
+2022-02-16 15:08:39.115 UTC 0001 INFO [channelCmd] InitCmdFactory -> Endorser and orderer connections initialized
+2022-02-16 15:08:39.126 UTC 0002 INFO [channelCmd] update -> Successfully submitted channel update
+Anchor peer set for org 'Org2MSP' on channel 'mychannel'
+Channel 'mychannel' joined
+```
+
+### 채인코드(chaincode) 배포
+
+채널 생성 후 deployCC 하위명령어를 이용해서 '**asset-transfer (basic)**' chaincode를 'peer0.org1.example.com'과 'peer0.org2.example.com'에 설치하고, 채널(channel)에 배포한다. 채널을 지정하지 않는 경우 'mychannel'에 배포한다.
+
+```
+$ ./network.sh deployCC -ccn basic -ccp ../asset-transfer-basic/chaincode-go -ccl go
+```
+
+채널을 지정하는 경우
+```
+$ ./network.sh deployCC -ccn basic -ccp ../asset-transfer-basic/chaincode-go -ccl go - c {channel}
+$ ./network.sh deployCC -ccn basic -ccp ../asset-transfer-basic/chaincode-go -ccl go - c channel1
+```
+
+체인코드 배포 성공로그
+```
+Using docker and docker-compose
+deploying chaincode on channel 'mychannel'
+executing with the following
+- CHANNEL_NAME: mychannel
+- CC_NAME: basic
+- CC_SRC_PATH: ../asset-transfer-basic/chaincode-go
+- CC_SRC_LANGUAGE: go
+- CC_VERSION: 1.0
+- CC_SEQUENCE: 1
+- CC_END_POLICY: NA
+- CC_COLL_CONFIG: NA
+- CC_INIT_FCN: NA
+- DELAY: 3
+- MAX_RETRY: 5
+- VERBOSE: false
+Vendoring Go dependencies at ../asset-transfer-basic/chaincode-go
+~/go/src/github.com/moss0801/fabric-samples/asset-transfer-basic/chaincode-go ~/go/src/github.com/moss0801/fabric-samples/test-network
+go: downloading github.com/hyperledger/fabric-contract-api-go v1.1.0
+go: downloading github.com/hyperledger/fabric-chaincode-go v0.0.0-20200424173110-d7076418f212
+go: downloading github.com/hyperledger/fabric-protos-go v0.0.0-20200424173316-dd554ba3746e
+go: downloading github.com/stretchr/testify v1.5.1
+go: downloading github.com/golang/protobuf v1.3.2
+go: downloading google.golang.org/grpc v1.23.0
+go: downloading github.com/davecgh/go-spew v1.1.1
+go: downloading github.com/pmezard/go-difflib v1.0.0
+go: downloading gopkg.in/yaml.v2 v2.2.8
+go: downloading github.com/xeipuuv/gojsonschema v1.2.0
+go: downloading github.com/go-openapi/spec v0.19.4
+go: downloading github.com/gobuffalo/packr v1.30.1
+go: downloading google.golang.org/genproto v0.0.0-20180831171423-11092d34479b
+go: downloading golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297
+go: downloading github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415
+go: downloading github.com/gobuffalo/envy v1.7.0
+go: downloading github.com/gobuffalo/packd v0.3.0
+go: downloading github.com/go-openapi/jsonpointer v0.19.3
+go: downloading github.com/go-openapi/jsonreference v0.19.2
+go: downloading github.com/go-openapi/swag v0.19.5
+go: downloading golang.org/x/sys v0.0.0-20190710143415-6ec70d6a5542
+go: downloading github.com/joho/godotenv v1.3.0
+go: downloading github.com/rogpeppe/go-internal v1.3.0
+go: downloading github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f
+go: downloading github.com/mailru/easyjson v0.0.0-20190626092158-b2ccc519800e
+go: downloading github.com/PuerkitoBio/purell v1.1.1
+go: downloading github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578
+go: downloading golang.org/x/text v0.3.2
+~/go/src/github.com/moss0801/fabric-samples/test-network
+Finished vendoring Go dependencies
++ peer lifecycle chaincode package basic.tar.gz --path ../asset-transfer-basic/chaincode-go --lang golang --label basic_1.0
++ res=0
+Chaincode is packaged
+Installing chaincode on peer0.org1...
+Using organization 1
++ peer lifecycle chaincode install basic.tar.gz
++ res=0
+2022-02-17 00:24:05.744 KST 0001 INFO [cli.lifecycle.chaincode] submitInstallProposal -> Installed remotely: response:<status:200 payload:"\nJbasic_1.0:dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4\022\tbasic_1.0" >
+2022-02-17 00:24:05.746 KST 0002 INFO [cli.lifecycle.chaincode] submitInstallProposal -> Chaincode code package identifier: basic_1.0:dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4
+Chaincode is installed on peer0.org1
+Install chaincode on peer0.org2...
+Using organization 2
++ peer lifecycle chaincode install basic.tar.gz
++ res=0
+2022-02-17 00:24:14.340 KST 0001 INFO [cli.lifecycle.chaincode] submitInstallProposal -> Installed remotely: response:<status:200 payload:"\nJbasic_1.0:dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4\022\tbasic_1.0" >
+2022-02-17 00:24:14.340 KST 0002 INFO [cli.lifecycle.chaincode] submitInstallProposal -> Chaincode code package identifier: basic_1.0:dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4
+Chaincode is installed on peer0.org2
+Using organization 1
++ peer lifecycle chaincode queryinstalled
++ res=0
+Installed chaincodes on peer:
+Package ID: basic_1.0:dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4, Label: basic_1.0
+Query installed successful on peer0.org1 on channel
+Using organization 1
++ peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem --channelID mychannel --name basic --version 1.0 --package-id basic_1.0:dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4 --sequence 1
++ res=0
+2022-02-17 00:24:16.476 KST 0001 INFO [chaincodeCmd] ClientWait -> txid [9ac7b8fb1c40049846ee2ef68f51427d4d7b765b92c8d8cddf5e1afc491a2f15] committed with status (VALID) at localhost:7051
+Chaincode definition approved on peer0.org1 on channel 'mychannel'
+Using organization 1
+Checking the commit readiness of the chaincode definition on peer0.org1 on channel 'mychannel'...
+Attempting to check the commit readiness of the chaincode definition on peer0.org1, Retry after 3 seconds.
++ peer lifecycle chaincode checkcommitreadiness --channelID mychannel --name basic --version 1.0 --sequence 1 --output json
++ res=0
+{
+        "approvals": {
+                "Org1MSP": true,
+                "Org2MSP": false
+        }
+}
+Checking the commit readiness of the chaincode definition successful on peer0.org1 on channel 'mychannel'
+Using organization 2
+Checking the commit readiness of the chaincode definition on peer0.org2 on channel 'mychannel'...
+Attempting to check the commit readiness of the chaincode definition on peer0.org2, Retry after 3 seconds.
++ peer lifecycle chaincode checkcommitreadiness --channelID mychannel --name basic --version 1.0 --sequence 1 --output json
++ res=0
+{
+        "approvals": {
+                "Org1MSP": true,
+                "Org2MSP": false
+        }
+}
+Checking the commit readiness of the chaincode definition successful on peer0.org2 on channel 'mychannel'
+Using organization 2
++ peer lifecycle chaincode approveformyorg -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem --channelID mychannel --name basic --version 1.0 --package-id basic_1.0:dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4 --sequence 1
++ res=0
+2022-02-17 00:24:24.663 KST 0001 INFO [chaincodeCmd] ClientWait -> txid [8a39e01b80ba23a9b567ac54927ad1276e8312e47c7e5728bde6f2f1e0469759] committed with status (VALID) at localhost:9051
+Chaincode definition approved on peer0.org2 on channel 'mychannel'
+Using organization 1
+Checking the commit readiness of the chaincode definition on peer0.org1 on channel 'mychannel'...
+Attempting to check the commit readiness of the chaincode definition on peer0.org1, Retry after 3 seconds.
++ peer lifecycle chaincode checkcommitreadiness --channelID mychannel --name basic --version 1.0 --sequence 1 --output json
++ res=0
+{
+        "approvals": {
+                "Org1MSP": true,
+                "Org2MSP": true
+        }
+}
+Checking the commit readiness of the chaincode definition successful on peer0.org1 on channel 'mychannel'
+Using organization 2
+Checking the commit readiness of the chaincode definition on peer0.org2 on channel 'mychannel'...
+Attempting to check the commit readiness of the chaincode definition on peer0.org2, Retry after 3 seconds.
++ peer lifecycle chaincode checkcommitreadiness --channelID mychannel --name basic --version 1.0 --sequence 1 --output json
++ res=0
+{
+        "approvals": {
+                "Org1MSP": true,
+                "Org2MSP": true
+        }
+}
+Checking the commit readiness of the chaincode definition successful on peer0.org2 on channel 'mychannel'
+Using organization 1
+Using organization 2
++ peer lifecycle chaincode commit -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem --channelID mychannel --name basic --peerAddresses localhost:7051 --tlsRootCertFiles /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem --peerAddresses localhost:9051 --tlsRootCertFiles /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem --version 1.0 --sequence 1
++ res=0
+2022-02-17 00:24:32.985 KST 0001 INFO [chaincodeCmd] ClientWait -> txid [b877b7f220ac86379c0b5a2a74603ee8490ba49c72ba23512d96c8256d51c4b5] committed with status (VALID) at localhost:7051
+2022-02-17 00:24:32.990 KST 0002 INFO [chaincodeCmd] ClientWait -> txid [b877b7f220ac86379c0b5a2a74603ee8490ba49c72ba23512d96c8256d51c4b5] committed with status (VALID) at localhost:9051
+Chaincode definition committed on channel 'mychannel'
+Using organization 1
+Querying chaincode definition on peer0.org1 on channel 'mychannel'...
+Attempting to Query committed status on peer0.org1, Retry after 3 seconds.
++ peer lifecycle chaincode querycommitted --channelID mychannel --name basic
++ res=0
+Committed chaincode definition for chaincode 'basic' on channel 'mychannel':
+Version: 1.0, Sequence: 1, Endorsement Plugin: escc, Validation Plugin: vscc, Approvals: [Org1MSP: true, Org2MSP: true]
+Query chaincode definition successful on peer0.org1 on channel 'mychannel'
+Using organization 2
+Querying chaincode definition on peer0.org2 on channel 'mychannel'...
+Attempting to Query committed status on peer0.org2, Retry after 3 seconds.
++ peer lifecycle chaincode querycommitted --channelID mychannel --name basic
++ res=0
+Committed chaincode definition for chaincode 'basic' on channel 'mychannel':
+Version: 1.0, Sequence: 1, Endorsement Plugin: escc, Validation Plugin: vscc, Approvals: [Org1MSP: true, Org2MSP: true]
+Query chaincode definition successful on peer0.org2 on channel 'mychannel'
+Chaincode initialization is not required
+
+```
+
+### network와 상호작용
+test network가 실행된 후, network와 상호작용을 위해서 peer CLI를 사용할 수 있다.
+
+peer CLI로 배포된 smart contract를 invoke 하거나 channels을 update 또는 새로운 smart contracts를 설치 및 배포할 수 있다.
+
+peer 바이너리(binaries)는 fabric-samples/bin 폴더에 위치하고 있다.
+
+아래 명령어로 CLI path에 peer를 추가할 수 있다.
+
+```
+$ export PATH=${PWD}/../bin:$PATH
+```
+
+추가로 FABRICT_CFG_PATH가 fabric-samples 의 core.yaml 파일로 지정되어야 한다.
+```
+$ export FABRIC_CFG_PATH=$PWD/../config/
+```
+
+아래 환경변수 설정은 peer CLI가 Org1으로 수행할 수 있도록 해준다.
+```
+# Environment variables for Org1
+ 
+export CORE_PEER_TLS_ENABLED=true
+export CORE_PEER_LOCALMSPID="Org1MSP"
+export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
+export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp
+export CORE_PEER_ADDRESS=localhost:7051
+
+```
+
+'CORE_PEER_TLS_ROOTCERT_FILE' 과 'CORE_PEER_MSPCONFIGPATH' 환경 변수는 organizations 폴더의 Org1 crypto 요소들을 가르킨다.
+
+다음 명령어는 asset들로 ledger를 초기화 한다. (아래 명령어는 Fabric Gateway peer를 통하지 않기에 endorsing peer가 지정되어야 한다.)
+
+```
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile "${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem" -C mychannel -n basic --peerAddresses localhost:7051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt" --peerAddresses localhost:9051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt" -c '{"function":"InitLedger","Args":[]}'
+```
+
+마지막 부분
+```
+'{"function":"InitLedger","Args":[]}'
+```
+
+초기화 성공 로그
+
+```
+2022-02-17 00:36:25.454 KST 0001 INFO [chaincodeCmd] chaincodeInvokeOrQuery -> Chaincode invoke successful. result: status:200
+```
+
+이제 CLI를 이용해서 ledger를 query 할 수 있다.
+
+아래 명령어로 channel ledger에 추가한 asset의 목록을 조회할 수 있다.
+
+```
+$ peer chaincode query -C mychannel -n basic -c '{"Args":["GetAllAssets"]}'
+```
+
+결과
+```
+[
+  {"AppraisedValue":300,"Color":"blue","ID":"asset1","Owner":"Tomoko","Size":5},
+  {"AppraisedValue":400,"Color":"red","ID":"asset2","Owner":"Brad","Size":5},
+  {"AppraisedValue":500,"Color":"green","ID":"asset3","Owner":"Jin Soo","Size":10},
+  {"AppraisedValue":600,"Color":"yellow","ID":"asset4","Owner":"Max","Size":10},
+  {"AppraisedValue":700,"Color":"black","ID":"asset5","Owner":"Adriana","Size":15},
+  {"AppraisedValue":800,"Color":"white","ID":"asset6","Owner":"Michel","Size":15}
+]
+```
+
+Chaincode들은 ledger(원장)의 asset(자산)의 변경(change) 또는 전송(transfer)을 네트워크 멤버가 원하는 경우 invoke 되어진다.
+
+아래는 'asset-transfer (basic)' chaincode를 invoke해서 ledger의 asset의 owner(주인)을 변경하는 명령어다.
+
+```
+peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com --tls --cafile "${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem" -C mychannel -n basic --peerAddresses localhost:7051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt" --peerAddresses localhost:9051 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt" -c '{"function":"TransferAsset","Args":["asset6","Christopher"]}'
+```
+
+마지막 부분
+```
+'{"function":"TransferAsset","Args":["asset6","Christopher"]}'
+```
+
+성공 로그
+```
+2022-02-17 00:40:49.442 KST 0001 INFO [chaincodeCmd] chaincodeInvokeOrQuery -> Chaincode invoke successful. result: status:200 payload:"Michel"
+```
+
+'asset-transfer (basic)' chaincode의 endorsement policy(정책)이 Org1과 Org2에 의해 sign된 transaction을 요청하기에, chaincode invoke 명령어는 --peerAddress flag를 이용해서 'peer0.org1.example.com'과 'peer0.org2.example.com'를 지정할 필요가 있다.
+
+TLS는 network에 대해서 활성화(enable)되었기에, 명령어는 --tltRootCertFiles flag를 이용해서 각 peer의 TLS certificate의 참조가 필요하다.
+
+chincode가 invoke 된 이후, blockchain ledger의 asset들이 어떻게 변경되었는지 query해 볼수 있다.
+
+Org1 peer를 통해서 query를 해보았으니, 이번에는 Org2 peer를 통해서 query를 해보자.
+
+아래 환경 변수 수정을 통해서 Org2로 동작하도록 하자.
+
+```
+# Environment variables for Org2
+ 
+export CORE_PEER_TLS_ENABLED=true
+export CORE_PEER_LOCALMSPID="Org2MSP"
+export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt
+export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp
+export CORE_PEER_ADDRESS=localhost:9051
+```
+
+이제 'peer0.org2.example.com'에서 실행중인 'asset-transfer (basic)' chaincode를 query할 수 있다.
+```
+$ peer chaincode query -C mychannel -n basic -c '{"Args":["GetAllAssets"]}'
+```
+
+"asset6"가 Christopher로 이동(transferred)된 것을 확인할 수 있다.
+
+결과:
+```
+{"AppraisedValue":800,"Color":"white","ID":"asset6","Owner":"Christopher","Size":15}
+```
+
+### network 중지(bring down)
+
+아래 명령어로 network를 중지(bring down)할 수 있다.
+```
+./network.sh down
+```
+
+실행 결과
+```
+Using docker and docker-compose
+Stopping network
+Decomposing compose-test-net.yaml
+Stopping cli                    ... done
+Stopping peer0.org2.example.com ... done
+Stopping peer0.org1.example.com ... done
+Stopping orderer.example.com    ... done
+Removing cli                    ... done
+Removing peer0.org2.example.com ... done
+Removing peer0.org1.example.com ... done
+Removing orderer.example.com    ... done
+Removing network fabric_test
+Removing volume compose_orderer.example.com
+Removing volume compose_peer0.org1.example.com
+Removing volume compose_peer0.org2.example.com
+Decomposing compose-couch.yaml
+ERROR: The Compose file is invalid because:
+Service peer0.org1.example.com has neither an image nor a build context specified. At least one must be provided.
+Decomposing compose-ca.yaml
+Removing network fabric_test
+WARNING: Network fabric_test not found.
+Error: No such volume: docker_orderer.example.com
+Error: No such volume: docker_peer0.org1.example.com
+Error: No such volume: docker_peer0.org2.example.com
+Removing remaining containers
+Removing generated chaincode docker images
+Untagged: dev-peer0.org2.example.com-basic_1.0-dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4-308602e1b42899c349e52c36c8f00dea32c141acb8851b0e809ca9e2543355c0:latest
+Deleted: sha256:d617a7fdd1146f6b30350041b674a978ff2716b1a6438926b458d1abdbb51f3a
+Deleted: sha256:4075f88e90ba2e6195f64bb585fda5a0f3753b390658dd64acf95287709aa775
+Deleted: sha256:d07d931615860d8fe6dfdf96e062be6bb868f9c1bd30fb31c519c9bcc4124ab2
+Deleted: sha256:948ad9a124614eb6f3e29e85b542df5183f8b8fa856e5a763b88ea1549b1ae2f
+Untagged: dev-peer0.org1.example.com-basic_1.0-dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4-56aae3ced9c0f8ca473609d4ac62394b30c6863da4d58757901cc5df53260f8b:latest
+Deleted: sha256:cc0e5b12d16ef9d850d2db742668f291208a6e17decaa0ff448d820ac3824499
+Deleted: sha256:b57d71c396aaa9c1c71212732b4ec3719d4e22537b35da0bf3a34592d275ef8c
+Deleted: sha256:25404051153a33f411669e5cda4b87b0a6b05554d9a0be6c67297e264574b646
+Deleted: sha256:5edd492d57fd125f01f9722fac74c4fcfda866c3953533b8f75094ab4d261b12
+"docker kill" requires at least 1 argument.
+See 'docker kill --help'.
+
+Usage:  docker kill [OPTIONS] CONTAINER [CONTAINER...]
+
+Kill one or more running containers
+```
+
+docker 컨테이너 목록 조회 +
+에러가 발생했지만 컨테이너들은 다 종료되었음.
+```
+$ docker container ls
+CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+
+```
