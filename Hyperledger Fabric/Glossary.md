@@ -1,26 +1,72 @@
+
+
+## 공식문서 번역 (v2.4)
 https://hyperledger-fabric.readthedocs.io/en/latest/glossary.html
 
-# Member
+### Member
 = Organization
 
-# Membership Service Provider(MSP)
+### Membership Service Provider(MSP)
 Membership Service Provider는 Hyperledger Fabric 네트워크에 참여하려는 클라이언트와 피어들의 자격증명(crendentail)을 제공하는 시스템의 추상화 컴포넌트를 의미합니다. 클라이언트들은 트랜잭션을 인증(authenticate)하고, 피어들은 트랜잭션 처리 결과(보장(endorsements))를 인증하기 위해서 자격증명을 사용합니다.
 
-# Private Data
+### Private Data
 인가된 피어의 개인 데이터베이스에 저장된 비공개 데이터. 논리적으로 채널 원장 데이터와는 분리됩니다. 채널상 조직들의 데이터 접근은 private data collection 정의를 통해서 제한됩니다. 인가되지 않은 조직들은 트랜잭션 데이터의 증거로 채널 원장에서 private data의 hash만 확인할 수 있습니다. 개인정보보호를 위해서 Ordering Service로 private data가 아닌 hash 값이 전달됩니다. 이를 통해 private data를 Orderer로부터 보호합니다.
 
-# Private Data Collection (Collection)
+### Private Data Collection (Collection)
 채널 상의 다른 조직에게 공개하지 않으면서 둘 이상의 조직간 confidential data를 관리하기 위해서 사용합니다. 컬렉션 정의는 비공개(private) 데이터 세트를 저장할 수 있는 채널의 조직의 하위 집합을 의미합니다. 이 조직들만이 비공개 데이터와 함께 트랜잭션할 수 있음을 의미합니다.
 
-# Ordering Service (= orderer)
+### Ordering Service (= orderer)
 = orderer
 +
 블록내 트랜잭션의 순서를 정하고, 검증(validation) 및 커밋(commit)을 위해 연결된 피어들에게 블럭을 전파하는 정의된 노드 집합입니다. Ordering service는 피어 프로세스와 독립적으로 존재하며, 네트워크의 모든 채널에 대해 first-come-first-serve 기준으로 트랜잭션의 순서를 정합니다. Kafka 및 Raft 뿐아니라 플러그형 구현을 지원하도록 설계되었습니다. 이것은 overfall network에 대한 공통 바인딩 입니다. 여기에는 각 멤버와 연결된 암호화 ID 요소가 포함됩니다. (It is a common binding for the overall network; it contains the cryptographic identity material tied to each Member.)
 
-# Organization (= Member)
+### Organization (= Member)
 조직(Organization)은 블록체인 네트워크 제공자(Provider)에 의해서 블록체인 네트워크 참여를 초대받게 됩니다. 조직은 MSP(Membership Service Provider)를 네트워크에 추가함으로써 네트워크에 참여합니다. 
 
 조직의 트랜잭션 endpoint는 Peer 입니다. 조직의 집합은 컨소시엄(Consortium)을 형성합니다. 네트워크의 모든 조직은 멤버이지만 모든 조직이 컨소시엄의 참여자는 아닐 수 있습니다.
 
-# Peer
+### Peer
 원장(ledger)를 유지보수하고, 원장에 읽기/쓰기를 수행하기 위해서 체인코드 컨테이너를 실행하는 네트워크 엔터티(netowrk entity)입니다. 피어(Peer)는 멤버에 의해서 관리됩니다.
+
+## 하이퍼레저 패브릭 실전 프로젝트(v1.4 기준) 용어정리
+
+### 신원확인(Identity)
+사용자가 하이퍼레저 패브릭의 네트워크에 접속하려면 신원확인을 가장 먼저 해야 한다. 그 이유는 하이퍼레저 패브릭은 폐쇄형 구조인 프라이빗 블록체인을 지향하고 있으며 권한을 가진 참여자만이 분산원장에 데이터를 기록, 수정, 삭제할 수 있기 때문이다. 신원확인은 MSP(Membership Service Provider)를 통해 이뤄진다.
+
+### 원장(Ledger)
+블록에 트랜잭션(거래) 정보가 실제로 저장되는 공간이다. 블록체인의 데이터를 관리하는 분산원장 데이터베이스를 가리키며, 이를 관리 및 처리하기 위한 기능으로 구성돼 있다. 참고로 이더리움은 스테이트 트리(State Tree)에 저장하는데 하이퍼레제 패브릭은 월드 스테이드(World State)라는 저장소에 저장한다. 하이퍼레저 패브릭에서는 한 채널이 한 원장을 가지며, 한 채널 안에 속한 피어 노드는 동일한 원장의 복사본을 가진다. 원장은 업데이트되며 채널 안에서 합의를 통해 일관성을 유지한다.
+
+### 트랜잭션(Transaction)
+스마트 컨트랙트인 체인코드의 실행을 의한다. 대용량 트랜잭션을 처리하기 위해 버전 1.0부터 기존 버전 0.6의 아키텍처 구조를 획기적으로 변경한 새로운 아키텍처를 제공하고 있는데, 엔도싱(Endorsing) 피어 노드와 오더링 서비스(Ordering Service) 노드가 그 역할을 수행한다. 엔도싱 피어 노드를 통해 보증 검증(Endorsement Validation)과 트랜잭션을 배치 처리하고, 오더링 서비스 노드를 통해 프라이빗 블록체인 네트워크에 참여하고 있는 모든 피어 노드들을 분기하는 역할을 수행하고 있다.
+
+### 체인코드(Chaincode)
+이더리움에서 솔리디티(Solidity)와 비슷한 개념을 가진 체인코드(Chaincode)는 하이퍼레저 패브릭의 스마트 컨트랙트다. 체인코드를 통해 프라이빗 블록체인에서 기업 및 컨소시엄으로 구성된 서비스에 맞게 블록체인을 활용할 수 있도록 비즈니스 로직을 구현할 수 있다. 하이퍼레저 패브릭은 이와 같은 비즈니스 로직을 구현할 수 있도록 다양한 개발 언어를 지원하고 있는데, 버전 1.1부터 Go, Node.js, 자바 등을 지원하기 시작했다.
+
+### 채널(Channel)
+네트워크에서 구성 요소 간 그룹을 나눠 트랜잭션을 수행해야 할 때 사용한다. 트랜잭션의 접근 권한을 그룹별로 설정하고 관리하는 중요한 프라이빗 블록체인 기술 요소다.
+
+### 조직(Organization)
+네트워크는 조직 단위로 구성되는데, 조직 별로 피어 노드 관리 및 권한 부여, 보증 정책 등을 수행하며, 클라이언트(Client), 즉 네트워크 참여자의 접근 권한도 관리한다.
+
+### 피어 노드(Peer Node)
+가장 기본적인 네트워크 구성 요소로, 블록체인 네트워크를 유지하고 트랜잭션의 제안 및 응답을 처리하며, 원장과 체인코드를 관리하고 저장하는 역할을 수행한다. 피어 노드는 역할에 따라 다음과 같은 4가지로 세분화될 수 있다.
+
+* **엔도싱(Endorsing) 피어 노드**: 보증 정책(Endorsing Policy)에 따라 요청된 트랜잭션을 먼저 실행해보는 검토 역할을 수행한 후 트랜잭션에 트랜잭션 보증 사인을 첨부하는 역할을 한다.
+* **커미팅(Committing) 피어 노드**: 엔도싱 피어 노드가 실행한 트랜잭션 결과를 검증하고 문제가 없으면 트랜잭션을 확정하고 그 내용을 블록체인에 업데이트하는 역할을 한다.
+* **앵커(Anchor) 피어 노드**: 채널 내에서 대표 역할을 수행하는 피어 노드다.
+* **리더(Leader) 피어 노드**: 조직에서 모든 피어 노드를 대표한다.
+
+노드(Node)란 일종의 물리적인 시스템 단위로 블록체인 네트워크를 구성하는 서버다.
+
+## 오더링 서비스(Oerdering Service) 노드
+오더러(Orderer) 라고도 부른다. +
+
+네트워크에 참여하고 있는 모든 피어 노드의 분기 및 정렬 역할을 한다. 네트워크 내의 채널에 대한 구성 정보를 소유하고 이를 기반으로 전체 시스템의 관리자 역할을 수행한다. 클라이언트로부터 트랜잭션을 제안 받으면, 시간 순서에 따라 차례로 정리해 피어 노드에게 전달한다. 또한 트랜잭션 정보를 네트워크에 반영해 새로운 블록을 추가하고 업데이트하며 관리한다.
+
+* **RAFT(Reliable, Replicated, Redundant, And Fault-Tolerant) 오더링 서비스**: 하이퍼레저 패브릭 1.4.1 버전부터 추가된 CFT(Crash Fault Tolerant) 알고리즘 기반 오더링 서비스다. 채널당 선출된 리더 노드(정확히는 채널 내 오더링 서비스 노드들 중에 하나)가 모든 트랜잭션을 처리하고 그 결과가 나머지 노드에게 복제되는 '리더 및 팔로워' 모델에 기반한다. 비잔티움(Byzantine) 문제를 해결하기 위해 하이퍼레저 패브릭이 출시한 첫 번째 BFT 계역 알고리즘이다. 하이퍼레저 패브릭 자체에 내장된 기술이기 떄문에 카프카 기반 오더링 서비스보다 구축이나 관리가 쉽다.
+
+### MSP(Membership Service Provider)
+단어에서 유추할 수 있듯이 멤버십 서비스 제공자, 즉 블록체인 네트워크에 인증 서비스를 제공하는 역할을 한다. 모든 참여자에게 해당하는 책임을 부여하고, 행위를 추적하는 책임성(Accountability)을 보장하며, 트랜잭션 익명성 및 트랜잭션 비연결성(Connectionlessness)을 보장하는 프라이버시도 보장한다. 다시 말해 MSP(Membership Service Provider)는 블록체인 네트워크에 참여하는 피어 노드, 오더링 서비스 노드 등 각 노드의 신원, 역할, 소속, 권한을 관리하고 조직 구조를 설계하는 역할을 한다. 또한 블록체인 네트워크에 접속하려는 클라이언트의 신원을 확인하고 접근 권한을 제공하다.
+
+### CA(Certification Authority)
+MSP에서 암호화 인증을 위해 필요한 인증기관이며, 공개키 인증서 및 이에 대응하는 개인 키를 발급한다. 블록체인 네트워크를 구성하는 조직에게는 루트 인증서(Root Certificate)를, 블록체인 네트워크에 접속하는 사용자에게는 신원등록 인증서(Enrollment Certificate , Ecert)를 발급한다. 1.1 버전까지 PKI 방식을 적용한 X.509 인증서 방식을 제공했고, 1.2 버전 이후로 아이덴티티 믹서(Identity Mixer)가 추가돼 익명성을 보장하는 암호화 기법으로 신원을 증명하는 방법도 제공하고 있다.

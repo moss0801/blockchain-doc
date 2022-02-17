@@ -882,3 +882,287 @@ $ docker container ls
 CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
 
 ```
+
+## Fabric CA 사용하기
+
+아래 명령어를 통해서 'cryptogen' 대신 Oragnation별 'Fabric CA'를 생성하여 test network를 구동시킬 수 있다. 이를 통해서 SDK client idenentity 등을 CA에 등록(entorll)할 수 있다.
+
+```
+$ ./network.sh up -ca
+```
+
+조직(Organization)별 CA가 생성된다.
+```
+##########################################################
+##### Generate certificates using Fabric CA's ############
+##########################################################
+Generating certificates using Fabric CA
+Creating network "fabric_test" with the default driver
+Creating ca_org2    ... done
+Creating ca_orderer ... done
+Creating ca_org1    ... done
+```
+
+이후 실행 로그에서 CA가 배포된 후, test-network가 Fabric CA client를 이용해서 각 조직의 CA에 노드와 유저의 identity를 등록(register) 및 각 identity별 MSP folder를 생성하기 위해서 enroll 명령어를 사용한다. MSP 폴더에는 certificate와 각 identity의 private key를 포함한다. 그리고 CA를 운영하는 조직 내에서의 역할(role)과 멤버쉽(membership)을 구성한다.
+
+아래 명령어를 통해서 Org1 admin 유저의 MSP 폴더 예제를 확인할 수 있다.
+```
+# tree 설치 필요
+$ sudo apt install tree
+$ tree organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/
+```
+
+MSP 폴더 구조와 설정 파일들을 아래와 같이 표시해 준다.
+```
+organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/: Is a directory
+└── msp
+    ├── IssuerPublicKey
+    ├── IssuerRevocationPublicKey
+    ├── cacerts
+    │   └── localhost-7054-ca-org1.pem
+    ├── config.yaml
+    ├── keystore
+    │   └── 58e81e6f1ee8930df46841bf88c22a08ae53c1332319854608539ee78ed2fd65_sk
+    ├── signcerts
+    │   └── cert.pem
+    └── user
+```
+
+admin user의 certificate는 'signcerts' 폴더에서, private key는 'keystore' 폴더에서 확인할 수 있다.
+
+실행 로그
+```
+Using docker and docker-compose
+Starting nodes with CLI timeout of '5' tries and CLI delay of '3' seconds and using database 'leveldb' with crypto from 'Certificate Authorities'
+LOCAL_VERSION=2.4.2
+DOCKER_IMAGE_VERSION=2.4.2
+CA_LOCAL_VERSION=1.5.2
+CA_DOCKER_IMAGE_VERSION=1.5.2
+Generating certificates using Fabric CA
+Creating network "fabric_test" with the default driver
+Creating ca_org2    ... done
+Creating ca_orderer ... done
+Creating ca_org1    ... done
+Creating Org1 Identities
+Enrolling the CA admin
++ fabric-ca-client enroll -u https://admin:adminpw@localhost:7054 --caname ca-org1 --tls.certfiles /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/fabric-ca/org1/ca-cert.pem
+2022/02/17 13:55:14 [INFO] Created a default configuration file at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/fabric-ca-client-config.yaml
+2022/02/17 13:55:14 [INFO] TLS Enabled
+2022/02/17 13:55:14 [INFO] generating key: &{A:ecdsa S:256}
+2022/02/17 13:55:14 [INFO] encoded CSR
+2022/02/17 13:55:14 [INFO] Stored client certificate at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/msp/signcerts/cert.pem
+2022/02/17 13:55:14 [INFO] Stored root CA certificate at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/msp/cacerts/localhost-7054-ca-org1.pem
+2022/02/17 13:55:14 [INFO] Stored Issuer public key at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/msp/IssuerPublicKey
+2022/02/17 13:55:14 [INFO] Stored Issuer revocation public key at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/msp/IssuerRevocationPublicKey
+Registering peer0
++ fabric-ca-client register --caname ca-org1 --id.name peer0 --id.secret peer0pw --id.type peer --tls.certfiles /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/fabric-ca/org1/ca-cert.pem
+2022/02/17 13:55:14 [INFO] Configuration file location: /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/fabric-ca-client-config.yaml
+2022/02/17 13:55:14 [INFO] TLS Enabled
+2022/02/17 13:55:14 [INFO] TLS Enabled
+Password: peer0pw
+Registering user
++ fabric-ca-client register --caname ca-org1 --id.name user1 --id.secret user1pw --id.type client --tls.certfiles /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/fabric-ca/org1/ca-cert.pem
+2022/02/17 13:55:15 [INFO] Configuration file location: /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/fabric-ca-client-config.yaml
+2022/02/17 13:55:15 [INFO] TLS Enabled
+2022/02/17 13:55:15 [INFO] TLS Enabled
+Password: user1pw
+Registering the org admin
++ fabric-ca-client register --caname ca-org1 --id.name org1admin --id.secret org1adminpw --id.type admin --tls.certfiles /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/fabric-ca/org1/ca-cert.pem
+2022/02/17 13:55:15 [INFO] Configuration file location: /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/fabric-ca-client-config.yaml
+2022/02/17 13:55:15 [INFO] TLS Enabled
+2022/02/17 13:55:15 [INFO] TLS Enabled
+Password: org1adminpw
+Generating the peer0 msp
++ fabric-ca-client enroll -u https://peer0:peer0pw@localhost:7054 --caname ca-org1 -M /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp --csr.hosts peer0.org1.example.com --tls.certfiles /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/fabric-ca/org1/ca-cert.pem
+2022/02/17 13:55:15 [INFO] TLS Enabled
+2022/02/17 13:55:15 [INFO] generating key: &{A:ecdsa S:256}
+2022/02/17 13:55:15 [INFO] encoded CSR
+2022/02/17 13:55:15 [INFO] Stored client certificate at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp/signcerts/cert.pem
+2022/02/17 13:55:15 [INFO] Stored root CA certificate at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp/cacerts/localhost-7054-ca-org1.pem
+2022/02/17 13:55:15 [INFO] Stored Issuer public key at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp/IssuerPublicKey
+2022/02/17 13:55:15 [INFO] Stored Issuer revocation public key at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp/IssuerRevocationPublicKey
+Generating the peer0-tls certificates
++ fabric-ca-client enroll -u https://peer0:peer0pw@localhost:7054 --caname ca-org1 -M /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls --enrollment.profile tls --csr.hosts peer0.org1.example.com --csr.hosts localhost --tls.certfiles /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/fabric-ca/org1/ca-cert.pem
+2022/02/17 13:55:15 [INFO] TLS Enabled
+2022/02/17 13:55:15 [INFO] generating key: &{A:ecdsa S:256}
+2022/02/17 13:55:15 [INFO] encoded CSR
+2022/02/17 13:55:15 [INFO] Stored client certificate at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/signcerts/cert.pem
+2022/02/17 13:55:15 [INFO] Stored TLS root CA certificate at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/tlscacerts/tls-localhost-7054-ca-org1.pem
+2022/02/17 13:55:15 [INFO] Stored Issuer public key at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/IssuerPublicKey
+2022/02/17 13:55:15 [INFO] Stored Issuer revocation public key at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/IssuerRevocationPublicKey
+Generating the user msp
++ fabric-ca-client enroll -u https://user1:user1pw@localhost:7054 --caname ca-org1 -M /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp --tls.certfiles /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/fabric-ca/org1/ca-cert.pem
+2022/02/17 13:55:15 [INFO] TLS Enabled
+2022/02/17 13:55:15 [INFO] generating key: &{A:ecdsa S:256}
+2022/02/17 13:55:15 [INFO] encoded CSR
+2022/02/17 13:55:15 [INFO] Stored client certificate at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/signcerts/cert.pem
+2022/02/17 13:55:15 [INFO] Stored root CA certificate at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/cacerts/localhost-7054-ca-org1.pem
+2022/02/17 13:55:15 [INFO] Stored Issuer public key at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/IssuerPublicKey
+2022/02/17 13:55:15 [INFO] Stored Issuer revocation public key at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/IssuerRevocationPublicKey
+Generating the org admin msp
++ fabric-ca-client enroll -u https://org1admin:org1adminpw@localhost:7054 --caname ca-org1 -M /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp --tls.certfiles /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/fabric-ca/org1/ca-cert.pem
+2022/02/17 13:55:15 [INFO] TLS Enabled
+2022/02/17 13:55:15 [INFO] generating key: &{A:ecdsa S:256}
+2022/02/17 13:55:15 [INFO] encoded CSR
+2022/02/17 13:55:15 [INFO] Stored client certificate at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/signcerts/cert.pem
+2022/02/17 13:55:15 [INFO] Stored root CA certificate at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/cacerts/localhost-7054-ca-org1.pem
+2022/02/17 13:55:15 [INFO] Stored Issuer public key at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/IssuerPublicKey
+2022/02/17 13:55:15 [INFO] Stored Issuer revocation public key at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/IssuerRevocationPublicKey
+Creating Org2 Identities
+Enrolling the CA admin
++ fabric-ca-client enroll -u https://admin:adminpw@localhost:8054 --caname ca-org2 --tls.certfiles /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/fabric-ca/org2/ca-cert.pem
+2022/02/17 13:55:15 [INFO] Created a default configuration file at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/fabric-ca-client-config.yaml
+2022/02/17 13:55:15 [INFO] TLS Enabled
+2022/02/17 13:55:15 [INFO] generating key: &{A:ecdsa S:256}
+2022/02/17 13:55:15 [INFO] encoded CSR
+2022/02/17 13:55:15 [INFO] Stored client certificate at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/msp/signcerts/cert.pem
+2022/02/17 13:55:15 [INFO] Stored root CA certificate at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/msp/cacerts/localhost-8054-ca-org2.pem
+2022/02/17 13:55:15 [INFO] Stored Issuer public key at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/msp/IssuerPublicKey
+2022/02/17 13:55:15 [INFO] Stored Issuer revocation public key at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/msp/IssuerRevocationPublicKey
+Registering peer0
++ fabric-ca-client register --caname ca-org2 --id.name peer0 --id.secret peer0pw --id.type peer --tls.certfiles /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/fabric-ca/org2/ca-cert.pem
+2022/02/17 13:55:15 [INFO] Configuration file location: /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/fabric-ca-client-config.yaml
+2022/02/17 13:55:15 [INFO] TLS Enabled
+2022/02/17 13:55:15 [INFO] TLS Enabled
+Password: peer0pw
+Registering user
++ fabric-ca-client register --caname ca-org2 --id.name user1 --id.secret user1pw --id.type client --tls.certfiles /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/fabric-ca/org2/ca-cert.pem
+2022/02/17 13:55:16 [INFO] Configuration file location: /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/fabric-ca-client-config.yaml
+2022/02/17 13:55:16 [INFO] TLS Enabled
+2022/02/17 13:55:16 [INFO] TLS Enabled
+Password: user1pw
+Registering the org admin
++ fabric-ca-client register --caname ca-org2 --id.name org2admin --id.secret org2adminpw --id.type admin --tls.certfiles /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/fabric-ca/org2/ca-cert.pem
+2022/02/17 13:55:16 [INFO] Configuration file location: /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/fabric-ca-client-config.yaml
+2022/02/17 13:55:16 [INFO] TLS Enabled
+2022/02/17 13:55:16 [INFO] TLS Enabled
+Password: org2adminpw
+Generating the peer0 msp
++ fabric-ca-client enroll -u https://peer0:peer0pw@localhost:8054 --caname ca-org2 -M /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/msp --csr.hosts peer0.org2.example.com --tls.certfiles /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/fabric-ca/org2/ca-cert.pem
+2022/02/17 13:55:16 [INFO] TLS Enabled
+2022/02/17 13:55:16 [INFO] generating key: &{A:ecdsa S:256}
+2022/02/17 13:55:16 [INFO] encoded CSR
+2022/02/17 13:55:16 [INFO] Stored client certificate at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/msp/signcerts/cert.pem
+2022/02/17 13:55:16 [INFO] Stored root CA certificate at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/msp/cacerts/localhost-8054-ca-org2.pem
+2022/02/17 13:55:16 [INFO] Stored Issuer public key at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/msp/IssuerPublicKey
+2022/02/17 13:55:16 [INFO] Stored Issuer revocation public key at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/msp/IssuerRevocationPublicKey
+Generating the peer0-tls certificates
++ fabric-ca-client enroll -u https://peer0:peer0pw@localhost:8054 --caname ca-org2 -M /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls --enrollment.profile tls --csr.hosts peer0.org2.example.com --csr.hosts localhost --tls.certfiles /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/fabric-ca/org2/ca-cert.pem
+2022/02/17 13:55:16 [INFO] TLS Enabled
+2022/02/17 13:55:16 [INFO] generating key: &{A:ecdsa S:256}
+2022/02/17 13:55:16 [INFO] encoded CSR
+2022/02/17 13:55:16 [INFO] Stored client certificate at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/signcerts/cert.pem
+2022/02/17 13:55:16 [INFO] Stored TLS root CA certificate at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/tlscacerts/tls-localhost-8054-ca-org2.pem
+2022/02/17 13:55:16 [INFO] Stored Issuer public key at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/IssuerPublicKey
+2022/02/17 13:55:16 [INFO] Stored Issuer revocation public key at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/IssuerRevocationPublicKey
+Generating the user msp
++ fabric-ca-client enroll -u https://user1:user1pw@localhost:8054 --caname ca-org2 -M /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/users/User1@org2.example.com/msp --tls.certfiles /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/fabric-ca/org2/ca-cert.pem
+2022/02/17 13:55:16 [INFO] TLS Enabled
+2022/02/17 13:55:16 [INFO] generating key: &{A:ecdsa S:256}
+2022/02/17 13:55:16 [INFO] encoded CSR
+2022/02/17 13:55:16 [INFO] Stored client certificate at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/users/User1@org2.example.com/msp/signcerts/cert.pem
+2022/02/17 13:55:16 [INFO] Stored root CA certificate at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/users/User1@org2.example.com/msp/cacerts/localhost-8054-ca-org2.pem
+2022/02/17 13:55:16 [INFO] Stored Issuer public key at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/users/User1@org2.example.com/msp/IssuerPublicKey
+2022/02/17 13:55:16 [INFO] Stored Issuer revocation public key at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/users/User1@org2.example.com/msp/IssuerRevocationPublicKey
+Generating the org admin msp
++ fabric-ca-client enroll -u https://org2admin:org2adminpw@localhost:8054 --caname ca-org2 -M /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp --tls.certfiles /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/fabric-ca/org2/ca-cert.pem
+2022/02/17 13:55:16 [INFO] TLS Enabled
+2022/02/17 13:55:16 [INFO] generating key: &{A:ecdsa S:256}
+2022/02/17 13:55:16 [INFO] encoded CSR
+2022/02/17 13:55:16 [INFO] Stored client certificate at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp/signcerts/cert.pem
+2022/02/17 13:55:16 [INFO] Stored root CA certificate at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp/cacerts/localhost-8054-ca-org2.pem
+2022/02/17 13:55:16 [INFO] Stored Issuer public key at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp/IssuerPublicKey
+2022/02/17 13:55:16 [INFO] Stored Issuer revocation public key at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp/IssuerRevocationPublicKey
+Creating Orderer Org Identities
+Enrolling the CA admin
++ fabric-ca-client enroll -u https://admin:adminpw@localhost:9054 --caname ca-orderer --tls.certfiles /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/fabric-ca/ordererOrg/ca-cert.pem
+2022/02/17 13:55:16 [INFO] Created a default configuration file at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/ordererOrganizations/example.com/fabric-ca-client-config.yaml
+2022/02/17 13:55:16 [INFO] TLS Enabled
+2022/02/17 13:55:16 [INFO] generating key: &{A:ecdsa S:256}
+2022/02/17 13:55:16 [INFO] encoded CSR
+2022/02/17 13:55:17 [INFO] Stored client certificate at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/ordererOrganizations/example.com/msp/signcerts/cert.pem
+2022/02/17 13:55:17 [INFO] Stored root CA certificate at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/ordererOrganizations/example.com/msp/cacerts/localhost-9054-ca-orderer.pem
+2022/02/17 13:55:17 [INFO] Stored Issuer public key at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/ordererOrganizations/example.com/msp/IssuerPublicKey
+2022/02/17 13:55:17 [INFO] Stored Issuer revocation public key at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/ordererOrganizations/example.com/msp/IssuerRevocationPublicKey
+Registering orderer
++ fabric-ca-client register --caname ca-orderer --id.name orderer --id.secret ordererpw --id.type orderer --tls.certfiles /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/fabric-ca/ordererOrg/ca-cert.pem
+2022/02/17 13:55:17 [INFO] Configuration file location: /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/ordererOrganizations/example.com/fabric-ca-client-config.yaml
+2022/02/17 13:55:17 [INFO] TLS Enabled
+2022/02/17 13:55:17 [INFO] TLS Enabled
+Password: ordererpw
+Registering the orderer admin
++ fabric-ca-client register --caname ca-orderer --id.name ordererAdmin --id.secret ordererAdminpw --id.type admin --tls.certfiles /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/fabric-ca/ordererOrg/ca-cert.pem
+2022/02/17 13:55:17 [INFO] Configuration file location: /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/ordererOrganizations/example.com/fabric-ca-client-config.yaml
+2022/02/17 13:55:17 [INFO] TLS Enabled
+2022/02/17 13:55:17 [INFO] TLS Enabled
+Password: ordererAdminpw
+Generating the orderer msp
++ fabric-ca-client enroll -u https://orderer:ordererpw@localhost:9054 --caname ca-orderer -M /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp --csr.hosts orderer.example.com --csr.hosts localhost --tls.certfiles /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/fabric-ca/ordererOrg/ca-cert.pem
+2022/02/17 13:55:17 [INFO] TLS Enabled
+2022/02/17 13:55:17 [INFO] generating key: &{A:ecdsa S:256}
+2022/02/17 13:55:17 [INFO] encoded CSR
+2022/02/17 13:55:17 [INFO] Stored client certificate at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/signcerts/cert.pem
+2022/02/17 13:55:17 [INFO] Stored root CA certificate at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/cacerts/localhost-9054-ca-orderer.pem
+2022/02/17 13:55:17 [INFO] Stored Issuer public key at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/IssuerPublicKey
+2022/02/17 13:55:17 [INFO] Stored Issuer revocation public key at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/IssuerRevocationPublicKey
+Generating the orderer-tls certificates
++ fabric-ca-client enroll -u https://orderer:ordererpw@localhost:9054 --caname ca-orderer -M /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/tls --enrollment.profile tls --csr.hosts orderer.example.com --csr.hosts localhost --tls.certfiles /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/fabric-ca/ordererOrg/ca-cert.pem
+2022/02/17 13:55:17 [INFO] TLS Enabled
+2022/02/17 13:55:17 [INFO] generating key: &{A:ecdsa S:256}
+2022/02/17 13:55:17 [INFO] encoded CSR
+2022/02/17 13:55:17 [INFO] Stored client certificate at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/tls/signcerts/cert.pem
+2022/02/17 13:55:17 [INFO] Stored TLS root CA certificate at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/tls/tlscacerts/tls-localhost-9054-ca-orderer.pem
+2022/02/17 13:55:17 [INFO] Stored Issuer public key at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/tls/IssuerPublicKey
+2022/02/17 13:55:17 [INFO] Stored Issuer revocation public key at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/tls/IssuerRevocationPublicKey
+Generating the admin msp
++ fabric-ca-client enroll -u https://ordererAdmin:ordererAdminpw@localhost:9054 --caname ca-orderer -M /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/ordererOrganizations/example.com/users/Admin@example.com/msp --tls.certfiles /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/fabric-ca/ordererOrg/ca-cert.pem
+2022/02/17 13:55:17 [INFO] TLS Enabled
+2022/02/17 13:55:17 [INFO] generating key: &{A:ecdsa S:256}
+2022/02/17 13:55:17 [INFO] encoded CSR
+2022/02/17 13:55:17 [INFO] Stored client certificate at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/ordererOrganizations/example.com/users/Admin@example.com/msp/signcerts/cert.pem
+2022/02/17 13:55:17 [INFO] Stored root CA certificate at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/ordererOrganizations/example.com/users/Admin@example.com/msp/cacerts/localhost-9054-ca-orderer.pem
+2022/02/17 13:55:17 [INFO] Stored Issuer public key at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/ordererOrganizations/example.com/users/Admin@example.com/msp/IssuerPublicKey
+2022/02/17 13:55:17 [INFO] Stored Issuer revocation public key at /home/ubuntu/go/src/github.com/moss0801/fabric-samples/test-network/organizations/ordererOrganizations/example.com/users/Admin@example.com/msp/IssuerRevocationPublicKey
+Generating CCP files for Org1 and Org2
+Creating volume "compose_orderer.example.com" with default driver
+Creating volume "compose_peer0.org1.example.com" with default driver
+Creating volume "compose_peer0.org2.example.com" with default driver
+WARNING: Found orphan containers (ca_orderer, ca_org1, ca_org2) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up.
+Creating peer0.org2.example.com ... done
+Creating peer0.org1.example.com ... done
+Creating orderer.example.com    ... done
+Creating cli                    ... done
+CONTAINER ID   IMAGE                               COMMAND                  CREATED                  STATUS                  PORTS                                                                                                                             NAMES
+804e32046b92   hyperledger/fabric-tools:latest     "/bin/bash"              Less than a second ago   Up Less than a second                                                                                                                                     cli
+f586cf6206b6   hyperledger/fabric-orderer:latest   "orderer"                1 second ago             Up Less than a second   0.0.0.0:7050->7050/tcp, :::7050->7050/tcp, 0.0.0.0:7053->7053/tcp, :::7053->7053/tcp, 0.0.0.0:9443->9443/tcp, :::9443->9443/tcp   orderer.example.com
+d470ba1d3695   hyperledger/fabric-peer:latest      "peer node start"        1 second ago             Up Less than a second   0.0.0.0:7051->7051/tcp, :::7051->7051/tcp, 0.0.0.0:9444->9444/tcp, :::9444->9444/tcp                                              peer0.org1.example.com
+6f42ee575605   hyperledger/fabric-peer:latest      "peer node start"        1 second ago             Up Less than a second   0.0.0.0:9051->9051/tcp, :::9051->9051/tcp, 7051/tcp, 0.0.0.0:9445->9445/tcp, :::9445->9445/tcp                                    peer0.org2.example.com
+15b50a88ef8f   hyperledger/fabric-ca:latest        "sh -c 'fabric-ca-seâ€¦"   6 seconds ago            Up 5 seconds            0.0.0.0:7054->7054/tcp, :::7054->7054/tcp, 0.0.0.0:17054->17054/tcp, :::17054->17054/tcp                                          ca_org1
+988aac3b88c8   hyperledger/fabric-ca:latest        "sh -c 'fabric-ca-seâ€¦"   6 seconds ago            Up 4 seconds            0.0.0.0:9054->9054/tcp, :::9054->9054/tcp, 7054/tcp, 0.0.0.0:19054->19054/tcp, :::19054->19054/tcp                                ca_orderer
+e5db745b4e90   hyperledger/fabric-ca:latest        "sh -c 'fabric-ca-seâ€¦"   6 seconds ago            Up 4 seconds            0.0.0.0:8054->8054/tcp, :::8054->8054/tcp, 7054/tcp, 0.0.0.0:18054->18054/tcp, :::18054->18054/tcp                                ca_org2
+```
+
+
+## test-network 구조 파악해 보기
+
+* configtx/configtx.yaml : 네트워크의 채널과 제네시스 블록을 만들고 앵커 피어 노드 파일을 생성하기 위한 설정 파일이다.
+* compose/compose-test-net.yaml: 전체 네트워크 노드의 도커 컴포즈 설정 파일이다.
+* compose/compose-ca.yaml: ca 노드의 도커 컴포즈 설정 파일이다.
+* organizations/cryptogen: MSP에서 인증서를 발급하기 위한 설정파일이다. +
+cryptogen 툴로 인증서를 발급할 때 사용되는데, 이 파일을 이용해서 조직과 참가자들에게 각각의 인증서를 발급한다.
+** crypto-config-orderer.yaml
+** crypto-config-org1.yaml
+** crypto-config-org2.yaml
+* organizations/fabric-ca: Fabric CA로 인증서를 발급할 때 사용된다.
+** ordererOrg/fabric-ca-server-config.yaml
+** org1/fabric-ca-server-config.yaml
+** org2/fabric-ca-server-config.yaml
+
+
+실행 과정
+
+1. cryptogen 도구를 사용해 인증서를 생성한다.
+2. cryptotxgen 도구를 사용해 오더링 서비스 노드의 제네시스 블록을 생성한다.
+3. cryptotxgen 도구를 사용해 채널을 생성한다.
+4. configtxgen 도구를 사용해 Org1MSP에 대한 앵커 피어 노드 트랜잭션 파일을 생성한다.
+5. configtxgen 도구를 사용해 Org2MSP에 대한 앵커 피어 노드 트랜잭션 파일을 생성한다.
