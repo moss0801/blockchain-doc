@@ -1,0 +1,100 @@
+
+## 개요
+
+Hyperledger Fabric 네트워크를 셋팅해보자.
+
+## Yaml 사전 학습
+Merge Key Language-Independent Type for YAML™ Version 1.1 - https://yaml.org/type/merge.html
+
+```
+---
+- &CENTER { x: 1, y: 2 }
+- &LEFT { x: 0, y: 2 }
+- &BIG { r: 10 }
+- &SMALL { r: 1 }
+
+# All the following maps are equal:
+
+- # Explicit keys
+  x: 1
+  y: 2
+  r: 10
+  label: center/big
+
+- # Merge one map
+  << : *CENTER
+  r: 10
+  label: center/big
+
+- # Merge multiple maps
+  << : [ *CENTER, *BIG ]
+  label: center/big
+
+- # Override
+  << : [ *BIG, *LEFT, *SMALL ]
+  x: 1
+  label: center/big
+```
+
+https://stackoverflow.com/questions/41063361/what-is-the-double-left-arrow-syntax-in-yaml-called-and-wheres-it-specced
+
+Input
+```
+base: &base
+    name: Everyone has same name
+    age: 5
+
+foo: &foo
+    <<: *base
+
+bar: &bar
+    <<: *base
+    age: 20
+```
+
+Result
+```
+foo: 
+    name: Everyone has same name
+    age: 5
+
+bar:
+    name: Everyone has same name
+    age: 20
+```
+
+
+
+## 고려사항
+
+* 채널&체인코드 별로 KeyValue State가 관리된다.(?)
+* channelsales1_music-cc-ch1 > MS01
+* channelsales2_music-cc-ch2 > MS01
+* Channel, Orderer, Application, Organization에 권한을 부여한다.
+** 권한을 부여할 때 Role 별로 Type과 Rule을 지정할 수 있다.
+** 권한 경로: /Channel/<Application|Orderer>/<OrgName>/<PolicyName>
+** member = client + peer + admin + orderer
+** ROLES(Policies) = [Readers, Writers, Admins, Endorsement, BlockValidation, LifecycleEndorsement]
+** 각 client별로 권한을 부여할 수는 없다.
+
+채널 권한 설정 예
+```
+# configtx.yaml
+Channel: &ChannelDefaults
+    # Policies defines the set of policies at this level of the config tree
+    # For Channel policies, their canonical path is
+    #   /Channel/<PolicyName>
+    Policies:
+        # Who may invoke the 'Deliver' API
+        Readers:
+            Type: ImplicitMeta
+            Rule: "ANY Readers"
+        # Who may invoke the 'Broadcast' API
+        Writers:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+        # By default, who may modify elements at this config level
+        Admins:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Admins"
+```

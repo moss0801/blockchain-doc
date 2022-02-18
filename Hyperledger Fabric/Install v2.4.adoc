@@ -1166,3 +1166,113 @@ cryptogen 툴로 인증서를 발급할 때 사용되는데, 이 파일을 이�
 3. cryptotxgen 도구를 사용해 채널을 생성한다.
 4. configtxgen 도구를 사용해 Org1MSP에 대한 앵커 피어 노드 트랜잭션 파일을 생성한다.
 5. configtxgen 도구를 사용해 Org2MSP에 대한 앵커 피어 노드 트랜잭션 파일을 생성한다.
+
+
+### -ca 로 실행 시 생성되는 파일들
+
+실행 전 파일
+```
+├── organizations
+│   ├── ccp-generate.sh
+│   ├── ccp-template.json
+│   ├── ccp-template.yaml
+│   ├── cryptogen
+│   │   ├── crypto-config-orderer.yaml
+│   │   ├── crypto-config-org1.yaml
+│   │   └── crypto-config-org2.yaml
+│   └── fabric-ca
+│       ├── ordererOrg
+│       │   └── fabric-ca-server-config.yaml
+│       ├── org1
+│       │   └── fabric-ca-server-config.yaml
+│       ├── org2
+│       │   └── fabric-ca-server-config.yaml
+│       └── registerEnroll.sh
+```
+
+실행후 생성 파일
+```
+├── organizations
+│   ├── fabric-ca
+│   │   ├── ordererOrg
+│   │   │   ├── IssuerPublicKey
+│   │   │   ├── IssuerRevocationPublicKey
+│   │   │   ├── ca-cert.pem
+│   │   │   ├── fabric-ca-server.db
+│   │   │   └── msp ...
+│   │   ├── org1
+│   │   │   ├── IssuerPublicKey
+│   │   │   ├── IssuerRevocationPublicKey
+│   │   │   ├── ca-cert.pem
+│   │   │   ├── fabric-ca-server.db
+│   │   │   └── msp ...
+│   │   ├── org2
+│   │   │   ├── IssuerPublicKey
+│   │   │   ├── IssuerRevocationPublicKey
+│   │   │   ├── ca-cert.pem
+│   │   │   ├── fabric-ca-server.db
+│   │   │   └── msp ...
+│   ├── ordererOrganizations
+│   │   └── example.com
+│   │       ├── fabric-ca-client-config.yaml
+│   │       ├── msp ...
+│   │       ├── orderers
+│   │       │   └── orderer.example.com
+│   │       │       ├── msp ...
+│   │       │       └── tls
+│   │       │           ├── IssuerPublicKey
+│   │       │           ├── IssuerRevocationPublicKey
+│   │       │           ├── ca.crt
+│   │       │           ├── cacerts
+│   │       │           ├── keystore
+│   │       │           │   └── 49edc14aac83e64d42bcd71825f4da7295d93e7dfc774af6a102e7082df86366_sk
+│   │       │           ├── server.crt
+│   │       │           ├── server.key
+│   │       │           ├── signcerts
+│   │       │           │   └── cert.pem
+│   │       │           ├── tlscacerts
+│   │       │           │   └── tls-localhost-9054-ca-orderer.pem
+│   │       │           └── user
+│   │       ├── tlsca
+│   │       │   └── tlsca.example.com-cert.pem
+│   │       └── users
+│   │           └── Admin@example.com
+│   │               └── msp ...
+│   └── peerOrganizations
+│       ├── org1.example.com
+│       │   ├── ca
+│       │   │   └── ca.org1.example.com-cert.pem
+│       │   ├── connection-org1.json
+│       │   ├── connection-org1.yaml
+│       │   ├── fabric-ca-client-config.yaml
+│       │   ├── msp ...
+│       │   ├── peers
+│       │   │   └── peer0.org1.example.com
+│       │   │       ├── msp ...
+│       │   │       └── tls ...
+│       │   ├── tlsca
+│       │   │   └── tlsca.org1.example.com-cert.pem
+│       │   └── users
+│       │       ├── Admin@org1.example.com
+│       │       │   └── msp ...
+│       │       └── User1@org1.example.com
+│       │           └── msp ...
+│       └── org2.example.com
+│           ├── ca
+│           │   └── ca.org2.example.com-cert.pem
+│           ├── connection-org2.json
+│           ├── connection-org2.yaml
+│           ├── fabric-ca-client-config.yaml
+│           ├── msp ...
+│           ├── peers
+│           │   └── peer0.org2.example.com
+│           │       ├── msp ...
+│           │       └── tls ...
+│           ├── tlsca
+│           │   └── tlsca.org2.example.com-cert.pem
+│           └── users
+│               ├── Admin@org2.example.com
+│               │   └── msp ...
+│               └── User1@org2.example.com
+│                   └── msp ...
+```
