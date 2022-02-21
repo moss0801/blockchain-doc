@@ -1,0 +1,1115 @@
+
+test-network 분석
+
+https://github.com/hyperledger/fabric-samples/tree/main/test-network
+
+## 네트워크 구성
+
+Fabric CA를 사용
+```
+./network.up -ca
+```
+
+## 로그 기반 실행 순서
+. Creating ca_org1, ca_org2, ca_orderer
+. Creating Org1 Identities
+
+[cols="1,1"]
+|===
+|구분|명령어
+
+|Enrolling the CA Admin
+|fabric-ca-client enroll -u https://admin:adminpw@localhost:7054 --caname ca-org1 --tls.certfiles ./organizations/fabric-ca/org1/ca-cert.pem
+
+|Registering peer0
+|fabric-ca-client register --caname ca-org1 --id.name peer0 --id.secret peer0pw --id.type peer --tls.certfiles ./organizations/fabric-ca/org1/ca-cert.pem
+
+|Registering user
+|fabric-ca-client register --caname ca-org1 --id.name user1 --id.secret user1pw --id.type client --tls.certfiles ./organizations/fabric-ca/org1/ca-cert.pem
+
+|Registering the org admin
+|fabric-ca-client register --caname ca-org1 --id.name org1admin --id.secret org1adminpw --id.type admin --tls.certfiles ./organizations/fabric-ca/org1/ca-cert.pem
+
+|Generating the peer0 msp
+|fabric-ca-client enroll -u https://peer0:peer0pw@localhost:7054 --caname ca-org1 -M ./organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp --csr.hosts peer0.org1.example.com --tls.certfiles ./organizations/fabric-ca/org1/ca-cert.pem
+
+|Generating the peer0-tls certificates
+|fabric-ca-client enroll -u https://peer0:peer0pw@localhost:7054 --caname ca-org1 -M ./organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls --enrollment.profile tls --csr.hosts peer0.org1.example.com --csr.hosts localhost --tls.certfiles ./organizations/fabric-ca/org1/ca-cert.pem
+
+|Generating the user msp
+|fabric-ca-client enroll -u https://user1:user1pw@localhost:7054 --caname ca-org1 -M ./organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp --tls.certfiles ./organizations/fabric-ca/org1/ca-cert.pem
+
+|Generating the org admin msp
+|fabric-ca-client enroll -u https://org1admin:org1adminpw@localhost:7054 --caname ca-org1 -M ./organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp --tls.certfiles ./organizations/fabric-ca/org1/ca-cert.pem
+
+|===
+
+[start=3]
+. Creating Org2 Identities
+. Creating Orderer Identities
+
+[cols="1,1"]
+|===
+|구분|명령어
+
+|Enrolling the CA admin
+|fabric-ca-client enroll -u https://admin:adminpw@localhost:9054 --caname ca-orderer --tls.certfiles ./organizations/fabric-ca/ordererOrg/ca-cert.pem
+
+|Registering orderer
+|fabric-ca-client register --caname ca-orderer --id.name orderer --id.secret ordererpw --id.type orderer --tls.certfiles ./organizations/fabric-ca/ordererOrg/ca-cert.pem
+
+|Registering the orderer admin
+|fabric-ca-client register --caname ca-orderer --id.name ordererAdmin --id.secret ordererAdminpw --id.type admin --tls.certfiles ./organizations/fabric-ca/ordererOrg/ca-cert.pem
+
+|Generating the orderer msp
+|fabric-ca-client enroll -u https://orderer:ordererpw@localhost:9054 --caname ca-orderer -M ./organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp --csr.hosts orderer.example.com --csr.hosts localhost --tls.certfiles ./organizations/fabric-ca/ordererOrg/ca-cert.pem
+
+|Generating the orderer-tls certificates
+|fabric-ca-client enroll -u https://orderer:ordererpw@localhost:9054 --caname ca-orderer -M ./organizations/ordererOrganizations/example.com/orderers/orderer.example.com/tls --enrollment.profile tls --csr.hosts orderer.example.com --csr.hosts localhost --tls.certfiles ./organizations/fabric-ca/ordererOrg/ca-cert.pem
+
+|Generating the admin msp
+|fabric-ca-client enroll -u https://ordererAdmin:ordererAdminpw@localhost:9054 --caname ca-orderer -M ./organizations/ordererOrganizations/example.com/users/Admin@example.com/msp --tls.certfiles ./organizations/fabric-ca/ordererOrg/ca-cert.pem
+
+|===
+
+[start=6]
+. Generating CCP files for Org1 and Org2
+.. Creating volume "compose_orderer.example.com"
+.. Creating volume "compose_peer0.org1.example.com"
+.. Creating volume "compose_peer0.org2.example.com"
+.. Creating peer0.org2.example.com
+.. Creating peer0.org1.example.com
+.. Creating orderer.example.com
+.. Creating cli
+
+ccp(common connection profile): application에서 gateway를 설정하여 network 와의 통신을 관리하는 데 사용됩니다.
+
+[start=7]
+. Creating docker containers
+
+
+## 코드 분석
+
+### ./network up -ca
+
+변수들에 설정들이 기본 값들이 정의되고 '-ca' 옵션에 의해서 'CRYPTO' 값은 "Certificate Authorities"로 변경된다.
+$MODE 값 "up"에 의해서 networkUp() 함수가 호출된다.
+
+```
+ROOTDIR=$(cd "$(dirname "$0")" && pwd)
+export PATH=${ROOTDIR}/../bin:${PWD}/../bin:$PATH
+export FABRIC_CFG_PATH=${PWD}/configtx
+export VERBOSE=false
+...
+CHANNEL_NAME="mychannel"
+COMPOSE_FILE_BASE=compose-test-net.yaml
+COMPOSE_FILE_COUCH=compose-couch.yaml
+COMPOSE_FILE_CA=compose-ca.yaml
+DATABASE="leveldb"
+
+...
+## Parse mode
+if [[ $# -lt 1 ]] ; then
+  printHelp
+  exit 0
+else
+  MODE=$1
+  shift
+fi
+
+...
+
+while [[ $# -ge 1 ]] ; do
+  key="$1"
+  case $key in
+  ...
+  -ca )
+    CRYPTO="Certificate Authorities"
+    ;;
+  ...
+esac
+  shift
+done
+
+# Are we generating crypto material with this command?
+if [ ! -d "organizations/peerOrganizations" ]; then
+  CRYPTO_MODE="with crypto from '${CRYPTO}'"
+else
+  CRYPTO_MODE=""
+fi
+
+# Determine mode of operation and printing out what we asked for
+if [ "$MODE" == "up" ]; then
+  infoln "Starting nodes with CLI timeout of '${MAX_RETRY}' tries and CLI delay of '${CLI_DELAY}' seconds and using database '${DATABASE}' ${CRYPTO_MODE}"
+  networkUp
+elif [ "$MODE" == "createChannel" ]; then
+  infoln "Creating channel '${CHANNEL_NAME}'."
+  infoln "If network is not up, starting nodes with CLI timeout of '${MAX_RETRY}' tries and CLI delay of '${CLI_DELAY}' seconds and using database '${DATABASE} ${CRYPTO_MODE}"
+  createChannel
+elif [ "$MODE" == "down" ]; then
+  infoln "Stopping network"
+  networkDown
+elif [ "$MODE" == "restart" ]; then
+  infoln "Restarting network"
+  networkDown
+  networkUp
+elif [ "$MODE" == "deployCC" ]; then
+  infoln "deploying chaincode on channel '${CHANNEL_NAME}'"
+  deployCC
+elif [ "$MODE" == "deployCCAAS" ]; then
+  infoln "deploying chaincode-as-a-service on channel '${CHANNEL_NAME}'"
+  deployCCAAS
+else
+  printHelp
+  exit 1
+fi
+```
+
+### networkUp()
+
+먼저 checkPrereqs() 함수를 실행하여 fabric binaries/image 의 버전을 확인합니다. +
+이후 createOrgs()를 통해 조직별 CA를 구동하고 조직별 crypto material을 생성합니다. +
+마지막으로 docker-compose를 이용해서 container를 실행합니다.
+
+link:https://github.com/hyperledger/fabric-samples/blob/main/test-network/compose/compose-test-net.yaml[compose/compose-test-net.yaml] +
+link:https://github.com/hyperledger/fabric-samples/blob/main/test-network/compose/docker/docker-compose-test-net.yaml[compose/docker/docker-compose-test-net.yaml]
+
+
+```
+function networkUp() {
+  checkPrereqs
+
+  # generate artifacts if they don't exist
+  if [ ! -d "organizations/peerOrganizations" ]; then
+    createOrgs
+  fi
+
+  COMPOSE_FILES="-f compose/${COMPOSE_FILE_BASE} -f compose/${CONTAINER_CLI}/${CONTAINER_CLI}-${COMPOSE_FILE_BASE}"
+  # COMPOSE_FILES="-f compose/compose-test-net.yaml -f compose/docker/docker-compose-test-net.yaml"
+  
+  if [ "${DATABASE}" == "couchdb" ]; then
+    COMPOSE_FILES="${COMPOSE_FILES} -f compose/${COMPOSE_FILE_COUCH} -f compose/${CONTAINER_CLI}/${CONTAINER_CLI}-${COMPOSE_FILE_COUCH}"
+    # COMPOSE_FILES="${COMPOSE_FILES} -f compose/compose-couch.yaml -f compose/docker/docker-compose-couch.yaml"
+  fi
+
+  DOCKER_SOCK="${DOCKER_SOCK}" ${CONTAINER_CLI_COMPOSE} ${COMPOSE_FILES} up -d 2>&1
+  # docker-compose -f compose/compose-test-net.yaml -f compose/docker/docker-compose-test-net.yaml up -d 2>&1
+  
+  $CONTAINER_CLI ps -a
+  if [ $? -ne 0 ]; then
+    fatalln "Unable to start network"
+  fi
+}
+```
+
+
+
+#### createOrgs()
+Fabric-CA 를 통해서 Identities 를 생성합니다. +
+우선 ca-org1, ca-org2, ca-orderer container를 실행합니다. 이후 'organizations/fabric-ca/registerEnroll.sh'의 createOrg1(), createOrg2() createOrderer() 함수를 실행하여 각 기관의 crypto material을 생성합니다.
+이후, 'organizations/ccp-generate.sh'를 실행하여 Org1과 Org2의 CCP 파일을 생성합니다.
+
+```
+function createOrgs() {
+  if [ -d "organizations/peerOrganizations" ]; then
+    rm -Rf organizations/peerOrganizations && rm -Rf organizations/ordererOrganizations
+  fi
+
+  # Create crypto material using cryptogen
+
+  # Create crypto material using Fabric CA
+  if [ "$CRYPTO" == "Certificate Authorities" ]; then
+    infoln "Generating certificates using Fabric CA"
+    ${CONTAINER_CLI_COMPOSE} -f compose/$COMPOSE_FILE_CA -f compose/$CONTAINER_CLI/${CONTAINER_CLI}-$COMPOSE_FILE_CA up -d 2>&1
+    # docker-compose -f compose/compose-ca.yaml -f compose/docker/docker-compose-ca.yml up -d 2>&1
+
+    . organizations/fabric-ca/registerEnroll.sh  # include createOrg1(), createOrg2(), createOrderer()
+
+    while :
+    do
+      if [ ! -f "organizations/fabric-ca/org1/tls-cert.pem" ]; then
+        sleep 1
+      else
+        break
+      fi
+    done
+
+    infoln "Creating Org1 Identities"
+
+    createOrg1
+
+    infoln "Creating Org2 Identities"
+
+    createOrg2
+
+    infoln "Creating Orderer Org Identities"
+
+    createOrderer
+
+  fi
+
+  infoln "Generating CCP files for Org1 and Org2"
+  ./organizations/ccp-generate.sh
+```
+
+#### compose/compose-ca.yaml
+link:https://github.com/hyperledger/fabric-samples/blob/main/test-network/compose/compose-ca.yaml[compose/compose-ca.yaml]
+
+```
+# Copyright IBM Corp. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+version: '3.7'
+
+networks:
+  test:
+    name: fabric_test
+
+services:
+
+  ca_org1:
+    image: hyperledger/fabric-ca:latest
+    labels:
+      service: hyperledger-fabric
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca-org1
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=7054
+      - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:17054
+    ports:
+      - "7054:7054"
+      - "17054:17054"
+    command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
+    volumes:
+      - ../organizations/fabric-ca/org1:/etc/hyperledger/fabric-ca-server
+    container_name: ca_org1
+    networks:
+      - test
+
+  ca_org2:
+    image: hyperledger/fabric-ca:latest
+    labels:
+      service: hyperledger-fabric
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca-org2
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=8054
+      - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:18054
+    ports:
+      - "8054:8054"
+      - "18054:18054"
+    command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
+    volumes:
+      - ../organizations/fabric-ca/org2:/etc/hyperledger/fabric-ca-server
+    container_name: ca_org2
+    networks:
+      - test
+
+  ca_orderer:
+    image: hyperledger/fabric-ca:latest
+    labels:
+      service: hyperledger-fabric
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca-orderer
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=9054
+      - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:19054
+    ports:
+      - "9054:9054"
+      - "19054:19054"
+    command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
+    volumes:
+      - ../organizations/fabric-ca/ordererOrg:/etc/hyperledger/fabric-ca-server
+    container_name: ca_orderer
+    networks:
+      - test
+```
+
+#### compose/docker/docker-compose-ca.yml
+link:https://github.com/hyperledger/fabric-samples/blob/main/test-network/compose/docker/docker-compose-ca.yaml[compose/docker/docker-compose-ca.yaml]
+```
+# Copyright IBM Corp. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+version: '3.7'
+
+```
+
+
+#### createOrgs() - createOrg1()
+
+Org1에 대한 crypto material 작업을 진행합니다.
+
+[cols="1,1"]
+|===
+|구분|명령어
+
+|Enrolling the CA Admin
+|fabric-ca-client enroll -u https://admin:adminpw@localhost:7054 --caname ca-org1 --tls.certfiles ./organizations/fabric-ca/org1/ca-cert.pem
+
+|Registering peer0
+|fabric-ca-client register --caname ca-org1 --id.name peer0 --id.secret peer0pw --id.type peer --tls.certfiles ./organizations/fabric-ca/org1/ca-cert.pem
+
+|Registering user
+|fabric-ca-client register --caname ca-org1 --id.name user1 --id.secret user1pw --id.type client --tls.certfiles ./organizations/fabric-ca/org1/ca-cert.pem
+
+|Registering the org admin
+|fabric-ca-client register --caname ca-org1 --id.name org1admin --id.secret org1adminpw --id.type admin --tls.certfiles ./organizations/fabric-ca/org1/ca-cert.pem
+
+|Generating the peer0 msp
+|fabric-ca-client enroll -u https://peer0:peer0pw@localhost:7054 --caname ca-org1 -M ./organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp --csr.hosts peer0.org1.example.com --tls.certfiles ./organizations/fabric-ca/org1/ca-cert.pem
+
+|Generating the peer0-tls certificates
+|fabric-ca-client enroll -u https://peer0:peer0pw@localhost:7054 --caname ca-org1 -M ./organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls --enrollment.profile tls --csr.hosts peer0.org1.example.com --csr.hosts localhost --tls.certfiles ./organizations/fabric-ca/org1/ca-cert.pem
+
+|Generating the user msp
+|fabric-ca-client enroll -u https://user1:user1pw@localhost:7054 --caname ca-org1 -M ./organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp --tls.certfiles ./organizations/fabric-ca/org1/ca-cert.pem
+
+|Generating the org admin msp
+|fabric-ca-client enroll -u https://org1admin:org1adminpw@localhost:7054 --caname ca-org1 -M ./organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp --tls.certfiles ./organizations/fabric-ca/org1/ca-cert.pem
+
+|===
+
+createOrg2()는 org1을 org2로 대체하여 createOrg1()과 동일한 작업을 진행합니다.
+
+#### createOrgs() - createOrderer()
+
+Orderer에 대한 crypto material 작업을 진행합니다.
+
+[cols="1,1"]
+|===
+|구분|명령어
+
+|Enrolling the CA admin
+|fabric-ca-client enroll -u https://admin:adminpw@localhost:9054 --caname ca-orderer --tls.certfiles ./organizations/fabric-ca/ordererOrg/ca-cert.pem
+
+|Registering orderer
+|fabric-ca-client register --caname ca-orderer --id.name orderer --id.secret ordererpw --id.type orderer --tls.certfiles ./organizations/fabric-ca/ordererOrg/ca-cert.pem
+
+|Registering the orderer admin
+|fabric-ca-client register --caname ca-orderer --id.name ordererAdmin --id.secret ordererAdminpw --id.type admin --tls.certfiles ./organizations/fabric-ca/ordererOrg/ca-cert.pem
+
+|Generating the orderer msp
+|fabric-ca-client enroll -u https://orderer:ordererpw@localhost:9054 --caname ca-orderer -M ./organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp --csr.hosts orderer.example.com --csr.hosts localhost --tls.certfiles ./organizations/fabric-ca/ordererOrg/ca-cert.pem
+
+|Generating the orderer-tls certificates
+|fabric-ca-client enroll -u https://orderer:ordererpw@localhost:9054 --caname ca-orderer -M ./organizations/ordererOrganizations/example.com/orderers/orderer.example.com/tls --enrollment.profile tls --csr.hosts orderer.example.com --csr.hosts localhost --tls.certfiles ./organizations/fabric-ca/ordererOrg/ca-cert.pem
+
+|Generating the admin msp
+|fabric-ca-client enroll -u https://ordererAdmin:ordererAdminpw@localhost:9054 --caname ca-orderer -M ./organizations/ordererOrganizations/example.com/users/Admin@example.com/msp --tls.certfiles ./organizations/fabric-ca/ordererOrg/ca-cert.pem
+
+|===
+
+#### createOrgs() - ccp-generate.sh
+
+Org1과 Org2의 CCP 파일을 생성합니다. +
+CCP 파일은 ./organizations/ccp-template.{json|yaml} 파일을 템플릿으로 하여 생성됩니다. +
+생성된 파일은 './organiazations/peerOrganizations/{organizationDoamin}/connection-{organization}.{json|yaml}' 에 저장됩니다.
+
+```
+#!/bin/bash
+
+function one_line_pem {
+    echo "`awk 'NF {sub(/\\n/, ""); printf "%s\\\\\\\n",$0;}' $1`"
+}
+
+function json_ccp {
+    local PP=$(one_line_pem $4)
+    local CP=$(one_line_pem $5)
+    sed -e "s/\${ORG}/$1/" \
+        -e "s/\${P0PORT}/$2/" \
+        -e "s/\${CAPORT}/$3/" \
+        -e "s#\${PEERPEM}#$PP#" \
+        -e "s#\${CAPEM}#$CP#" \
+        organizations/ccp-template.json
+}
+
+function yaml_ccp {
+    local PP=$(one_line_pem $4)
+    local CP=$(one_line_pem $5)
+    sed -e "s/\${ORG}/$1/" \
+        -e "s/\${P0PORT}/$2/" \
+        -e "s/\${CAPORT}/$3/" \
+        -e "s#\${PEERPEM}#$PP#" \
+        -e "s#\${CAPEM}#$CP#" \
+        organizations/ccp-template.yaml | sed -e $'s/\\\\n/\\\n          /g'
+}
+
+ORG=1
+P0PORT=7051
+CAPORT=7054
+PEERPEM=organizations/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+CAPEM=organizations/peerOrganizations/org1.example.com/ca/ca.org1.example.com-cert.pem
+
+echo "$(json_ccp $ORG $P0PORT $CAPORT $PEERPEM $CAPEM)" > organizations/peerOrganizations/org1.example.com/connection-org1.json
+echo "$(yaml_ccp $ORG $P0PORT $CAPORT $PEERPEM $CAPEM)" > organizations/peerOrganizations/org1.example.com/connection-org1.yaml
+
+ORG=2
+P0PORT=9051
+CAPORT=8054
+PEERPEM=organizations/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
+CAPEM=organizations/peerOrganizations/org2.example.com/ca/ca.org2.example.com-cert.pem
+
+echo "$(json_ccp $ORG $P0PORT $CAPORT $PEERPEM $CAPEM)" > organizations/peerOrganizations/org2.example.com/connection-org2.json
+echo "$(yaml_ccp $ORG $P0PORT $CAPORT $PEERPEM $CAPEM)" > organizations/peerOrganizations/org2.example.com/connection-org2.yaml
+```
+
+
+ccp-template.yaml
+```
+---
+name: test-network-org${ORG}
+version: 1.0.0
+client:
+  organization: Org${ORG}
+  connection:
+    timeout:
+      peer:
+        endorser: '300'
+organizations:
+  Org${ORG}:
+    mspid: Org${ORG}MSP
+    peers:
+    - peer0.org${ORG}.example.com
+    certificateAuthorities:
+    - ca.org${ORG}.example.com
+peers:
+  peer0.org${ORG}.example.com:
+    url: grpcs://localhost:${P0PORT}
+    tlsCACerts:
+      pem: |
+          ${PEERPEM}
+    grpcOptions:
+      ssl-target-name-override: peer0.org${ORG}.example.com
+      hostnameOverride: peer0.org${ORG}.example.com
+certificateAuthorities:
+  ca.org${ORG}.example.com:
+    url: https://localhost:${CAPORT}
+    caName: ca-org${ORG}
+    tlsCACerts:
+      pem: 
+        - |
+          ${CAPEM}
+    httpOptions:
+      verify: false
+```
+
+#### creating containers
+compose-test-net.yaml 파일을 이용해서 peer contrainer들을 생성한다.
+
+```
+docker-compose -f compose/compose-test-net.yaml -f compose/docker/docker-compose-test-net.yaml up -d 2>&1
+```
+
+##### compose/compose-test-net.yaml
+```
+# Copyright IBM Corp. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+version: '3.7'
+
+volumes:
+  orderer.example.com:
+  peer0.org1.example.com:
+  peer0.org2.example.com:
+
+networks:
+  test:
+    name: fabric_test
+
+services:
+
+  orderer.example.com:
+    container_name: orderer.example.com
+    image: hyperledger/fabric-orderer:latest
+    labels:
+      service: hyperledger-fabric
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_LISTENPORT=7050
+      - ORDERER_GENERAL_LOCALMSPID=OrdererMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
+      # enabled TLS
+      - ORDERER_GENERAL_TLS_ENABLED=true
+      - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_CLUSTER_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_GENERAL_BOOTSTRAPMETHOD=none
+      - ORDERER_CHANNELPARTICIPATION_ENABLED=true
+      - ORDERER_ADMIN_TLS_ENABLED=true
+      - ORDERER_ADMIN_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_ADMIN_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:7053
+      - ORDERER_OPERATIONS_LISTENADDRESS=orderer.example.com:9443
+      - ORDERER_METRICS_PROVIDER=prometheus
+    working_dir: /root
+    command: orderer
+    volumes:
+        - ../organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp:/var/hyperledger/orderer/msp
+        - ../organizations/ordererOrganizations/example.com/orderers/orderer.example.com/tls/:/var/hyperledger/orderer/tls
+        - orderer.example.com:/var/hyperledger/production/orderer
+    ports:
+      - 7050:7050
+      - 7053:7053
+      - 9443:9443
+    networks:
+      - test
+
+  peer0.org1.example.com:
+    container_name: peer0.org1.example.com
+    image: hyperledger/fabric-peer:latest
+    labels:
+      service: hyperledger-fabric
+    environment:
+      - FABRIC_CFG_PATH=/etc/hyperledger/peercfg
+      - FABRIC_LOGGING_SPEC=INFO
+      #- FABRIC_LOGGING_SPEC=DEBUG
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_PROFILE_ENABLED=false
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      # Peer specific variables
+      - CORE_PEER_ID=peer0.org1.example.com
+      - CORE_PEER_ADDRESS=peer0.org1.example.com:7051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:7051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.org1.example.com:7052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.org1.example.com:7051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.org1.example.com:7051
+      - CORE_PEER_LOCALMSPID=Org1MSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
+      - CORE_OPERATIONS_LISTENADDRESS=peer0.org1.example.com:9444
+      - CORE_METRICS_PROVIDER=prometheus
+      - CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG={"peername":"peer0org1"}
+      - CORE_CHAINCODE_EXECUTETIMEOUT=300s
+    volumes:
+        - ../organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com:/etc/hyperledger/fabric
+        - peer0.org1.example.com:/var/hyperledger/production
+    working_dir: /root
+    command: peer node start
+    ports:
+      - 7051:7051
+      - 9444:9444
+    networks:
+      - test
+
+  peer0.org2.example.com:
+    container_name: peer0.org2.example.com
+    image: hyperledger/fabric-peer:latest
+    labels:
+      service: hyperledger-fabric
+    environment:
+      - FABRIC_CFG_PATH=/etc/hyperledger/peercfg
+      - FABRIC_LOGGING_SPEC=INFO
+      #- FABRIC_LOGGING_SPEC=DEBUG
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_PROFILE_ENABLED=false
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      # Peer specific variables
+      - CORE_PEER_ID=peer0.org2.example.com
+      - CORE_PEER_ADDRESS=peer0.org2.example.com:9051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:9051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.org2.example.com:9052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:9052
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.org2.example.com:9051
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.org2.example.com:9051
+      - CORE_PEER_LOCALMSPID=Org2MSP
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp      
+      - CORE_OPERATIONS_LISTENADDRESS=peer0.org2.example.com:9445
+      - CORE_METRICS_PROVIDER=prometheus
+      - CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG={"peername":"peer0org2"}
+      - CORE_CHAINCODE_EXECUTETIMEOUT=300s
+    volumes:
+        - ../organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com:/etc/hyperledger/fabric
+        - peer0.org2.example.com:/var/hyperledger/production
+    working_dir: /root
+    command: peer node start
+    ports:
+      - 9051:9051
+      - 9445:9445
+    networks:
+      - test
+
+  cli:
+    container_name: cli
+    image: hyperledger/fabric-tools:latest
+    labels:
+      service: hyperledger-fabric
+    tty: true
+    stdin_open: true
+    environment:
+      - GOPATH=/opt/gopath
+      - FABRIC_LOGGING_SPEC=INFO
+      - FABRIC_CFG_PATH=/etc/hyperledger/peercfg
+      #- FABRIC_LOGGING_SPEC=DEBUG
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    command: /bin/bash
+    volumes:
+        - ../organizations:/opt/gopath/src/github.com/hyperledger/fabric/peer/organizations
+        - ../scripts:/opt/gopath/src/github.com/hyperledger/fabric/peer/scripts/
+    depends_on:
+      - peer0.org1.example.com
+      - peer0.org2.example.com
+    networks:
+      - test
+```
+
+
+##### compose/docker/docker-compose-test-net.yaml
+
+```
+# Copyright IBM Corp. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+version: '3.7'
+```
+
+## 채널 생성
+
+채녈명은 기본값(mychannel)로 하여 채널생성 실행
+
+```
+.network.sh createChannel
+```
+
+```
+# channel name defaults to "mychannel"
+CHANNEL_NAME="mychannel"
+
+# parse a createChannel subcommand if used
+if [[ $# -ge 1 ]] ; then
+  key="$1"
+  if [[ "$key" == "createChannel" ]]; then
+      export MODE="createChannel"
+      shift
+  fi
+fi
+
+...
+
+# parse flags
+
+while [[ $# -ge 1 ]] ; do
+  key="$1"
+  case $key in
+  ...
+  -c )
+    CHANNEL_NAME="$2"
+    shift
+    ;;
+  ...
+...
+
+# Determine mode of operation and printing out what we asked for
+...
+elif [ "$MODE" == "createChannel" ]; then
+  infoln "Creating channel '${CHANNEL_NAME}'."
+  infoln "If network is not up, starting nodes with CLI timeout of '${MAX_RETRY}' tries and CLI delay of '${CLI_DELAY}' seconds and using database '${DATABASE} ${CRYPTO_MODE}"
+  createChannel
+...
+```
+
+### createChannel()
+
+network 구성 여부 확인 후, 'script/createChannel.sh' 실행
+
+```
+# call the script to create the channel, join the peers of org1 and org2,
+# and then update the anchor peers for each organization
+function createChannel() {
+  # Bring up the network if it is not already up. 
+  bringUpNetwork="false"
+
+  if ! $CONTAINER_CLI info > /dev/null 2>&1 ; then
+    fatalln "$CONTAINER_CLI network is required to be running to create a channel"
+  fi
+
+  # check if all containers are present 
+  CONTAINERS=($($CONTAINER_CLI ps | grep hyperledger/ | awk '{print $2}'))
+  len=$(echo ${#CONTAINERS[@]})
+  
+  if [[ $len -ge 4 ]] && [[ ! -d "organizations/peerOrganizations" ]]; then
+    echo "Bringing network down to sync certs with containers"
+    networkDown 
+  fi
+
+  [[ $len -lt 4 ]] || [[ ! -d "organizations/peerOrganizations" ]] && bringUpNetwork="true" || echo "Network Running Already"
+
+  if [ $bringUpNetwork == "true"  ]; then
+    infoln "Bringing up network"
+    networkUp
+  fi
+
+  # now run the script that creates a channel. This script uses configtxgen once
+  # to create the channel creation transaction and the anchor peer updates.
+  scripts/createChannel.sh $CHANNEL_NAME $CLI_DELAY $MAX_RETRY $VERBOSE
+}
+```
+
+### createChannel() - script.createChannel.sh
+
+채널 명 등 상태 값을 확인 후 아래 작업들을 수행합니다
+
+. channel-artifacts 폴더 생성
+. FABRIC_CFG_PATH=${PWD}/configtx - 환경변수 설정
+. '${CHANNEL_NAME}.block' 채널 genesis block 생성 - createChannelGenesisBlock
+. FABRIC_CFG_PATH=$PWD/../config/ - 환경변수 경로 재설정
+. BLOCKFILE="./channel-artifacts/${CHANNEL_NAME}.block" - 채널 genesis block 경로 환경변수 설정
+. 채널 생성 - createChannel
+. 모든 peer 채널에 join - joinChannel 1, joinChannel 2
+. 채널의 각 조직별 anchor peer 설정 - setAnchorPeer 1, setAnchorPeer 2
+
+```
+# imports  
+. scripts/envVar.sh
+. scripts/utils.sh
+
+CHANNEL_NAME="$1"
+DELAY="$2"
+MAX_RETRY="$3"
+VERBOSE="$4"
+: ${CHANNEL_NAME:="mychannel"}
+: ${DELAY:="3"}
+: ${MAX_RETRY:="5"}
+: ${VERBOSE:="false"}
+
+: ${CONTAINER_CLI:="docker"}
+: ${CONTAINER_CLI_COMPOSE:="${CONTAINER_CLI}-compose"}
+infoln "Using ${CONTAINER_CLI} and ${CONTAINER_CLI_COMPOSE}"
+
+if [ ! -d "channel-artifacts" ]; then
+	mkdir channel-artifacts
+fi
+
+FABRIC_CFG_PATH=${PWD}/configtx
+
+## Create channel genesis block
+infoln "Generating channel genesis block '${CHANNEL_NAME}.block'"
+createChannelGenesisBlock
+
+FABRIC_CFG_PATH=$PWD/../config/
+BLOCKFILE="./channel-artifacts/${CHANNEL_NAME}.block"
+
+## Create channel
+infoln "Creating channel ${CHANNEL_NAME}"
+createChannel
+successln "Channel '$CHANNEL_NAME' created"
+
+## Join all the peers to the channel
+infoln "Joining org1 peer to the channel..."
+joinChannel 1
+infoln "Joining org2 peer to the channel..."
+joinChannel 2
+
+## Set the anchor peers for each org in the channel
+infoln "Setting anchor peer for org1..."
+setAnchorPeer 1
+infoln "Setting anchor peer for org2..."
+setAnchorPeer 2
+
+successln "Channel '$CHANNEL_NAME' joined"
+```
+
+### createChannel() - script.createChannel.sh - createChannelGenesisBlock()
+
+link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/commands/configtxgen.html[configtxgen]
+
+configtxgen tool을 이용해서 ./configtx/configtx.yaml($FABRIC_CFG_PATH/configtx.yaml) 파일의 'TwoOrgsApplicationGenesis' profile에 대한 채널의 genesis blcok을 ./channel-artifacts/mychannel.blcok 에 생성합니다.
+
+```
+createChannelGenesisBlock() {
+	which configtxgen
+	if [ "$?" -ne 0 ]; then
+		fatalln "configtxgen tool not found."
+	fi
+	set -x
+	configtxgen -profile TwoOrgsApplicationGenesis -outputBlock ./channel-artifacts/${CHANNEL_NAME}.block -channelID $CHANNEL_NAME
+	res=$?
+	{ set +x; } 2>/dev/null
+  verifyResult $res "Failed to generate channel configuration transaction..."
+}
+```
+
+!확인 필요 사항: 이 시점에 ./../config/configtx.yaml이 생성되는 것인가? diff 시 샘플 파일이고, 'solo'를 사용하는 것으로 보아서 예전 버전으로 보여진다.
+
+### createChannel() - script/createChannel.sh - createChannel()
+link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/commands/osnadminchannel.html[osnadmin channel]
+
+The **osnadmin channel** command allows administrators to perform channel-related operations on an orderer, such as joining a channel, listing the channels an orderer has joined, and removing a channel. The channel participation API must be enabled and the Admin endpoint must be configured in the **orderer.yaml** for each orderer.
+
+OSN: Oderering Service Node
+
+. 실행 전 Orderer의 raft leader가 선출되어야 한다.
+. envVar.sh 가 include 되면서 ORDERER 전역변수 설정
+.. ORDERER_CA
+.. ORDERER_ADMIN_TLS_SIGN_CERT
+.. ORDERER_ADMIN_TLS_PRIVATE_KEY
+. Org1 환경변수 설정 - setGlobals 1 (왜 여기서 할까?)
+. osnadmin tool과 채널 genesis block을 이용해서 Odering Service에 채널 생성 및 join 시킨다. +
+이 때 Orderer의 설정은 $FABRIC_CFG_PATH/orderer.yaml(./../config/orderer.yaml)이 사용된다.
+
+참고: osnadmin channel join +
+Join an Ordering Service Node (OSN) to a channel. If the channel does not yet
+exist, it will be created. +
+join 시 채널이 존재하지 않으면 생성 후, 참여한다.
+
+```
+createChannel() {
+	setGlobals 1
+	# Poll in case the raft leader is not set yet
+	local rc=1
+	local COUNTER=1
+	while [ $rc -ne 0 -a $COUNTER -lt $MAX_RETRY ] ; do
+		sleep $DELAY
+		set -x
+		osnadmin channel join --channelID $CHANNEL_NAME --config-block ./channel-artifacts/${CHANNEL_NAME}.block -o localhost:7053 --ca-file "$ORDERER_CA" --client-cert "$ORDERER_ADMIN_TLS_SIGN_CERT" --client-key "$ORDERER_ADMIN_TLS_PRIVATE_KEY" >&log.txt
+		res=$?
+		{ set +x; } 2>/dev/null
+		let rc=$res
+		COUNTER=$(expr $COUNTER + 1)
+	done
+	cat log.txt
+	verifyResult $res "Channel creation failed"
+}
+```
+
+**채널 생성 및 Join 명령어 및 결과**
+```
+osnadmin channel join --channelID mychannel --config-block ./channel-artifacts/mychannel.block -o localhost:7053 --ca-file ./ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem --client-cert ./organizations/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.crt --client-key ./organizations/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.key
+
+Status: 201
+{
+        "name": "mychannel",
+        "url": "/participation/v1/channels/mychannel",
+        "consensusRelation": "consenter",
+        "status": "active",
+        "height": 1
+}
+```
+
+#### evnVar.sh - setGlobals
+```
+ This is a collection of bash functions used by different scripts
+
+# imports
+. scripts/utils.sh
+
+export CORE_PEER_TLS_ENABLED=true
+export ORDERER_CA=${PWD}/organizations/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
+export PEER0_ORG1_CA=${PWD}/organizations/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+export PEER0_ORG2_CA=${PWD}/organizations/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
+export PEER0_ORG3_CA=${PWD}/organizations/peerOrganizations/org3.example.com/tlsca/tlsca.org3.example.com-cert.pem
+export ORDERER_ADMIN_TLS_SIGN_CERT=${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.crt
+export ORDERER_ADMIN_TLS_PRIVATE_KEY=${PWD}/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.key
+
+# Set environment variables for the peer org
+setGlobals() {
+  local USING_ORG=""
+  if [ -z "$OVERRIDE_ORG" ]; then
+    USING_ORG=$1
+  else
+    USING_ORG="${OVERRIDE_ORG}"
+  fi
+  infoln "Using organization ${USING_ORG}"
+  if [ $USING_ORG -eq 1 ]; then
+    export CORE_PEER_LOCALMSPID="Org1MSP"
+    export CORE_PEER_TLS_ROOTCERT_FILE=$PEER0_ORG1_CA
+    export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp
+    export CORE_PEER_ADDRESS=localhost:7051
+  elif [ $USING_ORG -eq 2 ]; then
+    export CORE_PEER_LOCALMSPID="Org2MSP"
+    export CORE_PEER_TLS_ROOTCERT_FILE=$PEER0_ORG2_CA
+    export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp
+    export CORE_PEER_ADDRESS=localhost:9051
+
+  elif [ $USING_ORG -eq 3 ]; then
+    export CORE_PEER_LOCALMSPID="Org3MSP"
+    export CORE_PEER_TLS_ROOTCERT_FILE=$PEER0_ORG3_CA
+    export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/org3.example.com/users/Admin@org3.example.com/msp
+    export CORE_PEER_ADDRESS=localhost:11051
+  else
+    errorln "ORG Unknown"
+  fi
+
+  if [ "$VERBOSE" == "true" ]; then
+    env | grep CORE
+  fi
+}
+```
+
+
+
+### createChannel() - script/createChannel.sh - joinChannel()
+
+link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/commands/peerchannel.html[peer channel]
+
+The **peer channel** command allows administrators to perform channel related operations on a peer, such as joining a channel or listing the channels to which a peer is joined.
+
+
+조직의 peer0 피어를 채널에 join 시킨다.
+
+. 환경변수를 Join하려는 Peer로 설정 - setGlobals 1 (조직: org1, 피어: peer0 으로 환경변수 설정)
+. Peer를 채널에 join 시킨다.
+
+```
+# joinChannel ORG
+joinChannel() {
+  FABRIC_CFG_PATH=$PWD/../config/
+  ORG=$1
+  setGlobals $ORG
+	local rc=1
+	local COUNTER=1
+	## Sometimes Join takes time, hence retry
+	while [ $rc -ne 0 -a $COUNTER -lt $MAX_RETRY ] ; do
+    sleep $DELAY
+    set -x
+    peer channel join -b $BLOCKFILE >&log.txt
+    res=$?
+    { set +x; } 2>/dev/null
+		let rc=$res
+		COUNTER=$(expr $COUNTER + 1)
+	done
+	cat log.txt
+	verifyResult $res "After $MAX_RETRY attempts, peer0.org${ORG} has failed to join channel '$CHANNEL_NAME' "
+}
+```
+
+**Peer 채널 참여 명령어 및 결과**
+```
+peer channel join -b ./channel-artifacts/mychannel.block
+
+[channelCmd] InitCmdFactory -> Endorser and orderer connections initialized
+[channelCmd] executeJoin -> Successfully submitted proposal to join channel
+
+```
+
+### createChannel() - script/createChannel.sh - setAnchorPeer()
+
+cli container 내 setAnchorPeer.sh를 실행하여 채널의 조직별 Anchor Peer를 설정한다.
+
+```
+setAnchorPeer() {
+  ORG=$1
+  ${CONTAINER_CLI} exec cli ./scripts/setAnchorPeer.sh $ORG $CHANNEL_NAME 
+}
+```
+
+#### setAnchorPeer.sh
+
+link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/commands/configtxlator.html[configtxlator]
+
+The **configtxlator** command allows users to translate between protobuf and JSON versions of fabric data structures and create config updates. The command may either start a REST server to expose its functions over HTTP or may be utilized directly as a command line tool.
+
+. 채널 config를 조회
+. anchor peer에 추가를 위한 설정 수정
+. 현재 설정과 수정된 설정의 diff로 config update tx(Org1MSPconfig.json) 생성
+. AnchorPeer 수정
+
+```
+# import utils
+. scripts/envVar.sh
+. scripts/configUpdate.sh
+
+
+# NOTE: this must be run in a CLI container since it requires jq and configtxlator 
+createAnchorPeerUpdate() {
+  infoln "Fetching channel config for channel $CHANNEL_NAME"
+  fetchChannelConfig $ORG $CHANNEL_NAME ${CORE_PEER_LOCALMSPID}config.json
+
+  infoln "Generating anchor peer update transaction for Org${ORG} on channel $CHANNEL_NAME"
+
+  if [ $ORG -eq 1 ]; then
+    HOST="peer0.org1.example.com"
+    PORT=7051
+  elif [ $ORG -eq 2 ]; then
+    HOST="peer0.org2.example.com"
+    PORT=9051
+  elif [ $ORG -eq 3 ]; then
+    HOST="peer0.org3.example.com"
+    PORT=11051
+  else
+    errorln "Org${ORG} unknown"
+  fi
+
+  set -x
+  # Modify the configuration to append the anchor peer 
+  jq '.channel_group.groups.Application.groups.'${CORE_PEER_LOCALMSPID}'.values += {"AnchorPeers":{"mod_policy": "Admins","value":{"anchor_peers": [{"host": "'$HOST'","port": '$PORT'}]},"version": "0"}}' ${CORE_PEER_LOCALMSPID}config.json > ${CORE_PEER_LOCALMSPID}modified_config.json
+  { set +x; } 2>/dev/null
+
+  # Compute a config update, based on the differences between 
+  # {orgmsp}config.json and {orgmsp}modified_config.json, write
+  # it as a transaction to {orgmsp}anchors.tx
+  createConfigUpdate ${CHANNEL_NAME} ${CORE_PEER_LOCALMSPID}config.json ${CORE_PEER_LOCALMSPID}modified_config.json ${CORE_PEER_LOCALMSPID}anchors.tx
+}
+
+updateAnchorPeer() {
+  peer channel update -o orderer.example.com:7050 --ordererTLSHostnameOverride orderer.example.com -c $CHANNEL_NAME -f ${CORE_PEER_LOCALMSPID}anchors.tx --tls --cafile "$ORDERER_CA" >&log.txt
+  res=$?
+  cat log.txt
+  verifyResult $res "Anchor peer update failed"
+  successln "Anchor peer set for org '$CORE_PEER_LOCALMSPID' on channel '$CHANNEL_NAME'"
+}
+
+ORG=$1
+CHANNEL_NAME=$2
+
+setGlobalsCLI $ORG
+
+createAnchorPeerUpdate 
+
+updateAnchorPeer 
+```
+
+#### Org1 수행 명령어 (setAnchorPeer 1)
+```
+
+docker exec cli ./scripts/setAnchorPeer.sh 1 mychannel
+
+===
+
+setGlobalsCLI 1
+setGlboals 1
+# fetchChannelConfig <org> <channel_id> <output_json>
+# fetchChannelConfig 1 mychannel Org1MSPconfig.json
+setGlobals 1
+peer channel fetch config config_block.pb -o orderer.exmaple.com:7050 --ordererTLSHostnameOverride orderer.example.com -c mychannel --tls --cafile "./organizations/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem"
+configtxlator proto_decode --input config_block.pb --type common.Block --output config_block.json
+jq .data.data[0].payload.data.config config_block.json >"Org1MSPconfig.json"
+
+jq '.channel_group.groups.Application.groups.'Org1MSP}'.values += {"AnchorPeers":{"mod_policy": "Admins","value":{"anchor_peers": [{"host": "'peer0.org1.example.com'","port": '7051'}]},"version": "0"}}' Org1MSPconfig.json > Org1MSPmodified_config.json
+
+# createConfigUpdate <channel_id> <original_config.json> <modified_config.json> <output.pb>
+# createConfigUpdate mychannel Org1MSPconfig.json Org1MSPmodified_config.json Org1MSPanchors.tx
+configtxlator proto_encode --input "Org1MSPconfig.json" --type common.Config --output original_config.pb
+configtxlator proto_encode --input "Org1MSPmodified_config.json" --type common.Config --output modified_config.pb
+configtxlator compute_update --channel_id "mychannel" --original original_config.pb --updated modified_config.pb --output config_update.pb
+configtxlator proto_decode --input config_update.pb --type common.ConfigUpdate --output config_update.json
+echo '{"payload":{"header":{"channel_header":{"channel_id":"'mychannel'", "type":2}},"data":{"config_update":'$(cat config_update.json)'}}}' | jq . >config_update_in_envelope.json
+configtxlator proto_encode --input config_update_in_envelope.json --type common.Envelope --output "Org1MSPanchors.tx"
+
+# updateAnchorPeer 
+peer channel update -o orderer.example.com:7050 --ordererTLSHostnameOverride orderer.example.com -c mychannel -f Org1MSPanchors.tx --tls --cafile "./organizations/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem" >&log.txt
+```
+
+## Reference
+* link:https://medium.com/@taehyoung46/fabric-samples-network-sh-%EB%B6%84%EC%84%9D-a845ce2f71db[Fabric-samples network.sh 분석]

@@ -1,0 +1,121 @@
+
+v2.4 test-network 실행 로그
+
+## curl -sSL https://bit.ly/2ysbOFE | bash -s
+
+test-network clone 및 docker image pull
+
+```
+$ curl -sSL https://bit.ly/2ysbOFE | bash -s
+
+Clone hyperledger/fabric-samples repo
+
+===> Changing directory to fabric-samples
+fabric-samples v2.4.2 does not exist, defaulting to main. fabric-samples main branch is intended to work with recent versions of fabric.
+
+Pull Hyperledger Fabric binaries
+
+===> Downloading version 2.4.2 platform specific fabric binaries
+===> Downloading:  https://github.com/hyperledger/fabric/releases/download/v2.4.2/hyperledger-fabric-linux-amd64-2.4.2.tar.gz
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   680  100   680    0     0   1937      0 --:--:-- --:--:-- --:--:--  1937
+100 76.7M  100 76.7M    0     0   582k      0  0:02:14  0:02:14 --:--:-- 18.3M
+==> Done.
+===> Downloading version 1.5.2 platform specific fabric-ca-client binary
+===> Downloading:  https://github.com/hyperledger/fabric-ca/releases/download/v1.5.2/hyperledger-fabric-ca-linux-amd64-1.5.2.tar.gz
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   683  100   683    0     0   1991      0 --:--:-- --:--:-- --:--:--  1991
+100 25.4M  100 25.4M    0     0  5068k      0  0:00:05  0:00:05 --:--:-- 5670k
+==> Done.
+
+Pull Hyperledger Fabric docker images
+
+FABRIC_IMAGES: peer orderer ccenv tools baseos
+===> Pulling fabric Images
+====> hyperledger/fabric-peer:2.4.2
+2.4.2: Pulling from hyperledger/fabric-peer
+97518928ae5f: Pull complete
+42bd03df3e1a: Pull complete
+3182c3c96871: Pull complete
+44ae96fc98a2: Pull complete
+2b2d34b5ab5c: Pull complete
+eff95e52b961: Pull complete
+650bde1fc3f7: Pull complete
+Digest: sha256:5eaad9fd093fdfb449310ae851912ab2cf6cd5b634380497404b9cb8bf91dcd2
+Status: Downloaded newer image for hyperledger/fabric-peer:2.4.2
+docker.io/hyperledger/fabric-peer:2.4.2
+====> hyperledger/fabric-orderer:2.4.2
+2.4.2: Pulling from hyperledger/fabric-orderer
+97518928ae5f: Pull complete
+42bd03df3e1a: Pull complete
+a565d10714cf: Pull complete
+cf01ceab4d02: Pull complete
+641b37dc6c30: Pull complete
+a4f70ee0bbbe: Pull complete
+3a78beab9d5d: Pull complete
+Digest: sha256:fc9fbf6d8c88ef7cff09835c5bf978388897a191ed9c9cf1ba33bc131a50799b
+Status: Downloaded newer image for hyperledger/fabric-orderer:2.4.2
+docker.io/hyperledger/fabric-orderer:2.4.2
+====> hyperledger/fabric-ccenv:2.4.2
+2.4.2: Pulling from hyperledger/fabric-ccenv
+97518928ae5f: Pull complete
+b78c28b3bbf7: Pull complete
+248309d37e25: Pull complete
+8f893ed93684: Pull complete
+60b34f272e36: Pull complete
+bde889820d2b: Pull complete
+759d90edbc0f: Pull complete
+81a0619aeb06: Pull complete
+fc7be8cce065: Pull complete
+Digest: sha256:bd2fa8d04b7bb74f422c34b03cfce62750fc7d99f78410c6f4dd7ce4eaf5f594
+Status: Downloaded newer image for hyperledger/fabric-ccenv:2.4.2
+docker.io/hyperledger/fabric-ccenv:2.4.2
+====> hyperledger/fabric-tools:2.4.2
+2.4.2: Pulling from hyperledger/fabric-tools
+97518928ae5f: Pull complete
+b78c28b3bbf7: Pull complete
+248309d37e25: Pull complete
+8f893ed93684: Pull complete
+60b34f272e36: Pull complete
+fb1c258a462f: Pull complete
+cddf115ada33: Pull complete
+24ea6585952d: Pull complete
+Digest: sha256:c3c4cdf3c73877c9d3dba1fcbbd59e152ecd23876a1ccb9f9bc9c4bed69824e7
+Status: Downloaded newer image for hyperledger/fabric-tools:2.4.2
+docker.io/hyperledger/fabric-tools:2.4.2
+====> hyperledger/fabric-baseos:2.4.2
+2.4.2: Pulling from hyperledger/fabric-baseos
+Digest: sha256:bdf4646cc0e98ab4cfab4a8cb109ebba5424ae5c84c799d5ec0f5eb7ae2ae2ca
+Status: Image is up to date for hyperledger/fabric-baseos:2.4.2
+docker.io/hyperledger/fabric-baseos:2.4.2
+===> Pulling fabric ca Image
+====> hyperledger/fabric-ca:1.5.2
+1.5.2: Pulling from hyperledger/fabric-ca
+a0d0a0d46f8b: Pull complete
+ac8258c0aeb1: Pull complete
+6c802cf1fa97: Pull complete
+Digest: sha256:faa3b743d9ed391c30f518a7cc1168160bf335f3bf60ba6aaaf1aa49c1ed023e
+Status: Downloaded newer image for hyperledger/fabric-ca:1.5.2
+docker.io/hyperledger/fabric-ca:1.5.2
+===> List out hyperledger docker images
+hyperledger/fabric-tools     2.4       eb40f70b1174   2 weeks ago    473MB
+hyperledger/fabric-tools     2.4.2     eb40f70b1174   2 weeks ago    473MB
+hyperledger/fabric-tools     latest    eb40f70b1174   2 weeks ago    473MB
+hyperledger/fabric-peer      2.4       43b970f84604   2 weeks ago    62.3MB
+hyperledger/fabric-peer      2.4.2     43b970f84604   2 weeks ago    62.3MB
+hyperledger/fabric-peer      latest    43b970f84604   2 weeks ago    62.3MB
+hyperledger/fabric-orderer   2.4       5edf6bdb4489   2 weeks ago    37.3MB
+hyperledger/fabric-orderer   2.4.2     5edf6bdb4489   2 weeks ago    37.3MB
+hyperledger/fabric-orderer   latest    5edf6bdb4489   2 weeks ago    37.3MB
+hyperledger/fabric-ccenv     2.4       e377a02242aa   2 weeks ago    517MB
+hyperledger/fabric-ccenv     2.4.2     e377a02242aa   2 weeks ago    517MB
+hyperledger/fabric-ccenv     latest    e377a02242aa   2 weeks ago    517MB
+hyperledger/fabric-baseos    2.4       4cfe0148d657   2 weeks ago    6.94MB
+hyperledger/fabric-baseos    2.4.2     4cfe0148d657   2 weeks ago    6.94MB
+hyperledger/fabric-baseos    latest    4cfe0148d657   2 weeks ago    6.94MB
+hyperledger/fabric-ca        1.5       4ea287b75c63   5 months ago   69.8MB
+hyperledger/fabric-ca        1.5.2     4ea287b75c63   5 months ago   69.8MB
+hyperledger/fabric-ca        latest    4ea287b75c63   5 months ago   69.8MB
+```
