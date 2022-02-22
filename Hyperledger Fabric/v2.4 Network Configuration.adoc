@@ -1,0 +1,167 @@
+
+Hyperledeger Fabric v2.4 Custom Network 구성
+
+* Docker Compose 사용 (Docker Compose 성공하면 k8s로 변경하여 수정 예정)
+* Fabric CA 사용
+* LevelDB 사용 (LevelDB 성공하면 CouchDB로 변경하여 수정 예정)
+
+## 네트워크 구성 요소
+* Orderer 1개
+* Organization 2개
+* Organization 별 Peer 1개
+* Organization 별 Admin 1명, User 1명
+* Organization 별 Cli 1개
+* Channel 1개 - 모든 Orderer 및 Peer 가입(Join)
+
+## 네트워크 구성 순서
+
+* 조직별 CA 생성 및 Contrainer 실행
+* 조직별 Identity 생성
+* Peer를 포함하는 조직의 CCP 생성
+* Container 실행 (Orderer, Peer, Cli)
+* configtxgen을 이용하여 채널 genesis block 생성(Configuration Block) /w configtx.yaml
+* osnadmin을 이용하여 채널 생성 및 Orderer 채널 가입 /w 채널 genesis block
+* 각 조직의 Peer들을 채널에 가입(Join)
+* 각 조직의 AnchorPeer 설정
+
+### 조직별 CA 생성 및 Contrainer 실행
+
+1. 조직별 CA 설정파일 작성 - link:https://github.com/hyperledger/fabric-samples/blob/main/test-network/organizations/fabric-ca/org1/fabric-ca-server-config.yaml[Org1], link:https://github.com/hyperledger/fabric-samples/blob/main/test-network/organizations/fabric-ca/ordererOrg/fabric-ca-server-config.yaml[Orderer]
+2. 'docker-compose-ca.yaml' CA Docker Compose 설정파일 작성 - link:https://github.com/hyperledger/fabric-samples/blob/main/test-network/compose/compose-ca.yaml[test-network compose-ca.yaml]
+3. cotainer 배포 +
+docker-compose -f compose-ca.yaml up -d 2>&1
+4. ca Identity 파일 확인 (./organizations/fabric-ca/{organizationName})
+```
+./
+├── IssuerPublicKey
+├── IssuerRevocationPublicKey
+├── ca-cert.pem
+├── fabric-ca-server-config.yaml
+├── fabric-ca-server.db
+├── msp
+│   ├── cacerts
+│   ├── keystore
+│   │   ├── 84cb92646b3b7a74bd77f8727aa5b3871e7a6aaf34a2949a3d6ab77badb551d0_sk
+│   │   ├── IssuerRevocationPrivateKey
+│   │   ├── IssuerSecretKey
+│   │   └── a11b524715aec040c0b352efcc4dfc939e9850ff1e40532f766a5bf3aca665a6_sk
+│   ├── signcerts
+│   └── user
+└── tls-cert.pem
+```
+
+**참고: 2>&1** - link:https://reebok.tistory.com/56[/dev/null 2>&1 의 의미]
+
+n >&m: 표준출력과 표준에러를 서로 바꾸기. +
+0, 1, 2는 각각 표준입력, 표준출력, 그리고 표준에러를 의미합니다. 
+
+2>&1의 의미는 표준 출력의 전달되는 곳으로 표준에러를 전달하라라는 의미입니다. 
+
+### 조직별 Identity 생성
+
+#### Peer 조직
+
+. fabric-ca-clinet enroll 이용하여 CA admin 등록(enroll)
+. 기본 설정 파일(fabric-ca-client-config.yaml) 수정 (CA Admin enroll시 생성)
+. fabric-ca-clinet register 이용하여 Peer 'peer0' 등록(register)
+. fabric-ca-clinet register 이용하여 User 'user' 등록(register)
+. fabric-ca-clinet register 이용하여 User 'org admin' 등록(register)
+. fabric-ca-clinet enroll 이용하여 Peer 'peer0' msp 생성
+. fabric-ca-clinet enroll 이용하여 Peer 'peer0-tls' certificates 생성
+. fabric-ca-clinet enroll 이용하여 User 'user' msp 생성
+. fabric-ca-clinet enroll 이용하여 User 'org admin' msp 생성
+
+
+#### Orderer 조직
+
+. fabric-ca-clinet enroll 이용하여 CA admin 등록(enroll)
+. 기본 설정 파일(fabric-ca-client-config.yaml) 수정 (CA Admin enroll시 생성)
+. fabric-ca-clinet register 이용하여 Orderer 'orderer' 등록(register)
+. fabric-ca-clinet register 이용하여 Admin 'ordererAdmin' 등록(register)
+. fabric-ca-clinet enroll 이용하여 Orderer 'orderer' msp 생성
+. fabric-ca-clinet enroll 이용하여 Orderer 'orderer-tls' certificates 생성
+. fabric-ca-clinet enroll 이용하여 Admin 'ordererAdmin' msp 생성
+
+### Peer를 포함하는 조직의 CCP 생성
+
+link:https://github.com/hyperledger/fabric-samples/blob/main/test-network/organizations/ccp-template.yaml[ccp-template.yaml], link:https://github.com/hyperledger/fabric-samples/blob/main/test-network/organizations/ccp-generate.sh[ccp-generate.sh]
+
+/organizations/ccp-template.yaml 및 /organizations/ccp-template.sh를 참고하여,
+Peer를 포함하는 조직의 CCP 파일 생성
+
+조직별로 아래 파일들이 생성되어야 합니다.
+
+/organizations/peerOrganizations/{organization}.{domain}/connection-{organization}.yaml
+
+예) domain: moss.com, organization: service1 +
+/organizations/peerOrganizations/service1.moss.com/connection-service1.yaml
+
+ccp(common connection profile): application에서 gateway를 설정하여 network 와의 통신을 관리하는 데 사용됩니다.
+
+### Container 실행 (Orderer, Peer, Cli)
+. 'compose-network.yaml' 네트워크 Docker Compose 설정파일 작성, 참고: link:https://github.com/hyperledger/fabric-samples/blob/main/test-network/compose/compose-test-net.yaml[compose-tesk-net.yaml] +
+test-network와 다르게 Peer Organization 별 Cli를 1개씩 정의 했으므로 Cli Container가 한개 더 추가된다.
+. cotainer 배포 +
+docker-compose -f compose-network.yaml up -d 2>&1
+. container 정상 동작 확인 : orderer 1개, peer 2개, cli 2개 (앞에서 실행한 ca3 개를 포함하여 총 8개) +
+docker container ls
+
+조금 더 발전된 형태는 인증서 파일들을 mount 하는 것이 아닌 파일들을 복사한 새로운 이미지를 만들어서 배포하는 것일 것이다. k8s를 이용하면 PV를 이용하여 인증서를 공유하고 mount하여 처리 하는 것도 고려해 볼 수 있다.
+
+### configtxgen을 이용하여 채널 genesis block 생성(Configuration Block) /w configtx.yaml
+
+. 채널명 환경변수 설정 : CHANNEL_NAME="mosschannel"
+. ./../config/configtx.yaml 채널 설정 파일을 작성한다. 참고: link:https://github.com/hyperledger/fabric-samples/blob/main/test-network/configtx/configtx.yaml[configtx.yaml]
+. 환경변수 설정 - FABRIC_CFG_PATH=${PWD}/configtx
+. block 생성 +
+configtxgen -profile TwoOrgsApplicationGenesis -outputBlock ./channel-artifacts/${CHANNEL_NAME}.block -channelID $CHANNEL_NAME
+. 환경변수 경로 재설정 - FABRIC_CFG_PATH=$PWD/../config/
+. 채널 genesis block 경로 환경변수 설정 - BLOCKFILE="./channel-artifacts/${CHANNEL_NAME}.block"
+
+### osnadmin을 이용하여 채널 생성 및 Orderer 채널 가입 /w 채널 genesis block
+
+. $FABRIC_CFG_PATH/orderer.yaml Orderer 설정파일 수정
+. osnadmin channel join 를 이용하여 채널 genesis block으로 채널 생성(존재하지 않으면 생성) 및 Orderer를 채널에 가입 +
+osnadmin channel join --channelID $CHANNEL_NAME --config-block ./channel-artifacts/${CHANNEL_NAME}.block -o localhost:7053 --ca-file "$ORDERER_CA" --client-cert "$ORDERER_ADMIN_TLS_SIGN_CERT" --client-key "$ORDERER_ADMIN_TLS_PRIVATE_KEY" + 
+osnadmin channel join --channelID mychannel --config-block ./channel-artifacts/mychannel.block -o localhost:7053 --ca-file ./ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem --client-cert ./organizations/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.crt --client-key ./organizations/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.key
+
+### 각 조직의 Peer들을 채널에 가입(Join)
+
+. peer channel join 명령어 실행을 위한 환경변수 설정
+.. export CORE_PEER_LOCALMSPID="Org1MSP"
+.. export CORE_PEER_TLS_ROOTCERT_FILE=$PEER0_ORG1_CA
+.. export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp
+.. export CORE_PEER_ADDRESS=localhost:7051
+.. 추가환경설정 변수 확인 필요
+. peer channel join 명령어로 Peer의 채널 가입(join) - peer channel join -b $BLOCKFILE >&log.txt
+
+
+### 각 조직의 AnchorPeer 설정
+cli container에서 실행되어야 한다.
+
+. 채널 config를 조회
+. anchor peer에 추가를 위한 설정 수정
+. 현재 설정과 수정된 설정의 diff로 config update tx(Org1MSPconfig.json) 생성
+. AnchorPeer 수정
+
+```
+# 채널 config 조회
+setGlobals 1
+peer channel fetch config config_block.pb -o orderer.exmaple.com:7050 --ordererTLSHostnameOverride orderer.example.com -c mychannel --tls --cafile "./organizations/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem"
+configtxlator proto_decode --input config_block.pb --type common.Block --output config_block.json
+jq .data.data[0].payload.data.config config_block.json >"Org1MSPconfig.json"
+
+# anchor peer에 추가를 위한 설정 수정
+jq '.channel_group.groups.Application.groups.'Org1MSP}'.values += {"AnchorPeers":{"mod_policy": "Admins","value":{"anchor_peers": [{"host": "'peer0.org1.example.com'","port": '7051'}]},"version": "0"}}' Org1MSPconfig.json > Org1MSPmodified_config.json
+
+# 현재 설정과 수정된 설정의 diff로 config update tx(Org1MSPconfig.json) 생성
+configtxlator proto_encode --input "Org1MSPconfig.json" --type common.Config --output original_config.pb
+configtxlator proto_encode --input "Org1MSPmodified_config.json" --type common.Config --output modified_config.pb
+configtxlator compute_update --channel_id "mychannel" --original original_config.pb --updated modified_config.pb --output config_update.pb
+configtxlator proto_decode --input config_update.pb --type common.ConfigUpdate --output config_update.json
+echo '{"payload":{"header":{"channel_header":{"channel_id":"'mychannel'", "type":2}},"data":{"config_update":'$(cat config_update.json)'}}}' | jq . >config_update_in_envelope.json
+configtxlator proto_encode --input config_update_in_envelope.json --type common.Envelope --output "Org1MSPanchors.tx"
+
+# AnchorPeer 수정
+peer channel update -o orderer.example.com:7050 --ordererTLSHostnameOverride orderer.example.com -c mychannel -f Org1MSPanchors.tx --tls --cafile "./organizations/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem" >&log.txt
+```
