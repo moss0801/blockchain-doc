@@ -223,7 +223,7 @@ peer channel update -o orderer.example.com:7050 --ordererTLSHostnameOverride ord
 
 ### 바이너리 다운로드
 
-moss-network 폴더 생성 후, fabric, fabric-ca linux 바이너리를 다운받아서 압축을 풉니다.
+moss-network 폴더 생성 후, fabric, fabric-ca linux 바이너리를 다운받아서 압축을 풉니다. 이후 ./bin을 PATH 경로에 추가합니다.
 
 * link:https://github.com/hyperledger/fabric/releases/tag/v2.4.2[fabric v2.4.2]
 * link:https://github.com/hyperledger/fabric-ca/releases/tag/v1.5.2[fabric-ca v1.5.2]
@@ -237,11 +237,13 @@ curl -L https://github.com/hyperledger/fabric-ca/releases/download/v1.5.2/hyperl
 
 sudo tar -zxvf hyperledger-fabric-linux-amd64-2.4.2.tar.gz
 sudo tar -zxvf hyperledger-fabric-ca-linux-amd64-1.5.2.tar.gz
+
+export PATH=${PWD}/bin:$PATH
 ```
 
 작업 완료 후
 ```
-./ moss-network
+/moss-network
 ├── bin
 │   ├── configtxgen
 │   ├── configtxlator
@@ -260,3 +262,37 @@ sudo tar -zxvf hyperledger-fabric-ca-linux-amd64-1.5.2.tar.gz
 ├── hyperledger-fabric-ca-linux-amd64-1.5.2.tar.gz
 └── hyperledger-fabric-linux-amd64-2.4.2.tar.gz
 ```
+
+### 조직별 CA 서버 설정 파일 작성
+link:https://hyperledger-fabric-ca.readthedocs.io/en/latest/users-guide.html[Fabric CA User’s Guide], 
+link:https://hyperledger-fabric-ca.readthedocs.io/en/latest/operations_guide.html[Fabric CA Operations Guide], 
+link:https://hyperledger-fabric-ca.readthedocs.io/en/latest/deployguide/ca-deploy-topology.html[Planning for a CA], 
+link:https://hyperledger-fabric-ca.readthedocs.io/en/latest/deployguide/cadeploy.html[CA Deployment steps]
+
+조직(Organization)별 두 개의 CA(organization CA[블록체인 인증], TLS CA[보안통신 인증]) 설정이 추천되나, 여기서는 하나의 CA가 2개의 CA 역할을 모두 하도록 설정합니다.
+
+조직별로 ./organizations/fabric-ca/{organizationName} 폴더를 생성하고, 조직별 설정파일(fabric-ca-server-config.yaml)을 작성합니다. 설정파일은 fabric-samples에서 다운받아 수정합니다.
+
+* ./organizations/fabric-ca/orderer1/fabric-ca-server-config.yaml
+* ./organizations/fabric-ca/platform/fabric-ca-server-config.yaml
+* ./organizations/fabric-ca/customer/fabric-ca-server-config.yaml
+* ./organizations/fabric-ca/service1/fabric-ca-server-config.yaml
+* ./organizations/fabric-ca/service2/fabric-ca-server-config.yaml
+
+```
+curl -L https://raw.githubusercontent.com/hyperledger/fabric-samples/main/test-network/organizations/fabric-ca/ordererOrg/fabric-ca-server-config.yaml -o fabric-ca-server-config.yaml
+
+mkdir -p organizations/fabric-ca/orderer1 
+mkdir -p organizations/fabric-ca/platform
+mkdir -p organizations/fabric-ca/customer
+mkdir -p organizations/fabric-ca/service1
+mkdir -p organizations/fabric-ca/service2
+
+cp fabric-ca-server-config.yaml organizations/fabric-ca/orderer1
+cp fabric-ca-server-config.yaml organizations/fabric-ca/platform
+cp fabric-ca-server-config.yaml organizations/fabric-ca/customer
+cp fabric-ca-server-config.yaml organizations/fabric-ca/service1
+cp fabric-ca-server-config.yaml organizations/fabric-ca/service2
+
+```
+
