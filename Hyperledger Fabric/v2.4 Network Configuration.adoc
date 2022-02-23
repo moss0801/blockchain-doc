@@ -461,4 +461,16 @@ csr:
             └── fabric-ca-server-config.yaml
 ```
 
+### Fabric-CA docker-compose 파일 작성 및 container 실행
+
+CA 구동을 위한 docker-compose 파일을 작성하고 실행합니다. +
+compose 폴더 생성 후, fabric-samples의 'compose-ca.yaml' 파일을 다운받아 수정하여 작성합니다.
+
+
+```
+mkdir compose
+curl -L https://raw.githubusercontent.com/hyperledger/fabric-samples/main/test-network/compose/compose-ca.yaml -o compose/compose-ca.yaml
+
+```
+
 
