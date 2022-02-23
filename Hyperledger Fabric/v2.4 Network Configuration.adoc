@@ -224,7 +224,9 @@ peer channel update -o orderer.example.com:7050 --ordererTLSHostnameOverride ord
 
 ### 바이너리 다운로드
 
-moss-network 폴더 생성 후, fabric, fabric-ca linux 바이너리를 다운받아서 압축을 풉니다. 이후 ./bin을 PATH 경로에 추가합니다.
+moss-network 또는 임의의 폴더 생성 후, fabric, fabric-ca linux 바이너리를 다운받아서 압축을 풉니다. 이후 ./bin을 PATH 경로에 추가합니다.
+
+진행의 편의를 위해서 moss-network 폴더 경로를 'FABRIC_NETWORK_HOME' 환경변수로 설정합니다.
 
 * link:https://github.com/hyperledger/fabric/releases/tag/v2.4.2[fabric v2.4.2]
 * link:https://github.com/hyperledger/fabric-ca/releases/tag/v1.5.2[fabric-ca v1.5.2]
@@ -232,6 +234,7 @@ moss-network 폴더 생성 후, fabric, fabric-ca linux 바이너리를 다운�
 ```
 mkdir moss-network
 cd moss-network
+export FABRIC_NETWORK_HOME=${PWD}
 
 curl -L https://github.com/hyperledger/fabric/releases/download/v2.4.2/hyperledger-fabric-linux-amd64-2.4.2.tar.gz -o hyperledger-fabric-linux-amd64-2.4.2.tar.gz
 curl -L https://github.com/hyperledger/fabric-ca/releases/download/v1.5.2/hyperledger-fabric-ca-linux-amd64-1.5.2.tar.gz -o hyperledger-fabric-ca-linux-amd64-1.5.2.tar.gz
@@ -240,6 +243,7 @@ sudo tar -zxvf hyperledger-fabric-linux-amd64-2.4.2.tar.gz
 sudo tar -zxvf hyperledger-fabric-ca-linux-amd64-1.5.2.tar.gz
 
 export PATH=${PWD}/bin:$PATH
+
 ```
 
 작업 완료 후
@@ -282,6 +286,8 @@ link:https://hyperledger-fabric-ca.readthedocs.io/en/latest/deployguide/cadeploy
 * ./organizations/fabric-ca/service2/fabric-ca-server-config.yaml
 
 ```
+cd "$FABRIC_NETWORK_HOME"
+
 curl -L https://raw.githubusercontent.com/hyperledger/fabric-samples/main/test-network/organizations/fabric-ca/ordererOrg/fabric-ca-server-config.yaml -o fabric-ca-server-config.yaml
 
 mkdir -p organizations/fabric-ca/orderer1 
@@ -461,16 +467,70 @@ csr:
             └── fabric-ca-server-config.yaml
 ```
 
-### Fabric-CA docker-compose 파일 작성 및 container 실행
+### Fabric-CA 초기화
 
-CA 구동을 위한 docker-compose 파일을 작성하고 실행합니다. +
-compose 폴더 생성 후, fabric-samples의 'compose-ca.yaml' 파일을 다운받아 수정하여 작성합니다.
+'fabric-ca-server init'을 'fabric-ca-server-config.yaml' 함께 초기화 합니다.
+초기화 마다 CA 경로를 'FABRIC_CA_HOME' 환경변수로 지정하거나, '--home' flag로 지정해 주어야 합니다.
 
-
-```
-mkdir compose
-curl -L https://raw.githubusercontent.com/hyperledger/fabric-samples/main/test-network/compose/compose-ca.yaml -o compose/compose-ca.yaml
+초기화가 완료되면 CA 의 identitiy 관련 리소스 및 msp가 생성됩니다.
 
 ```
+cd "$FABRIC_NETWORK_HOME"
 
+fabric-ca-server init --home organizations/fabric-ca/orderer1
+fabric-ca-server init --home organizations/fabric-ca/platform
+fabric-ca-server init --home organizations/fabric-ca/customer
+fabric-ca-server init --home organizations/fabric-ca/service1
+fabric-ca-server init --home organizations/fabric-ca/service2
+
+```
+
+orderer1 실행 결과
+```
+./
+...
+└── organizations
+    └── fabric-ca
+        ...
+        ├── orderer1
+        │   ├── IssuerPublicKey
+        │   ├── IssuerRevocationPublicKey
+        │   ├── ca-cert.pem
+        │   ├── fabric-ca-server-config.yaml
+        │   ├── fabric-ca-server.db
+        │   └── msp
+        │       └── keystore
+        │           ├── 0088ced00ae5e283443796f7e5a6d37219bde24f6234c3958cc6320f56297c29_sk
+        │           ├── IssuerRevocationPrivateKey
+        │           └── IssuerSecretKey
+        ...
+```
+
+* ca-cert.pem: CA 인증서(Certificates)
+* fabric-ca-server.db: CA DB(sqllite3) - MySQL 또는 Postgresql로 변경할 수 있습니다.
+* msp: Membership Service Provider
+* msp/keystore/0088ced00ae5e283443796f7e5a6d37219bde24f6234c3958cc6320f56297c29_sk: CA 개인키
+* Issuer~ 파일들: Idemix MSP와 연관된 공개키, 비밀키, link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/idemix.html?highlight=IssuerPublicKey#how-to-use-idemix[How to use Idemix]
+
+init 실행 로그
+```
+$ fabric-ca-server init --home organizations/fabric-ca/orderer1
+2022/02/23 16:43:44 [INFO] Configuration file location: /moss-network/organizations/fabric-ca/orderer1/fabric-ca-server-config.yaml
+2022/02/23 16:43:44 [WARNING] Unknown provider type: ; metrics disabled
+2022/02/23 16:43:44 [INFO] Server Version: 1.5.2
+2022/02/23 16:43:44 [INFO] Server Levels: &{Identity:2 Affiliation:1 Certificate:1 Credential:1 RAInfo:1 Nonce:1}
+2022/02/23 16:43:44 [WARNING] &{69 The specified CA certificate file /moss-network/organizations/fabric-ca/orderer1/ca-cert.pem does not exist}
+2022/02/23 16:43:44 [INFO] generating key: &{A:ecdsa S:256}
+2022/02/23 16:43:44 [INFO] encoded CSR
+2022/02/23 16:43:44 [INFO] signed certificate with serial number 269352255072886714176999719127157165508707073505
+2022/02/23 16:43:44 [INFO] The CA key and certificate were generated for CA Orderer1CA
+2022/02/23 16:43:44 [INFO] The key was stored by BCCSP provider 'SW'
+2022/02/23 16:43:44 [INFO] The certificate is at: /moss-network/organizations/fabric-ca/orderer1/ca-cert.pem
+2022/02/23 16:43:44 [INFO] Initialized sqlite3 database at /moss-network/organizations/fabric-ca/orderer1/fabric-ca-server.db
+2022/02/23 16:43:45 [INFO] The issuer key was successfully stored. The public key is at: /moss-network/organizations/fabric-ca/orderer1/IssuerPublicKey, secret key is at: /moss-network/organizations/fabric-ca/orderer1/msp/keystore/IssuerSecretKey
+2022/02/23 16:43:45 [INFO] Idemix issuer revocation public and secret keys were generated for CA 'Orderer1CA'
+2022/02/23 16:43:45 [INFO] The revocation key was successfully stored. The public key is at: /moss-network/organizations/fabric-ca/orderer1/IssuerRevocationPublicKey, private key is at: /moss-network/organizations/fabric-ca/orderer1/msp/keystore/IssuerRevocationPrivateKey
+2022/02/23 16:43:45 [INFO] Home directory for default CA: /moss-network/organizations/fabric-ca/orderer1
+2022/02/23 16:43:45 [INFO] Initialization was successful
+```
 
