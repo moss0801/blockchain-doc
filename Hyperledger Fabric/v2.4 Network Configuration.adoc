@@ -172,7 +172,7 @@ peer channel update -o orderer.example.com:7050 --ordererTLSHostnameOverride ord
 
 ## Custom Network Configuration
 실제 Custom 네트워크 설정을 해본다. +
-진행 환경은 'ubuntu' 또는 'wsl2(ubuntu) on windows 10' 에서 진행합니다. +
+진행 환경은 'ubuntu 20.04' 또는 'wsl2(ubuntu 20.04) on windows 10' 에서 진행합니다. +
 컨테이너 환경은 docker, docker-compose를 이용합니다.
 
 * domain: moss.com
@@ -512,6 +512,32 @@ orderer1 실행 결과
 * msp/keystore/0088ced00ae5e283443796f7e5a6d37219bde24f6234c3958cc6320f56297c29_sk: CA 개인키
 * Issuer~ 파일들: Idemix MSP와 연관된 공개키, 비밀키, link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/idemix.html?highlight=IssuerPublicKey#how-to-use-idemix[How to use Idemix]
 
+*CA 인증서*: ca-cert.pem
+```
+-----BEGIN CERTIFICATE-----
+MIICAjCCAamgAwIBAgIULy4sP4xuIKfleNcduvQWMCJpveEwCgYIKoZIzj0EAwIw
+XjELMAkGA1UEBhMCS1IxFDASBgNVBAcTC1Nlb25nbmFtLXNpMRowGAYDVQQKExFv
+cmRlcmVyMS5tb3NzLmNvbTEdMBsGA1UEAxMUY2Eub3JkZXJlcjEubW9zcy5jb20w
+HhcNMjIwMjIzMDczOTAwWhcNMzcwMjE5MDczOTAwWjBeMQswCQYDVQQGEwJLUjEU
+MBIGA1UEBxMLU2VvbmduYW0tc2kxGjAYBgNVBAoTEW9yZGVyZXIxLm1vc3MuY29t
+MR0wGwYDVQQDExRjYS5vcmRlcmVyMS5tb3NzLmNvbTBZMBMGByqGSM49AgEGCCqG
+SM49AwEHA0IABJK4ePqTq3trxPMYftaURRucZF0SDtPbG/x6pQ9X/bl6HuW4nC5S
+uixX1yVWtYN56ovvzZtC/63DqDSTUZ1+Ij2jRTBDMA4GA1UdDwEB/wQEAwIBBjAS
+BgNVHRMBAf8ECDAGAQH/AgEBMB0GA1UdDgQWBBQVLR9tKg/j3Pfa121mCf6cl4IM
+tTAKBggqhkjOPQQDAgNHADBEAiBo9z2OWQTpBcUTiMe//RsvLB3mR2NeMS6Tl9Rq
+zkrjUwIgWd0YW7osW/nfwViXTj7peHizxK8SSia6MkRF+utD28w=
+-----END CERTIFICATE-----
+```
+
+*CA 개인키*: msp/keystore/0088ced00ae5e283443796f7e5a6d37219bde24f6234c3958cc6320f56297c29_sk
+```
+-----BEGIN PRIVATE KEY-----
+MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgfMYU9F28vKDpLNcW
+VAaIOVm1AJa6HehiM0I17mfef1qhRANCAASSuHj6k6t7a8TzGH7WlEUbnGRdEg7T
+2xv8eqUPV/25eh7luJwuUrosV9clVrWDeeqL782bQv+tw6g0k1GdfiI9
+-----END PRIVATE KEY-----
+```
+
 init 실행 로그
 ```
 $ fabric-ca-server init --home organizations/fabric-ca/orderer1
@@ -536,28 +562,230 @@ $ fabric-ca-server init --home organizations/fabric-ca/orderer1
 
 ### Fabric CA docker-compose 파일 작성 및 container 실행
 
-Fabric CA 구동을 위한 docker-compose 파일을 작성하고 실행합니다. +
+Fabric CA 구동을 위한 docker-compose 파일을 작성하고 실행합니다.
+
 compose 폴더 생성 후, fabric-samples의 'compose-ca.yaml' 파일을 다운받아 수정하여 작성합니다.
+compose-ca.yaml 작성 후 docker-compose를 이용하여 Fabric CA를 실행합니다.
 
 각 CA 서버의 port를 다음과 같이 사용합니다.
 
 |===
 |CA|Port
 
-|Orderer1CA|7094
+|Orderer1CA|7054
 
-|PlatformCA|8094
+|PlatformCA|8054
 
-|CustomerCA|9094
+|CustomerCA|9054
 
-|Service1CA|10094
+|Service1CA|10054
 
-|Service2CA|11094
+|Service2CA|11054
 
 |===
 
+*docker-compose 실행*
+
 ```
+cd "$FABRIC_NETWORK_HOME"
+
 mkdir compose
 curl -L https://raw.githubusercontent.com/hyperledger/fabric-samples/main/test-network/compose/compose-ca.yaml -o compose/compose-ca.yaml
 
+# compose-ca.yml 수정 (아래 참조)
+
+docker-compose -f compose/compose-ca.yaml up -d 2>&1
+
 ```
+
+*수정된 compose/compose-ca.yaml*
+```
+# Copyright IBM Corp. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+version: '3.7'
+
+networks:
+  moss:
+    name: fabric_moss
+
+services:
+  ca_orderer1:
+    image: hyperledger/fabric-ca:1.5.2
+    labels:
+      service: hyperledger-fabric
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca.orderer1.moss.com
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=7054
+      - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:17054
+    ports:
+      - "7054:7054"
+      - "17054:17054"
+    command: sh -c 'fabric-ca-server start -d'
+    volumes:
+      - ../organizations/fabric-ca/orderer1:/etc/hyperledger/fabric-ca-server
+    container_name: ca_orderer1
+    networks:
+      - moss
+  ca_platform:
+    image: hyperledger/fabric-ca:1.5.2
+    labels:
+      service: hyperledger-fabric
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca.platform.moss.com
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=8054
+      - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:18054
+    ports:
+      - "8054:8054"
+      - "18054:18054"
+    command: sh -c 'fabric-ca-server start -d'
+    volumes:
+      - ../organizations/fabric-ca/platform:/etc/hyperledger/fabric-ca-server
+    container_name: ca_platform
+    networks:
+      - moss
+  ca_customer:
+    image: hyperledger/fabric-ca:1.5.2
+    labels:
+      service: hyperledger-fabric
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca.customer.moss.com
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=9054
+      - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:19054
+    ports:
+      - "9054:9054"
+      - "19054:19054"
+    command: sh -c 'fabric-ca-server start -d'
+    volumes:
+      - ../organizations/fabric-ca/customer:/etc/hyperledger/fabric-ca-server
+    container_name: ca_customer
+    networks:
+      - moss
+  ca_service1:
+    image: hyperledger/fabric-ca:1.5.2
+    labels:
+      service: hyperledger-fabric
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca.service1.moss.com
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=10054
+      - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:20054
+    ports:
+      - "10054:10054"
+      - "20054:20054"
+    command: sh -c 'fabric-ca-server start -d'
+    volumes:
+      - ../organizations/fabric-ca/service1:/etc/hyperledger/fabric-ca-server
+    container_name: ca_service1
+    networks:
+      - moss
+  ca_service2:
+    image: hyperledger/fabric-ca:1.5.2
+    labels:
+      service: hyperledger-fabric
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca.service2.moss.com
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=11054
+      - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:21054
+    ports:
+      - "11054:11054"
+      - "21054:21054"
+    command: sh -c 'fabric-ca-server start -d'
+    volumes:
+      - ../organizations/fabric-ca/service2:/etc/hyperledger/fabric-ca-server
+    container_name: ca_service2
+    networks:
+      - moss
+  
+```
+
+*docker-compose 실행 로그*
+```
+$ docker-compose -f compose/compose-ca.yaml up -d 2>&1
+[+] Running 6/6
+ ⠿ Network fabric_moss    Created   0.6s
+ ⠿ Container ca_orderer1  Started   5.3s
+ ⠿ Container ca_platform  Started   6.0s
+ ⠿ Container ca_customer  Started   2.8s
+ ⠿ Container ca_service1  Started   4.8s
+ ⠿ Container ca_service2  Started   5.6s
+
+$ docker container ls --format "table {{.ID}}\t{{.Names}}\t{{.Ports}}\t{{.Image}}"
+CONTAINER ID   NAMES         PORTS                                                          IMAGE
+2665e4654f10   ca_orderer1   0.0.0.0:7054->7054/tcp, 0.0.0.0:17054->17054/tcp               hyperledger/fabric-ca:1.5.2
+9d839e03574d   ca_platform   0.0.0.0:8054->8054/tcp, 7054/tcp, 0.0.0.0:18054->18054/tcp     hyperledger/fabric-ca:1.5.2
+ad33f9863d63   ca_customer   0.0.0.0:9054->9054/tcp, 7054/tcp, 0.0.0.0:19054->19054/tcp     hyperledger/fabric-ca:1.5.2
+20db8feb19ec   ca_service1   0.0.0.0:10054->10054/tcp, 7054/tcp, 0.0.0.0:20054->20054/tcp   hyperledger/fabric-ca:1.5.2
+e53ca1995ae4   ca_service2   0.0.0.0:11054->11054/tcp, 7054/tcp, 0.0.0.0:21054->21054/tcp   hyperledger/fabric-ca:1.5.2
+```
+
+*참고: docker-compose down*
+```
+docker-compose -f compose/compose-ca.yaml down
+```
+
+*실행 결과* +
+Fabric CA가 실행되면 tls CA 파일이 생성됩니다.
+
+```
+./moss-network
+└── organizations
+    └── fabric-ca
+        ...
+        ├── orderer1
+        │   ├── msp
+        │   │   ├── cacerts
+        │   │   ├── keystore
+        │   │   │   ├── 1e6b54abf023f7eeaa974224327a407036dc923b39afd82fdeca88be1d1d5118_sk
+        │   │   ├── signcerts
+        │   │   └── user
+        │   └── tls-cert.pem
+        ...
+```
+
+* tls-cert.pem: TLS CA 인증서(Certificates)
+* msp/keystore/1e6b54abf023f7eeaa974224327a407036dc923b39afd82fdeca88be1d1d5118_sk: TLS CA 개인키
+
+*TLS CA 인증서*: tls-cert.pem
+```
+-----BEGIN CERTIFICATE-----
+MIICXzCCAgagAwIBAgIUVk4WBmcAnf5usEjaQ2hDaCjTq4cwCgYIKoZIzj0EAwIw
+XjELMAkGA1UEBhMCS1IxFDASBgNVBAcTC1Nlb25nbmFtLXNpMRowGAYDVQQKExFv
+cmRlcmVyMS5tb3NzLmNvbTEdMBsGA1UEAxMUY2Eub3JkZXJlcjEubW9zcy5jb20w
+HhcNMjIwMjIzMDg1NzAwWhcNMjMwMjIzMDg1NzAwWjBWMQswCQYDVQQGEwJLUjEU
+MBIGA1UEBxMLU2VvbmduYW0tc2kxGjAYBgNVBAoTEW9yZGVyZXIxLm1vc3MuY29t
+MRUwEwYDVQQDEwwxNmRmNGUzYTEyOTQwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNC
+AARcu+pT4mwEcp1TPWYF4UcYsBQ/4pY4t0Y6h0RHvGWXstYO/VY/R7Jp7ZnqCpWr
+d6kaoNJ1WqlMsm8yQ4V1U97ao4GpMIGmMA4GA1UdDwEB/wQEAwIDqDAdBgNVHSUE
+FjAUBggrBgEFBQcDAQYIKwYBBQUHAwIwDAYDVR0TAQH/BAIwADAdBgNVHQ4EFgQU
+pRhxzgxKIR8jW1m4brs9FAxf52MwHwYDVR0jBBgwFoAUFS0fbSoP49z32tdtZgn+
+nJeCDLUwJwYDVR0RBCAwHoIJbG9jYWxob3N0ghFvcmRlcmVyMS5tb3NzLmNvbTAK
+BggqhkjOPQQDAgNHADBEAiBPStUJPx5F6wk7qvjdPnDI0Jaa0Lzkk/aaa0ZoX9pd
+vgIgWXQZu9cOQVXp+J9yFEkc6aVe5/maZi/ETL10NGM8wnk=
+-----END CERTIFICATE-----
+```
+
+*TLS CA 개인키*: msp/keystore/1e6b54abf023f7eeaa974224327a407036dc923b39afd82fdeca88be1d1d5118_sk
+```
+-----BEGIN PRIVATE KEY-----
+MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgXVJDmmTIl7OtaQRr
+EeTa4PKAjdIzQODZCaNLVdFPaoChRANCAARcu+pT4mwEcp1TPWYF4UcYsBQ/4pY4
+t0Y6h0RHvGWXstYO/VY/R7Jp7ZnqCpWrd6kaoNJ1WqlMsm8yQ4V1U97a
+-----END PRIVATE KEY-----
+```
+
+## 개선 필요사항
+. 네트워크 환경 k8s로 변경
+. CA adin 비밀번호 암호화
+. CA DB MySQL로 변경
