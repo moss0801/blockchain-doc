@@ -534,3 +534,30 @@ $ fabric-ca-server init --home organizations/fabric-ca/orderer1
 2022/02/23 16:43:45 [INFO] Initialization was successful
 ```
 
+### Fabric CA docker-compose 파일 작성 및 container 실행
+
+Fabric CA 구동을 위한 docker-compose 파일을 작성하고 실행합니다. +
+compose 폴더 생성 후, fabric-samples의 'compose-ca.yaml' 파일을 다운받아 수정하여 작성합니다.
+
+각 CA 서버의 port를 다음과 같이 사용합니다.
+
+|===
+|CA|Port
+
+|Orderer1CA|7094
+
+|PlatformCA|8094
+
+|CustomerCA|9094
+
+|Service1CA|10094
+
+|Service2CA|11094
+
+|===
+
+```
+mkdir compose
+curl -L https://raw.githubusercontent.com/hyperledger/fabric-samples/main/test-network/compose/compose-ca.yaml -o compose/compose-ca.yaml
+
+```
