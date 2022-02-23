@@ -172,7 +172,8 @@ peer channel update -o orderer.example.com:7050 --ordererTLSHostnameOverride ord
 
 ## Custom Network Configuration
 실제 Custom 네트워크 설정을 해본다. +
-진행 환경은 'ubuntu' 또는 'wsl2(ubuntu) on windows 10' 에서 진행합니다.
+진행 환경은 'ubuntu' 또는 'wsl2(ubuntu) on windows 10' 에서 진행합니다. +
+컨테이너 환경은 docker, docker-compose를 이용합니다.
 
 * domain: moss.com
 * channel : mosschannel
@@ -264,6 +265,7 @@ export PATH=${PWD}/bin:$PATH
 ```
 
 ### 조직별 CA 서버 설정 파일 작성
+
 link:https://hyperledger-fabric-ca.readthedocs.io/en/latest/users-guide.html[Fabric CA User’s Guide], 
 link:https://hyperledger-fabric-ca.readthedocs.io/en/latest/operations_guide.html[Fabric CA Operations Guide], 
 link:https://hyperledger-fabric-ca.readthedocs.io/en/latest/deployguide/ca-deploy-topology.html[Planning for a CA], 
@@ -294,5 +296,169 @@ cp fabric-ca-server-config.yaml organizations/fabric-ca/customer
 cp fabric-ca-server-config.yaml organizations/fabric-ca/service1
 cp fabric-ca-server-config.yaml organizations/fabric-ca/service2
 
+rm fabric-ca-server-config.yaml
+
 ```
+
+아래는 파일별 수정한 내용만 표시했습니다.
+
+```
+# organizations/fabric-ca/orderer1/fabric-ca-server-config.yaml
+...
+ca:
+  # Name of this CA
+  name: Orderer1CA
+...
+registry:
+  # Contains identity information which is used when LDAP is disabled
+  identities:
+     - name: o1admin
+       pass: o1adminpw
+...
+csr:
+   cn: ca.orderer1.moss.com
+   names:
+      - C: KR
+        S: "Gyeonggi-Do"
+        L: "Seongnam-si"
+        O: Moss
+        OU:
+   hosts:
+     - localhost
+     - orderer1.moss.com
+...
+
+```
+
+```
+# organizations/fabric-ca/platform/fabric-ca-server-config.yaml
+...
+ca:
+  # Name of this CA
+  name: PlatformCA
+...
+registry:
+  # Contains identity information which is used when LDAP is disabled
+  identities:
+     - name: padmin
+       pass: padminpw
+...
+csr:
+   cn: ca.platform.moss.com
+   names:
+      - C: KR
+        S: "Gyeonggi-Do"
+        L: "Seongnam-si"
+        O: platform.moss.com
+        OU:
+   hosts:
+     - localhost
+     - platform.moss.com
+...
+
+```
+
+```
+# organizations/fabric-ca/customer/fabric-ca-server-config.yaml
+...
+ca:
+  # Name of this CA
+  name: CustomerCA
+...
+registry:
+  # Contains identity information which is used when LDAP is disabled
+  identities:
+     - name: cadmin
+       pass: cadminpw
+...
+csr:
+   cn: ca.customer.moss.com
+   names:
+      - C: KR
+        S: "Gyeonggi-Do"
+        L: "Seongnam-si"
+        O: customer.moss.com
+        OU:
+   hosts:
+     - localhost
+     - customer.moss.com
+...
+
+```
+
+```
+# organizations/fabric-ca/service1/fabric-ca-server-config.yaml
+...
+ca:
+  # Name of this CA
+  name: Service1CA
+...
+registry:
+  # Contains identity information which is used when LDAP is disabled
+  identities:
+     - name: s1admin
+       pass: s1adminpw
+...
+csr:
+   cn: ca.service1.moss.com
+   names:
+      - C: KR
+        S: "Gyeonggi-Do"
+        L: "Seongnam-si"
+        O: service1.moss.com
+        OU:
+   hosts:
+     - localhost
+     - service1.moss.com
+...
+
+```
+
+```
+# organizations/fabric-ca/service2/fabric-ca-server-config.yaml
+...
+ca:
+  # Name of this CA
+  name: Service2CA
+...
+registry:
+  # Contains identity information which is used when LDAP is disabled
+  identities:
+     - name: s2admin
+       pass: s2adminpw
+...
+csr:
+   cn: ca.service2.moss.com
+   names:
+      - C: KR
+        S: "Gyeonggi-Do"
+        L: "Seongnam-si"
+        O: service2.moss.com
+        OU:
+   hosts:
+     - localhost
+     - service2.moss.com
+...
+
+```
+
+작업 후 폴더구조는 아래와 같습니다.
+
+```
+/moss-network
+...
+└── organizations
+    └── fabric-ca
+        ├── customer
+        │   └── fabric-ca-server-config.yaml
+        ├── orderer1
+        │   └── fabric-ca-server-config.yaml
+        ├── platform
+        │   └── fabric-ca-server-config.yaml
+        ├── service1
+        │   └── fabric-ca-server-config.yaml
+        └── service2
+            └── fabric-ca-server-config.yaml
+```
+
 

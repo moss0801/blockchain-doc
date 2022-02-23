@@ -80,7 +80,7 @@ tls:
 #############################################################################
 ca:
   # Name of this CA
-  name: OrdererCA
+  name: Service1CA
   # Key file (is only used to import a private key into BCCSP)
   keyfile:
   # Certificate file (default: ca-cert.pem)
@@ -123,8 +123,8 @@ registry:
 
   # Contains identity information which is used when LDAP is disabled
   identities:
-     - name: admin
-       pass: adminpw
+     - name: s1admin
+       pass: s1adminpw
        type: client
        affiliation: ""
        attrs:
@@ -301,16 +301,16 @@ signing:
 #     CA certificates though it can still issue end entity certificates.
 ###########################################################################
 csr:
-   cn: ca.example.com
+   cn: ca.service1.moss.com
    names:
-      - C: US
-        ST: "New York"
-        L: "New York"
-        O: example.com
+      - C: KR
+        S: "Gyeonggi-Do"
+        L: "Seongnam-si"
+        O: service1.moss.com
         OU:
    hosts:
      - localhost
-     - example.com
+     - service1.moss.com
    ca:
       expiry: 131400h
       pathlength: 1
