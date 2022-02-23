@@ -230,14 +230,33 @@ moss-network 폴더 생성 후, fabric, fabric-ca linux 바이너리를 다운�
 
 ```
 mkdir moss-network
+cd moss-network
 
+curl -L https://github.com/hyperledger/fabric/releases/download/v2.4.2/hyperledger-fabric-linux-amd64-2.4.2.tar.gz -o hyperledger-fabric-linux-amd64-2.4.2.tar.gz
+curl -L https://github.com/hyperledger/fabric-ca/releases/download/v1.5.2/hyperledger-fabric-ca-linux-amd64-1.5.2.tar.gz -o hyperledger-fabric-ca-linux-amd64-1.5.2.tar.gz
+
+sudo tar -zxvf hyperledger-fabric-linux-amd64-2.4.2.tar.gz
+sudo tar -zxvf hyperledger-fabric-ca-linux-amd64-1.5.2.tar.gz
 ```
 
-
-### 조직별 CA 서버 설정 파일 작성
-
-* ./moss-network/organizations/fabric-ca/orderer1/fabric-ca-server-config.yaml
-* ./moss-network/organizations/fabric-ca/platform/fabric-ca-server-config.yaml
-* ./moss-network/organizations/fabric-ca/customer/fabric-ca-server-config.yaml
-* ./moss-network/organizations/fabric-ca/service1/fabric-ca-server-config.yaml
-* ./moss-network/organizations/fabric-ca/service2/fabric-ca-server-config.yaml
+작업 완료 후
+```
+./ moss-network
+├── bin
+│   ├── configtxgen
+│   ├── configtxlator
+│   ├── cryptogen
+│   ├── discover
+│   ├── fabric-ca-client
+│   ├── fabric-ca-server
+│   ├── ledgerutil
+│   ├── orderer
+│   ├── osnadmin
+│   └── peer
+├── config
+│   ├── configtx.yaml
+│   ├── core.yaml
+│   └── orderer.yaml
+├── hyperledger-fabric-ca-linux-amd64-1.5.2.tar.gz
+└── hyperledger-fabric-linux-amd64-2.4.2.tar.gz
+```
