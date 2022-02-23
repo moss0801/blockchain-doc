@@ -277,13 +277,13 @@ link:https://hyperledger-fabric-ca.readthedocs.io/en/latest/deployguide/cadeploy
 
 조직(Organization)별 두 개의 CA(organization CA[블록체인 인증], TLS CA[보안통신 인증]) 설정이 추천되나, 여기서는 하나의 CA가 2개의 CA 역할을 모두 하도록 설정합니다.
 
-조직별로 ./organizations/fabric-ca/{organizationName} 폴더를 생성하고, 조직별 설정파일(fabric-ca-server-config.yaml)을 작성합니다. 설정파일은 fabric-samples에서 다운받아 수정합니다.
+조직별로 organizations/fabric-ca/{organizationName} 폴더를 생성하고, 조직별 설정파일(fabric-ca-server-config.yaml)을 작성합니다. 설정파일은 fabric-samples에서 다운받아 수정합니다.
 
-* ./organizations/fabric-ca/orderer1/fabric-ca-server-config.yaml
-* ./organizations/fabric-ca/platform/fabric-ca-server-config.yaml
-* ./organizations/fabric-ca/customer/fabric-ca-server-config.yaml
-* ./organizations/fabric-ca/service1/fabric-ca-server-config.yaml
-* ./organizations/fabric-ca/service2/fabric-ca-server-config.yaml
+* organizations/fabric-ca/orderer1/fabric-ca-server-config.yaml
+* organizations/fabric-ca/platform/fabric-ca-server-config.yaml
+* organizations/fabric-ca/customer/fabric-ca-server-config.yaml
+* organizations/fabric-ca/service1/fabric-ca-server-config.yaml
+* organizations/fabric-ca/service2/fabric-ca-server-config.yaml
 
 ```
 cd "$FABRIC_NETWORK_HOME"
@@ -451,7 +451,7 @@ csr:
 작업 후 폴더구조는 아래와 같습니다.
 
 ```
-/moss-network
+/$FABRIC_NETWORK_HOME
 ...
 └── organizations
     └── fabric-ca
@@ -469,10 +469,10 @@ csr:
 
 ### Fabric-CA 초기화
 
-'fabric-ca-server init'을 'fabric-ca-server-config.yaml' 함께 초기화 합니다.
-초기화 마다 CA 경로를 'FABRIC_CA_HOME' 환경변수로 지정하거나, '--home' flag로 지정해 주어야 합니다.
+'fabric-ca-server init'을 'fabric-ca-server-config.yaml' 함께 사용해 Fabric CA를 초기화 합니다.
+CA 경로를 'FABRIC_CA_HOME' 환경변수로 지정하거나, '--home' flag로 지정해 주어야 합니다.
 
-초기화가 완료되면 CA 의 identitiy 관련 리소스 및 msp가 생성됩니다.
+초기화가 완료되면 CA의 Identitiy 리소스가 생성됩니다.
 
 ```
 cd "$FABRIC_NETWORK_HOME"
@@ -485,9 +485,9 @@ fabric-ca-server init --home organizations/fabric-ca/service2
 
 ```
 
-orderer1 실행 결과
+*orderer1 실행 결과*
 ```
-./
+./$FABRIC_NETWORK_HOME
 ...
 └── organizations
     └── fabric-ca
@@ -538,7 +538,7 @@ VAaIOVm1AJa6HehiM0I17mfef1qhRANCAASSuHj6k6t7a8TzGH7WlEUbnGRdEg7T
 -----END PRIVATE KEY-----
 ```
 
-init 실행 로그
+*orderer1 실행 로그*
 ```
 $ fabric-ca-server init --home organizations/fabric-ca/orderer1
 2022/02/23 16:43:44 [INFO] Configuration file location: /moss-network/organizations/fabric-ca/orderer1/fabric-ca-server-config.yaml
@@ -739,7 +739,7 @@ docker-compose -f compose/compose-ca.yaml down
 Fabric CA가 실행되면 tls CA 파일이 생성됩니다.
 
 ```
-./moss-network
+./$FABRIC_NETWORK_HOME
 └── organizations
     └── fabric-ca
         ...
