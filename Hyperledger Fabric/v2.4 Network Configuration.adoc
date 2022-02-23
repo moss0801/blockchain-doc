@@ -59,6 +59,10 @@ n >&m: 표준출력과 표준에러를 서로 바꾸기. +
 
 ### 조직별 Identity 생성
 
+link:https://hyperledger-fabric-ca.readthedocs.io/en/release-1.4/deployguide/use_CA.html#folder-structure-for-your-org-and-node-admin-identities[Folder structure for your org and node admin identities]
+
+image:https://hyperledger-fabric-ca.readthedocs.io/en/release-1.4/_images/organizationswithpeer.png[]
+
 #### Peer 조직
 
 . fabric-ca-clinet enroll 이용하여 CA admin 등록(enroll)
@@ -165,3 +169,61 @@ configtxlator proto_encode --input config_update_in_envelope.json --type common.
 # AnchorPeer 수정
 peer channel update -o orderer.example.com:7050 --ordererTLSHostnameOverride orderer.example.com -c mychannel -f Org1MSPanchors.tx --tls --cafile "./organizations/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem" >&log.txt
 ```
+
+## Custom Network Configuration
+실제 Custom 네트워크 설정을 해본다.
+
+* domain: moss.com
+* channel : mosschannel
+** ordererOrganizations: oderer1
+** peerOrganizations: platform, customer, service1, service2
+** policy: test-network default policy
+* organizations
+** orderer1
+*** domain: orderer1.moss.com
+*** users
+**** admin
+*** orderer node: 3개
+**** osn1.orderer1.moss.com
+**** osn2.orderer1.moss.com
+**** osn3.orderer1.moss.com
+** platform organization
+*** domain: platform.moss.com
+*** users
+**** admin
+**** user1
+*** peer node: 2개
+**** peer0.platform.moss.com (anchor peer)
+**** peer1.platform.moss.com
+** customer organization
+*** domain: customer.moss.com
+*** users
+**** admin
+**** user1
+*** peer node: 2개
+**** peer0.customer.moss.com (anchor peer)
+**** peer1.customer.moss.com
+** service1 organization
+*** domain: service1.moss.com
+*** users
+**** admin
+**** user1
+*** peer node: 2개
+**** peer0.service1.moss.com (anchor peer)
+**** peer1.service1.moss.com
+** service2 organization
+*** domain: service2.moss.com
+*** users
+**** admin
+**** user1
+*** peer node: 2개
+**** peer0.service2.moss.com (anchor peer)
+**** peer1.service2.moss.com
+
+### 조직별 CA 서버 설정 파일 작성
+
+* ./moss-network/organizations/fabric-ca/orderer1/fabric-ca-server-config.yaml
+* ./moss-network/organizations/fabric-ca/platform/fabric-ca-server-config.yaml
+* ./moss-network/organizations/fabric-ca/customer/fabric-ca-server-config.yaml
+* ./moss-network/organizations/fabric-ca/service1/fabric-ca-server-config.yaml
+* ./moss-network/organizations/fabric-ca/service2/fabric-ca-server-config.yaml
