@@ -171,7 +171,8 @@ peer channel update -o orderer.example.com:7050 --ordererTLSHostnameOverride ord
 ```
 
 ## Custom Network Configuration
-실제 Custom 네트워크 설정을 해본다.
+실제 Custom 네트워크 설정을 해본다. +
+진행 환경은 'ubuntu' 또는 'wsl2(ubuntu) on windows 10' 에서 진행합니다.
 
 * domain: moss.com
 * channel : mosschannel
@@ -219,6 +220,19 @@ peer channel update -o orderer.example.com:7050 --ordererTLSHostnameOverride ord
 *** peer node: 2개
 **** peer0.service2.moss.com (anchor peer)
 **** peer1.service2.moss.com
+
+### 바이너리 다운로드
+
+moss-network 폴더 생성 후, fabric, fabric-ca linux 바이너리를 다운받아서 압축을 풉니다.
+
+* link:https://github.com/hyperledger/fabric/releases/tag/v2.4.2[fabric v2.4.2]
+* link:https://github.com/hyperledger/fabric-ca/releases/tag/v1.5.2[fabric-ca v1.5.2]
+
+```
+mkdir moss-network
+
+```
+
 
 ### 조직별 CA 서버 설정 파일 작성
 
