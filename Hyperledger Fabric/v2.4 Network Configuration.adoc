@@ -910,6 +910,88 @@ zkrjUwIgWd0YW7osW/nfwViXTj7peHizxK8SSia6MkRF+utD28w=
 -----END CERTIFICATE-----
 ```
 
+*msp/config.yaml 파일 생성*
+
+link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/msp.html#organizational-units[Organizational Units]
+
+OU(Organizational Units)가 MSP의 유효한 멤버(member)인 것을 설정하기 위해서는 X.509 인증서(certificate)가 필요합니다. OU의 Identities를 명시하기 위해서 *config.yaml* 파일이 필요하기에 'organizations/ordererOrganizations/orderer1.moss.com/msp' 경로에 config.yaml 파일을 아래와 같이 작성합니다.
+
+* *Identity classification(분류)*
+** *client*: 네트워크에서 거래(트랜잭션)
+** *admin*: 관리 업무 처리(채널에 peer 참여(join), 채널설정 수정 트랜잭션의 서명 등)
+** *peer*: 트랜잭션 보증(endorese) 및 커밋(commit)
+** *orderer*: 정렬 노드(ordering node)에 소속
+
+```
+# organizations/ordererOrganizations/orderer1.moss.com/msp/config.yaml
+NodeOUs:
+  Enable: true
+  # For each identity classification that you would like to utilize, specify
+  # an OU identifier.
+  # You can optionally configure that the OU identifier must be issued by a specific CA
+  # or intermediate certificate from your organization. However, it is typical to NOT
+  # configure a specific Certificate. By not configuring a specific Certificate, you will be
+  # able to add other CA or intermediate certs later, without having to reissue all credentials.
+  # For this reason, the sample below comments out the Certificate field.
+  ClientOUIdentifier:
+    Certificate: "cacerts/localhost-7054-ca-orderer1-moss-com.pem"
+    OrganizationalUnitIdentifier: "client"
+  AdminOUIdentifier:
+    Certificate: "cacerts/localhost-7054-ca-orderer1-moss-com.pem"
+    OrganizationalUnitIdentifier: "admin"
+  PeerOUIdentifier:
+    Certificate: "cacerts/localhost-7054-ca-orderer1-moss-com.pem"
+    OrganizationalUnitIdentifier: "peer"
+  OrdererOUIdentifier:
+    Certificate: "cacerts/cacert.pem"
+    OrganizationalUnitIdentifier: "orderer"
+```
+
+Identity classification은 'NodeOUs.Enable'을 'true'로 설정하면 활성화 되고, client(admin, peer, orderer) OU Identifier가 'NodeOUs.ClientOUIdentifier' ('NodeOUs.AdminOUIdentifier', 'NodeOUs.PeerOUIdentifier', 'NodeOUs.OrdererOUIdentifier') 키의 속성 값으로 정의됩니다.
+
+* *OrganizationalUnitIdentifier*: x509 인증서가 client(admin, peer, orderer)로 간주되기 위해 포함해야 하는 OU 값입니다. 필드가 비어 있으면 적용되지 않습니다.
+* *Certificate*: (Optional) CA 또는 intermedicate CA 인증서 경로를 MSP root 폴더의 상대경로로 지정합니다. 오직 하나의 인증서만 설정할 수 있고, 값을 설정하지 않으면 조직의 MSP 설정에 정의된 CA 중 하나에서만 유효하면 됩니다.
+
+ 파일에서 'Certificate'는 CA 또는 intermediate CA 인증서 경로를 나타냅니다. 경로는 MSP root 폴더를 기준으로 상대적 경로이고 규칙을 따른다면 생략 가능합니다.
+
+*CA 인증서 복사* +
+CA 서버가 조직 CA와 TLS CA를 모두 제공하기 때문에, CA에 의해 생성된 조직의 Root 인증서를 tlsca 폴더에도 복사합니다.
+
+```
+cd "$FABRIC_NETWORK_HOME"
+
+# copy CA cert to /msp/tlscacerts (for use in the channel MSP definition)
+mkdir -p "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/msp/tlscacerts"
+cp "${PWD}/organizations/fabric-ca/orderer1/ca-cert.pem" "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/msp/tlscacerts/tlsca.orderer1.moss.com-cert.pem"
+
+# copy CA cert to /tlsca (for use by clients)
+mkdir -p "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/tlsca"
+cp "${PWD}/organizations/fabric-ca/orderer1/ca-cert.pem" "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/tlsca/tlsca.orderer1.moss.com-cert.pem"
+```
+
+*config.yaml 추가 및 CA 인증서 복사 결과*
+```
+./$FABRIC_NETWORK_HOME
+...
+└── organizations
+    ├── fabric-ca
+    ...
+    │   ├── orderer1
+    │   │   ├── ca-cert.pem # orderer1 CA Certificateion
+    ...
+    └── ordererOrganizations
+        └── orderer1.moss.com
+            ...
+            ├── msp
+            ...
+            │   ├── config.yaml
+            │   ├── tlscacerts
+            │   │   └── tlsca.orderer1.moss.com-cert.pem
+            └── tlsca
+                └── tlsca.orderer1.moss.com-cert.pem
+```
+
+
 ## 개선 필요사항
 . 네트워크 환경 k8s로 변경
 . CA adin 비밀번호 암호화
