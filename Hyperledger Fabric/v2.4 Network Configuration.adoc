@@ -813,7 +813,7 @@ t0Y6h0RHvGWXstYO/VY/R7Jp7ZnqCpWrd6kaoNJ1WqlMsm8yQ4V1U97a
 fabric-ca-client를 이용하여 Fabric CA Server 호출를 위해서는 admin id 및 password와 ca-cert.pem 파일이 필요합니다.
 
 #### Orderer 조직
-*eroll CA Admin*
+*orderer1 - eroll CA Admin*
 
 정렬자조직 폴더를 생성하고, 해당 경로를 FABRIC_CA_CLINET_HOME 환경변수로 설정 후, enroll 명령을 수행합니다.
 
@@ -826,7 +826,7 @@ export FABRIC_CA_CLIENT_HOME=${PWD}/organizations/ordererOrganizations/orderer1.
 fabric-ca-client enroll -u https://o1admin:o1adminpw@localhost:7054 --caname "ca.orderer1.moss.com" --tls.certfiles "${PWD}/organizations/fabric-ca/orderer1/ca-cert.pem"
 ```
 
-*eroll CA Admin 결과 및 로그*
+*orderer1 - eroll CA Admin 결과 및 로그*
 ```
 ./$FABRIC_NETWORK_HOME
 ...
@@ -865,7 +865,7 @@ $ fabric-ca-client enroll -u https://o1admin:o1adminpw@localhost:7054 --caname "
 2022/02/23 20:29:31 [INFO] Stored Issuer revocation public key at /moss-network/organizations/ordererOrganizations/orderer1.moss.com/msp/IssuerRevocationPublicKey
 ```
 
-*Client Certificates(인증서)*: orderer1.moss.com/msp/signcerts/cert.pem
+*orderer1 - Client Certificates(인증서)*: orderer1.moss.com/msp/signcerts/cert.pem
 ```
 -----BEGIN CERTIFICATE-----
 MIICMzCCAdqgAwIBAgIUQRRPu4+pBQaxnzXSIleLFhlG/K4wCgYIKoZIzj0EAwIw
@@ -883,7 +883,7 @@ NsBH6U4CIER2Mbkl/pztLDbsVS60eI6/ci13nWkJGUEkzTX5EQB4
 -----END CERTIFICATE-----
 ```
 
-*Client PrivateKey(개인키)*: orderer1.moss.com/msp/keystore/c50209c4e52e67dd04cef356efbd36af08bc3e0d07f23768e20f899600ae1ef1_sk
+*orderer1 - Client PrivateKey(개인키)*: orderer1.moss.com/msp/keystore/c50209c4e52e67dd04cef356efbd36af08bc3e0d07f23768e20f899600ae1ef1_sk
 ```
 -----BEGIN PRIVATE KEY-----
 MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgvSxekvZMQdA7/PcC
@@ -892,7 +892,7 @@ IV64iybZfgHmOateH/YF9EDWxfS84QyLz1t+LGhgR0GOHRiD3kV1Ohia
 -----END PRIVATE KEY-----
 ```
 
-*Root CA Certificates(인증서)*: orderer1.moss.com/msp/cacerts/localhost-7054-ca-orderer1-moss-com.pem +
+*orderer1 - Root CA Certificates(인증서)*: orderer1.moss.com/msp/cacerts/localhost-7054-ca-orderer1-moss-com.pem +
 organizations/fabric-ca/orderer1/ca-cert.pem 과 동일 파일이다.
 ```
 -----BEGIN CERTIFICATE-----
@@ -910,7 +910,7 @@ zkrjUwIgWd0YW7osW/nfwViXTj7peHizxK8SSia6MkRF+utD28w=
 -----END CERTIFICATE-----
 ```
 
-*msp/config.yaml 파일 생성*
+*orderer1 - msp/config.yaml 파일 생성*
 
 link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/msp.html#organizational-units[Organizational Units]
 
@@ -954,7 +954,7 @@ Identity classification은 'NodeOUs.Enable'을 'true'로 설정하면 활성화 
 
  파일에서 'Certificate'는 CA 또는 intermediate CA 인증서 경로를 나타냅니다. 경로는 MSP root 폴더를 기준으로 상대적 경로이고 규칙을 따른다면 생략 가능합니다.
 
-*CA 인증서 복사* +
+*orderer1 - CA 인증서 복사* +
 CA 서버가 조직 CA와 TLS CA를 모두 제공하기 때문에, CA에 의해 생성된 조직의 Root 인증서를 tlsca 폴더에도 복사합니다.
 
 ```
@@ -969,7 +969,7 @@ mkdir -p "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/tlsca"
 cp "${PWD}/organizations/fabric-ca/orderer1/ca-cert.pem" "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/tlsca/tlsca.orderer1.moss.com-cert.pem"
 ```
 
-*config.yaml 추가 및 CA 인증서 복사 결과*
+*orderer1 - config.yaml 추가 및 CA 인증서 복사 결과*
 ```
 ./$FABRIC_NETWORK_HOME
 ...
@@ -991,6 +991,107 @@ cp "${PWD}/organizations/fabric-ca/orderer1/ca-cert.pem" "${PWD}/organizations/o
                 └── tlsca.orderer1.moss.com-cert.pem
 ```
 
+*orderer1 - osn1, osn2, osn3, amdin를 CA에 register*
+
+OSN: Ordering Service Node
+
+orderer1 조직에 orderer 'osn1', 'osn2', 'osn3'와 admin 'orderer1Admin'을 CA에 register 합니다.
+
+```
+cd "$FABRIC_NETWORK_HOME"
+
+fabric-ca-client register --caname ca.orderer1.moss.com --id.name osn1 --id.secret osn1pw --id.type orderer --tls.certfiles "${PWD}/organizations/fabric-ca/orderer1/ca-cert.pem"
+fabric-ca-client register --caname ca.orderer1.moss.com --id.name osn2 --id.secret osn2pw --id.type orderer --tls.certfiles "${PWD}/organizations/fabric-ca/orderer1/ca-cert.pem"
+fabric-ca-client register --caname ca.orderer1.moss.com --id.name osn3 --id.secret osn3pw --id.type orderer --tls.certfiles "${PWD}/organizations/fabric-ca/orderer1/ca-cert.pem"
+
+fabric-ca-client register --caname ca.orderer1.moss.com --id.name orderer1Admin --id.secret orderer1Adminpw --id.type admin --tls.certfiles "${PWD}/organizations/fabric-ca/orderer1/ca-cert.pem"
+
+```
+
+*orderer1 - osn1, osn2, osn3, admin의 msp 생성 및 TLS 인증서 복사*
+
+osn1, osn2, osn3, admin의 msp를 생성(enroll)하고, 조직의 msp/config.yaml을 복사합니다.
+
+```
+cd "$FABRIC_NETWORK_HOME"
+
+# enroll
+fabric-ca-client enroll -u https://osn1:osn1pw@localhost:7054 --caname ca.orderer1.moss.com -M "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn1.orderer1.moss.com/msp" --csr.hosts osn1.orderer1.moss.com --csr.hosts localhost --tls.certfiles "${PWD}/organizations/fabric-ca/orderer1/ca-cert.pem"
+fabric-ca-client enroll -u https://osn2:osn2pw@localhost:7054 --caname ca.orderer1.moss.com -M "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn2.orderer1.moss.com/msp" --csr.hosts osn2.orderer1.moss.com --csr.hosts localhost --tls.certfiles "${PWD}/organizations/fabric-ca/orderer1/ca-cert.pem"
+fabric-ca-client enroll -u https://osn3:osn3pw@localhost:7054 --caname ca.orderer1.moss.com -M "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn3.orderer1.moss.com/msp" --csr.hosts osn3.orderer1.moss.com --csr.hosts localhost --tls.certfiles "${PWD}/organizations/fabric-ca/orderer1/ca-cert.pem"
+
+fabric-ca-client enroll -u https://orderer1Admin:orderer1Adminpw@localhost:7054 --caname ca.orderer1.moss.com -M "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/users/Admin@orderer1.moss.com/msp" --tls.certfiles "${PWD}/organizations/fabric-ca/orderer1/ca-cert.pem"
+
+# copy msp/config.yaml
+cp "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/msp/config.yaml" "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn1.orderer1.moss.com/msp/config.yaml"
+cp "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/msp/config.yaml" "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn2.orderer1.moss.com/msp/config.yaml"
+cp "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/msp/config.yaml" "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn3.orderer1.moss.com/msp/config.yaml"
+
+cp "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/msp/config.yaml" "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/users/Admin@orderer1.moss.com/msp/config.yaml"
+
+```
+
+enroll 후 결과
+```
+./$FABRIC_NETWORK_HOME
+...
+└── organizations
+    ...
+    └── ordererOrganizations
+        └── orderer1.moss.com
+            ...
+            ├── orderers
+            │   ├── osn1.orderer1.moss.com
+            │   │   └── msp
+            │   │       ├── IssuerPublicKey
+            │   │       ├── IssuerRevocationPublicKey
+            │   │       ├── cacerts
+            │   │       │   └── localhost-7054-ca-orderer1-moss-com.pem
+            │   │       ├── config.yaml
+            │   │       ├── keystore
+            │   │       │   └── fecacf6499484b0af8afb1f47c9c82358ab8f853fbbc8335139a1e49ab42a695_sk
+            │   │       ├── signcerts
+            │   │       │   └── cert.pem
+            │   │       └── user
+            │   ├── osn2.orderer1.moss.com
+            │   │   └── msp
+            │   │       ├── IssuerPublicKey
+            │   │       ├── IssuerRevocationPublicKey
+            │   │       ├── cacerts
+            │   │       │   └── localhost-7054-ca-orderer1-moss-com.pem
+            │   │       ├── config.yaml
+            │   │       ├── keystore
+            │   │       │   └── a6be1b4829cf2a1c8bdb9305fc289a31d66032a7d7f6e3c12223e0afe76aed54_sk
+            │   │       ├── signcerts
+            │   │       │   └── cert.pem
+            │   │       └── user
+            │   └── osn3.orderer1.moss.com
+            │       └── msp
+            │           ├── IssuerPublicKey
+            │           ├── IssuerRevocationPublicKey
+            │           ├── cacerts
+            │           │   └── localhost-7054-ca-orderer1-moss-com.pem
+            │           ├── config.yaml
+            │           ├── keystore
+            │           │   └── b0ecf1d7d50824df50aa7c1612b9b5b3d87e6eee07721ead1ba42c517aa5eebb_sk
+            │           ├── signcerts
+            │           │   └── cert.pem
+            │           └── user
+            ...
+            └── users
+                └── Admin@orderer1.moss.com
+                    └── msp
+                        ├── IssuerPublicKey
+                        ├── IssuerRevocationPublicKey
+                        ├── cacerts
+                        │   └── localhost-7054-ca-orderer1-moss-com.pem
+                        ├── config.yaml
+                        ├── keystore
+                        │   └── 732b0591d867142254cd768c7c1d5cb19b378bca4df30b2b08e3f1006b2ec39f_sk
+                        ├── signcerts
+                        │   └── cert.pem
+                        └── user
+```
 
 ## 개선 필요사항
 . 네트워크 환경 k8s로 변경
