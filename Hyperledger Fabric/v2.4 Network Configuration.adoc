@@ -1093,6 +1093,121 @@ enroll 후 결과
                         └── user
 ```
 
+node인 orderer(osn1, osn2, osn3)는 TLS certificates를 생성합니다. +
+orderer 시작시 설정에 의해 참조될 수 있도록, TLS CA cert, server cert, server keystore를 잘 알려임 이름으로 tls 폴더에 복사합니다. +
+orderer MSP 정의에서 사용하기 위해서 CA의 인증서를 /msp/tlscacerts 폴더로 복사합니다.
+
+```
+cd "$FABRIC_NETWORK_HOME"
+
+# Generating the orderer-tls certificates
+fabric-ca-client enroll -u https://osn1:osn1pw@localhost:7054 --caname ca.orderer1.moss.com -M "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn1.orderer1.moss.com/tls" --enrollment.profile tls --csr.hosts osn1.orderer1.moss.com --csr.hosts localhost --tls.certfiles "${PWD}/organizations/fabric-ca/orderer1/ca-cert.pem"
+fabric-ca-client enroll -u https://osn2:osn2pw@localhost:7054 --caname ca.orderer1.moss.com -M "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn2.orderer1.moss.com/tls" --enrollment.profile tls --csr.hosts osn2.orderer1.moss.com --csr.hosts localhost --tls.certfiles "${PWD}/organizations/fabric-ca/orderer1/ca-cert.pem"
+fabric-ca-client enroll -u https://osn3:osn3pw@localhost:7054 --caname ca.orderer1.moss.com -M "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn3.orderer1.moss.com/tls" --enrollment.profile tls --csr.hosts osn3.orderer1.moss.com --csr.hosts localhost --tls.certfiles "${PWD}/organizations/fabric-ca/orderer1/ca-cert.pem"
+
+# osn1
+## Copy the tls CA cert, server cert, server keystore to well known file names in the orderer's tls directory that are referenced by orderer startup config
+cp "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn1.orderer1.moss.com/tls/tlscacerts/"* "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn1.orderer1.moss.com/tls/ca.crt"
+cp "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn1.orderer1.moss.com/tls/signcerts/"* "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn1.orderer1.moss.com/tls/server.crt"
+cp "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn1.orderer1.moss.com/tls/keystore/"* "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn1.orderer1.moss.com/tls/server.key"
+
+## Copy orderer org's CA cert to orderer's /msp/tlscacerts directory (for use in the orderer MSP definition)
+mkdir -p "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn1.orderer1.moss.com/msp/tlscacerts"
+cp "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn1.orderer1.moss.com/tls/tlscacerts/"* "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn1.orderer1.moss.com/msp/tlscacerts/tlsca.orderer1.moss.com-cert.pem"
+
+# osn2
+## Copy the tls CA cert, server cert, server keystore to well known file names in the orderer's tls directory that are referenced by orderer startup config
+cp "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn2.orderer1.moss.com/tls/tlscacerts/"* "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn2.orderer1.moss.com/tls/ca.crt"
+cp "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn2.orderer1.moss.com/tls/signcerts/"* "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn2.orderer1.moss.com/tls/server.crt"
+cp "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn2.orderer1.moss.com/tls/keystore/"* "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn2.orderer1.moss.com/tls/server.key"
+
+## Copy orderer org's CA cert to orderer's /msp/tlscacerts directory (for use in the orderer MSP definition)
+mkdir -p "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn2.orderer1.moss.com/msp/tlscacerts"
+cp "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn2.orderer1.moss.com/tls/tlscacerts/"* "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn2.orderer1.moss.com/msp/tlscacerts/tlsca.orderer1.moss.com-cert.pem"
+
+# osn3
+## Copy the tls CA cert, server cert, server keystore to well known file names in the orderer's tls directory that are referenced by orderer startup config
+cp "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn3.orderer1.moss.com/tls/tlscacerts/"* "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn3.orderer1.moss.com/tls/ca.crt"
+cp "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn3.orderer1.moss.com/tls/signcerts/"* "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn3.orderer1.moss.com/tls/server.crt"
+cp "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn3.orderer1.moss.com/tls/keystore/"* "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn3.orderer1.moss.com/tls/server.key"
+
+## Copy orderer org's CA cert to orderer's /msp/tlscacerts directory (for use in the orderer MSP definition)
+mkdir -p "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn3.orderer1.moss.com/msp/tlscacerts"
+cp "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn3.orderer1.moss.com/tls/tlscacerts/"* "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn3.orderer1.moss.com/msp/tlscacerts/tlsca.orderer1.moss.com-cert.pem"
+
+```
+
+orderer TLS certificates 생성 및 파일 복사 결과
+```
+./$FABRIC_NETWORK_HOME
+...
+└── organizations
+    ...
+    └── ordererOrganizations
+        └── orderer1.moss.com
+            ...
+            ├── orderers
+            │   ├── osn1.orderer1.moss.com
+            │   │   ├── msp
+                        ...
+            │   │   │   └── tlscacerts
+            │   │   │       └── tlsca.orderer1.moss.com-cert.pem
+            │   │   └── tls
+            │   │       ├── ca.crt
+            │   │       ├── server.crt
+            │   │       ├── server.key
+            │   │       ├── IssuerPublicKey
+            │   │       ├── IssuerRevocationPublicKey
+            │   │       ├── cacerts
+            │   │       ├── keystore
+            │   │       │   └── 7f96f517feeed09257535a3f1c49d388b96cf52b0755e400ad9e7aec3878a11b_sk
+            │   │       ├── signcerts
+            │   │       │   └── cert.pem
+            │   │       └── tlscacerts
+            │   │           └── tls-localhost-7054-ca-orderer1-moss-com.pem
+            │   ├── osn2.orderer1.moss.com
+            │   │   ├── msp
+                        ...
+            │   │   │   ├── tlscacerts
+            │   │   │   │   └── tlsca.orderer1.moss.com-cert.pem
+            │   │   │   └── user
+            │   │   └── tls
+            │   │       ├── ca.crt
+            │   │       ├── server.crt
+            │   │       ├── server.key
+            │   │       ├── IssuerPublicKey
+            │   │       ├── IssuerRevocationPublicKey
+            
+            │   │       ├── cacerts
+            │   │       ├── keystore
+            │   │       │   └── ecda61559d7e8240c1a33d1b59003078a02f126de9cb4e4a723d3f873a4e8019_sk
+            │   │       ├── signcerts
+            │   │       │   └── cert.pem
+            │   │       └── tlscacerts
+            │   │           └── tls-localhost-7054-ca-orderer1-moss-com.pem
+            │   └── osn3.orderer1.moss.com
+            │       ├── msp
+                        ...
+            │       │   ├── tlscacerts
+            │       │   │   └── tlsca.orderer1.moss.com-cert.pem
+            │       │   └── user
+            │       └── tls
+            │           ├── ca.crt
+            │           ├── server.crt
+            │           ├── server.key
+            │           ├── IssuerPublicKey
+            │           ├── IssuerRevocationPublicKey
+            │           ├── cacerts
+            │           ├── keystore
+            │           │   └── 8c1c3d930c44378de07a4c340c9a60b7d89f96a47c42a15722deea3390a7d161_sk
+            │           ├── signcerts
+            │           │   └── cert.pem
+            │           ├── tlscacerts
+            │           │   └── tls-localhost-7054-ca-orderer1-moss-com.pem
+            │           └── user
+            ...
+```
+
 ## 개선 필요사항
 . 네트워크 환경 k8s로 변경
 . CA adin 비밀번호 암호화
