@@ -1,0 +1,84 @@
+---
+name: moss-network-service2
+version: 1.0.0
+client:
+  organization: service2
+  connection:
+    timeout:
+      peer:
+        endorser: '300'
+organizations:
+  service2:
+    mspid: service2MSP
+    peers:
+    - peer0.service2.moss.com
+    - peer1.service2.moss.com
+    certificateAuthorities:
+    - ca.service2.moss.com
+peers:
+  peer0.service2.moss.com:
+    url: grpcs://localhost:11060
+    tlsCACerts:
+      pem: |
+          -----BEGIN CERTIFICATE-----
+MIICAzCCAamgAwIBAgIUCJY1OYD0glcYzIpGxQNl08i9vAIwCgYIKoZIzj0EAwIw
+XjELMAkGA1UEBhMCS1IxFDASBgNVBAcTC1Nlb25nbmFtLXNpMRowGAYDVQQKExFz
+ZXJ2aWNlMi5tb3NzLmNvbTEdMBsGA1UEAxMUY2Euc2VydmljZTIubW9zcy5jb20w
+HhcNMjIwMjIzMDgyNzAwWhcNMzcwMjE5MDgyNzAwWjBeMQswCQYDVQQGEwJLUjEU
+MBIGA1UEBxMLU2VvbmduYW0tc2kxGjAYBgNVBAoTEXNlcnZpY2UyLm1vc3MuY29t
+MR0wGwYDVQQDExRjYS5zZXJ2aWNlMi5tb3NzLmNvbTBZMBMGByqGSM49AgEGCCqG
+SM49AwEHA0IABNqoI8Bp9E4WTF0dRqTk8lOltIP4xNBagDYQ5d586RZsuSiEG1I7
+D2CfBGz6AqgyvqFCtJTI0SBJP0RaGef20IejRTBDMA4GA1UdDwEB/wQEAwIBBjAS
+BgNVHRMBAf8ECDAGAQH/AgEBMB0GA1UdDgQWBBSIkbO6gktKKW1r5UyQBioC3nMh
+pjAKBggqhkjOPQQDAgNIADBFAiEAsx7TzfjCPY29dwg9MedG6XbH+L04Rsw+uPqp
+AdOU4iECIDbL92AoEZkbhW/9h3Km1AgEkuffwaJZ0Bcbzn4DSp1E
+-----END CERTIFICATE-----
+
+    grpcOptions:
+      ssl-target-name-override: peer0.service2.moss.com
+      hostnameOverride: peer0.service2.moss.com
+  peer1.service2.moss.com:
+    url: grpcs://localhost:11061
+    tlsCACerts:
+      pem: |
+          -----BEGIN CERTIFICATE-----
+MIICAzCCAamgAwIBAgIUCJY1OYD0glcYzIpGxQNl08i9vAIwCgYIKoZIzj0EAwIw
+XjELMAkGA1UEBhMCS1IxFDASBgNVBAcTC1Nlb25nbmFtLXNpMRowGAYDVQQKExFz
+ZXJ2aWNlMi5tb3NzLmNvbTEdMBsGA1UEAxMUY2Euc2VydmljZTIubW9zcy5jb20w
+HhcNMjIwMjIzMDgyNzAwWhcNMzcwMjE5MDgyNzAwWjBeMQswCQYDVQQGEwJLUjEU
+MBIGA1UEBxMLU2VvbmduYW0tc2kxGjAYBgNVBAoTEXNlcnZpY2UyLm1vc3MuY29t
+MR0wGwYDVQQDExRjYS5zZXJ2aWNlMi5tb3NzLmNvbTBZMBMGByqGSM49AgEGCCqG
+SM49AwEHA0IABNqoI8Bp9E4WTF0dRqTk8lOltIP4xNBagDYQ5d586RZsuSiEG1I7
+D2CfBGz6AqgyvqFCtJTI0SBJP0RaGef20IejRTBDMA4GA1UdDwEB/wQEAwIBBjAS
+BgNVHRMBAf8ECDAGAQH/AgEBMB0GA1UdDgQWBBSIkbO6gktKKW1r5UyQBioC3nMh
+pjAKBggqhkjOPQQDAgNIADBFAiEAsx7TzfjCPY29dwg9MedG6XbH+L04Rsw+uPqp
+AdOU4iECIDbL92AoEZkbhW/9h3Km1AgEkuffwaJZ0Bcbzn4DSp1E
+-----END CERTIFICATE-----
+
+    grpcOptions:
+      ssl-target-name-override: peer1.service2.moss.com
+      hostnameOverride: peer1.service2.moss.com
+certificateAuthorities:
+  ca.service2.moss.com:
+    url: https://localhost:11054
+    caName: ca.service2.moss.com
+    tlsCACerts:
+      pem: 
+        - |
+          -----BEGIN CERTIFICATE-----
+MIICAzCCAamgAwIBAgIUCJY1OYD0glcYzIpGxQNl08i9vAIwCgYIKoZIzj0EAwIw
+XjELMAkGA1UEBhMCS1IxFDASBgNVBAcTC1Nlb25nbmFtLXNpMRowGAYDVQQKExFz
+ZXJ2aWNlMi5tb3NzLmNvbTEdMBsGA1UEAxMUY2Euc2VydmljZTIubW9zcy5jb20w
+HhcNMjIwMjIzMDgyNzAwWhcNMzcwMjE5MDgyNzAwWjBeMQswCQYDVQQGEwJLUjEU
+MBIGA1UEBxMLU2VvbmduYW0tc2kxGjAYBgNVBAoTEXNlcnZpY2UyLm1vc3MuY29t
+MR0wGwYDVQQDExRjYS5zZXJ2aWNlMi5tb3NzLmNvbTBZMBMGByqGSM49AgEGCCqG
+SM49AwEHA0IABNqoI8Bp9E4WTF0dRqTk8lOltIP4xNBagDYQ5d586RZsuSiEG1I7
+D2CfBGz6AqgyvqFCtJTI0SBJP0RaGef20IejRTBDMA4GA1UdDwEB/wQEAwIBBjAS
+BgNVHRMBAf8ECDAGAQH/AgEBMB0GA1UdDgQWBBSIkbO6gktKKW1r5UyQBioC3nMh
+pjAKBggqhkjOPQQDAgNIADBFAiEAsx7TzfjCPY29dwg9MedG6XbH+L04Rsw+uPqp
+AdOU4iECIDbL92AoEZkbhW/9h3Km1AgEkuffwaJZ0Bcbzn4DSp1E
+-----END CERTIFICATE-----
+
+    httpOptions:
+      verify: false
+```
