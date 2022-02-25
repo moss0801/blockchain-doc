@@ -103,7 +103,7 @@ Peer를 포함하는 조직의 CCP 파일 생성
 ccp(common connection profile): application에서 gateway를 설정하여 network 와의 통신을 관리하는 데 사용됩니다.
 
 ### Container 실행 (Orderer, Peer, Cli)
-. 'compose-network.yaml' 네트워크 Docker Compose 설정파일 작성, 참고: link:https://github.com/hyperledger/fabric-samples/blob/main/test-network/compose/compose-test-net.yaml[compose-tesk-net.yaml] +
+. 'compose-network.yaml' 네트워크 Docker Compose 설정파일 작성, 참고: link:https://github.com/hyperledger/fabric-samples/blob/main/test-network/compose/compose-test-net.yaml[compose-test-net.yaml] +
 test-network와 다르게 Peer Organization 별 Cli를 1개씩 정의 했으므로 Cli Container가 한개 더 추가된다.
 . cotainer 배포 +
 docker-compose -f compose-network.yaml up -d 2>&1
@@ -2079,6 +2079,43 @@ OvygIgIgC/dDyD5KG4tIAB9GaPCOeOBwswLDgnV67e0Rkgqj8hQ=
 ```
 
 *organizations/peerOrganizations/service2.moss.com/connection-service2.yaml*
+
+### network docker-compose 작성 및 실행
+orderer, peer, cli node를 위한 docker-compose를 작성하고 실행하여 container를 실행시킵니다.
+
+compose/compose-moss-net.yaml 파일을 참고 합니다.
+
+docker-compose 실행 결과
+
+```
+$ docker-compose -f compose/compose-moss-net.yaml up -d 2>&1
+[+] Running 0/0
+ ⠋ Volume "compose_osn2.orderer1.moss.com"  Creating    0.0s
+[+] Running 23/23orphan containers ([ca_orderer1 ca_service1 ca_platform ca_customer ca_service2]) for this project. If you removed or renamed this service in your compose file, you can run this command with t
+ ⠿ Volume "compose_osn2.orderer1.moss.com"   Created    0.0s
+ ⠿ Volume "compose_peer0.service2.moss.com"  Created    0.0s
+ ⠿ Volume "compose_peer1.service1.moss.com"  Created    0.0s
+ ⠿ Volume "compose_osn1.orderer1.moss.com"   Created    0.0s
+ ⠿ Volume "compose_peer0.platform.moss.com"  Created    0.0s
+ ⠿ Volume "compose_peer1.service2.moss.com"  Created    0.0s
+ ⠿ Volume "compose_osn3.orderer1.moss.com"   Created    0.0s
+ ⠿ Volume "compose_peer1.customer.moss.com"  Created    0.0s
+ ⠿ Volume "compose_peer1.platform.moss.com"  Created    0.0s
+ ⠿ Volume "compose_peer0.customer.moss.com"  Created    0.0s
+ ⠿ Volume "compose_peer0.service1.moss.com"  Created    0.0s
+ ⠿ Container peer0.platform.moss.com         Started    4.7s
+ ⠿ Container peer1.customer.moss.com         Started    8.3s
+ ⠿ Container peer1.service1.moss.com         Started    10.4s
+ ⠿ Container peer1.platform.moss.com         Started    12.7s
+ ⠿ Container osn2.orderer1.moss.com          Started    15.9s
+ ⠿ Container peer0.service1.moss.com         Started    9.3s
+ ⠿ Container peer1.service2.moss.com         Started    7.3s
+ ⠿ Container osn3.orderer1.moss.com          Started    15.2s
+ ⠿ Container osn1.orderer1.moss.com          Started    13.3s
+ ⠿ Container peer0.service2.moss.com         Started    5.9s
+ ⠿ Container peer0.customer.moss.com         Started    9.5s
+ ⠿ Container cli                             Started    9.4s
+```
 
 
 ## 개선 필요사항
