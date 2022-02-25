@@ -17,5 +17,5 @@ NodeOUs:
     Certificate: "cacerts/localhost-7054-ca-orderer1-moss-com.pem"
     OrganizationalUnitIdentifier: "peer"
   OrdererOUIdentifier:
-    Certificate: "cacerts/cacert.pem"
+    Certificate: "cacerts/localhost-7054-ca-orderer1-moss-com.pem"
     OrganizationalUnitIdentifier: "orderer"
