@@ -943,7 +943,7 @@ NodeOUs:
     Certificate: "cacerts/localhost-7054-ca-orderer1-moss-com.pem"
     OrganizationalUnitIdentifier: "peer"
   OrdererOUIdentifier:
-    Certificate: "cacerts/cacert.pem"
+    Certificate: "cacerts/localhost-7054-ca-orderer1-moss-com.pem"
     OrganizationalUnitIdentifier: "orderer"
 ```
 
@@ -1207,6 +1207,131 @@ orderer TLS certificates 생성 및 파일 복사 결과
             │           └── user
             ...
 ```
+
+#### Peer 조직
+
+platform 조직을 기준으로 작업하고, 나머지 조직은 동일한 방식으로 진행합니다.
+
+*paltform - eroll CA Admin*
+
+피어조직 폴더를 생성하고, 해당 경로를 FABRIC_CA_CLINET_HOME 환경변수로 설정 후, enroll 명령을 수행합니다.
+
+```
+cd "$FABRIC_NETWORK_HOME"
+
+mkdir -p organizations/peerOrganizations/platform.moss.com
+export FABRIC_CA_CLIENT_HOME=${PWD}/organizations/peerOrganizations/platform.moss.com
+
+# enroll CA Admin
+fabric-ca-client enroll -u https://padmin:padminpw@localhost:8054 --caname "ca.platform.moss.com" --tls.certfiles "${PWD}/organizations/fabric-ca/platform/ca-cert.pem"
+
+```
+
+실행 결과
+```
+./$FABRIC_NETWORK_HOME
+└── organizations
+    ├── fabric-ca
+        ...
+    │   ├── platform
+    │   │   ├── ca-cert.pem
+            ...
+    └── peerOrganizations
+        └── platform.moss.com
+            ├── fabric-ca-client-config.yaml
+            └── msp
+                ├── IssuerPublicKey
+                ├── IssuerRevocationPublicKey
+                ├── cacerts
+                │   └── localhost-8054-ca-platform-moss-com.pem
+                ├── keystore
+                │   └── 49a94d9f5d6e65ffb6df5da88d3e0954674c7001d6913abdb5e17134b8518461_sk
+                ├── signcerts
+                │   └── cert.pem
+                └── user
+```
+
+================> 여기서부터 진행하면 됨!!!!!!!!!!!
+
+*platform - msp/config.yaml 파일 생성*
+
+```
+# organizations/peerOrganizations/platform.moss.com/msp/config.yaml
+NodeOUs:
+  Enable: true
+  # For each identity classification that you would like to utilize, specify
+  # an OU identifier.
+  # You can optionally configure that the OU identifier must be issued by a specific CA
+  # or intermediate certificate from your organization. However, it is typical to NOT
+  # configure a specific Certificate. By not configuring a specific Certificate, you will be
+  # able to add other CA or intermediate certs later, without having to reissue all credentials.
+  # For this reason, the sample below comments out the Certificate field.
+  ClientOUIdentifier:
+    Certificate: "cacerts/localhost-8054-ca-platform-moss-com.pem"
+    OrganizationalUnitIdentifier: "client"
+  AdminOUIdentifier:
+    Certificate: "cacerts/localhost-8054-ca-platform-moss-com.pem"
+    OrganizationalUnitIdentifier: "admin"
+  PeerOUIdentifier:
+    Certificate: "cacerts/localhost-8054-ca-platform-moss-com.pem"
+    OrganizationalUnitIdentifier: "peer"
+  OrdererOUIdentifier:
+    Certificate: "cacerts/localhost-8054-ca-platform-moss-com.pem"
+    OrganizationalUnitIdentifier: "orderer"
+```
+
+*platform - CA 인증서 복사* +
+조직 CA 서버가 조직 CA와 TLS CA를 모두 제공하기 때문에, CA에 의해 생성된 조직의 Root 인증서를 ca 및 tlsca 폴더에도 복사합니다.
+
+```
+cd "$FABRIC_NETWORK_HOME"
+
+# Copy CA cert to /msp/tlscacerts (for use in the channel MSP definition)
+mkdir -p "${PWD}/organizations/peerOrganizations/platform.moss.com/msp/tlscacerts"
+cp "${PWD}/organizations/fabric-ca/platform/ca-cert.pem" "${PWD}/organizations/peerOrganizations/platform.moss.com/msp/tlscacerts/ca.crt"
+
+# Copy CA cert to /tlsca directory (for use by clients)
+mkdir -p "${PWD}/organizations/peerOrganizations/platform.moss.com/tlsca"
+cp "${PWD}/organizations/fabric-ca/platform/ca-cert.pem" "${PWD}/organizations/peerOrganizations/platform.moss.com/tlsca/tlsca.platform.moss.com-cert.pem"
+
+# Copy CA cert to /ca directory (for use by clients)
+mkdir -p "${PWD}/organizations/peerOrganizations/platform.moss.com/ca"
+cp "${PWD}/organizations/fabric-ca/platform/ca-cert.pem" "${PWD}/organizations/peerOrganizations/platform.moss.com/ca/ca.platform.moss.com-cert.pem"
+
+```
+
+*platform - config.yaml 추가 및 CA 인증서 복사 결과*
+```
+./$FABRIC_NETWORK_HOME
+...
+└── organizations
+    ├── fabric-ca
+    ...
+    │   ├── orderer1
+    │   │   ├── ca-cert.pem # orderer1 CA Certificateion
+    ...
+    └── ordererOrganizations
+        └── orderer1.moss.com
+            ...
+            ├── msp
+            ...
+            │   ├── config.yaml
+            └── tlsca
+                └── tlsca.orderer1.moss.com-cert.pem
+    └── peerOrganizations
+        └── platform.moss.com
+            ...
+            ├── msp
+                ...
+            │   ├── config.yaml
+            │   └── tlscacerts
+            │       └── ca.crt
+            ├── tlsca
+            │   └── tlsca.platform.moss.com-cert.pem
+            └── ca
+                └── ca.platform.moss.com-cert.pem
+```
+
 
 ## 개선 필요사항
 . 네트워크 환경 k8s로 변경
