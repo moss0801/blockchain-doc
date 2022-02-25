@@ -1545,7 +1545,7 @@ NodeOUs:
     OrganizationalUnitIdentifier: "orderer"
 ```
 
-custeomr - copy CA cert, register and enroll identity
+customer - copy CA cert, register and enroll identity
 ```
 # Copy CA cert to /msp/tlscacerts (for use in the channel MSP definition)
 mkdir -p "${PWD}/organizations/peerOrganizations/customer.moss.com/msp/tlscacerts"
@@ -1601,6 +1601,98 @@ cp "${PWD}/organizations/peerOrganizations/customer.moss.com/peers/peer1.custome
 cp "${PWD}/organizations/peerOrganizations/customer.moss.com/peers/peer1.customer.moss.com/tls/keystore/"* "${PWD}/organizations/peerOrganizations/customer.moss.com/peers/peer1.customer.moss.com/tls/server.key"
 ```
 
+service1 - enroll CA admin
+```
+cd "$FABRIC_NETWORK_HOME"
+
+mkdir -p organizations/peerOrganizations/service1.moss.com
+export FABRIC_CA_CLIENT_HOME=${PWD}/organizations/peerOrganizations/service1.moss.com
+
+# enroll CA Admin
+fabric-ca-client enroll -u https://s1admin:s1adminpw@localhost:10054 --caname "ca.service1.moss.com" --tls.certfiles "${PWD}/organizations/fabric-ca/service1/ca-cert.pem"
+```
+
+service1 - create msp/config.yaml
+```
+# organizations/peerOrganizations/service1.moss.com/msp/config.yaml
+NodeOUs:
+  Enable: true
+  # For each identity classification that you would like to utilize, specify
+  # an OU identifier.
+  # You can optionally configure that the OU identifier must be issued by a specific CA
+  # or intermediate certificate from your organization. However, it is typical to NOT
+  # configure a specific Certificate. By not configuring a specific Certificate, you will be
+  # able to add other CA or intermediate certs later, without having to reissue all credentials.
+  # For this reason, the sample below comments out the Certificate field.
+  ClientOUIdentifier:
+    Certificate: "cacerts/localhost-10054-ca-service1-moss-com.pem"
+    OrganizationalUnitIdentifier: "client"
+  AdminOUIdentifier:
+    Certificate: "cacerts/localhost-10054-ca-service1-moss-com.pem"
+    OrganizationalUnitIdentifier: "admin"
+  PeerOUIdentifier:
+    Certificate: "cacerts/localhost-10054-ca-service1-moss-com.pem"
+    OrganizationalUnitIdentifier: "peer"
+  OrdererOUIdentifier:
+    Certificate: "cacerts/localhost-10054-ca-service1-moss-com.pem"
+    OrganizationalUnitIdentifier: "orderer"
+```
+
+service1 - copy CA cert, register and enroll identity
+```
+# Copy CA cert to /msp/tlscacerts (for use in the channel MSP definition)
+mkdir -p "${PWD}/organizations/peerOrganizations/service1.moss.com/msp/tlscacerts"
+cp "${PWD}/organizations/fabric-ca/service1/ca-cert.pem" "${PWD}/organizations/peerOrganizations/service1.moss.com/msp/tlscacerts/ca.crt"
+
+# Copy CA cert to /tlsca directory (for use by clients)
+mkdir -p "${PWD}/organizations/peerOrganizations/service1.moss.com/tlsca"
+cp "${PWD}/organizations/fabric-ca/service1/ca-cert.pem" "${PWD}/organizations/peerOrganizations/service1.moss.com/tlsca/tlsca.service1.moss.com-cert.pem"
+
+# Copy CA cert to /ca directory (for use by clients)
+mkdir -p "${PWD}/organizations/peerOrganizations/service1.moss.com/ca"
+cp "${PWD}/organizations/fabric-ca/service1/ca-cert.pem" "${PWD}/organizations/peerOrganizations/service1.moss.com/ca/ca.service1.moss.com-cert.pem"
+
+
+# register peer0, peer1, user1, admin
+fabric-ca-client register --caname ca.service1.moss.com --id.name peer0 --id.secret peer0pw --id.type peer --tls.certfiles "${PWD}/organizations/fabric-ca/service1/ca-cert.pem"
+fabric-ca-client register --caname ca.service1.moss.com --id.name peer1 --id.secret peer1pw --id.type peer --tls.certfiles "${PWD}/organizations/fabric-ca/service1/ca-cert.pem"
+
+fabric-ca-client register --caname ca.service1.moss.com --id.name user1 --id.secret user1pw --id.type client --tls.certfiles "${PWD}/organizations/fabric-ca/service1/ca-cert.pem"
+
+fabric-ca-client register --caname ca.service1.moss.com --id.name service1Admin --id.secret service1Adminpw --id.type admin --tls.certfiles "${PWD}/organizations/fabric-ca/service1/ca-cert.pem"
+
+# enroll
+fabric-ca-client enroll -u https://peer0:peer0pw@localhost:10054 --caname ca.service1.moss.com -M "${PWD}/organizations/peerOrganizations/service1.moss.com/peers/peer0.service1.moss.com/msp" --csr.hosts peer0.service1.moss.com --csr.hosts localhost --tls.certfiles "${PWD}/organizations/fabric-ca/service1/ca-cert.pem"
+fabric-ca-client enroll -u https://peer1:peer1pw@localhost:10054 --caname ca.service1.moss.com -M "${PWD}/organizations/peerOrganizations/service1.moss.com/peers/peer1.service1.moss.com/msp" --csr.hosts peer1.service1.moss.com --csr.hosts localhost --tls.certfiles "${PWD}/organizations/fabric-ca/service1/ca-cert.pem"
+
+fabric-ca-client enroll -u https://user1:user1pw@localhost:10054 --caname ca.service1.moss.com -M "${PWD}/organizations/peerOrganizations/service1.moss.com/users/User1@service1.moss.com/msp" --tls.certfiles "${PWD}/organizations/fabric-ca/service1/ca-cert.pem"
+
+fabric-ca-client enroll -u https://service1Admin:service1Adminpw@localhost:10054 --caname ca.service1.moss.com -M "${PWD}/organizations/peerOrganizations/service1.moss.com/users/Admin@service1.moss.com/msp" --tls.certfiles "${PWD}/organizations/fabric-ca/service1/ca-cert.pem"
+
+# copy msp/config.yaml
+cp "${PWD}/organizations/peerOrganizations/service1.moss.com/msp/config.yaml" "${PWD}/organizations/peerOrganizations/service1.moss.com/peers/peer0.service1.moss.com/msp/config.yaml"
+cp "${PWD}/organizations/peerOrganizations/service1.moss.com/msp/config.yaml" "${PWD}/organizations/peerOrganizations/service1.moss.com/peers/peer1.service1.moss.com/msp/config.yaml"
+
+cp "${PWD}/organizations/peerOrganizations/service1.moss.com/msp/config.yaml" "${PWD}/organizations/peerOrganizations/service1.moss.com/users/User1@service1.moss.com/msp/config.yaml"
+
+cp "${PWD}/organizations/peerOrganizations/service1.moss.com/msp/config.yaml" "${PWD}/organizations/peerOrganizations/service1.moss.com/users/Admin@service1.moss.com/msp/config.yaml"
+
+# Generating the tls certificates
+fabric-ca-client enroll -u https://peer0:peer0pw@localhost:10054 --caname ca.service1.moss.com -M "${PWD}/organizations/peerOrganizations/service1.moss.com/peers/peer0.service1.moss.com/tls" --enrollment.profile tls --csr.hosts peer0.service1.moss.com --csr.hosts localhost --tls.certfiles "${PWD}/organizations/fabric-ca/service1/ca-cert.pem"
+fabric-ca-client enroll -u https://peer1:peer1pw@localhost:10054 --caname ca.service1.moss.com -M "${PWD}/organizations/peerOrganizations/service1.moss.com/peers/peer1.service1.moss.com/tls" --enrollment.profile tls --csr.hosts peer1.service1.moss.com --csr.hosts localhost --tls.certfiles "${PWD}/organizations/fabric-ca/service1/ca-cert.pem"
+
+# peer0
+# Copy the tls CA cert, server cert, server keystore to well known file names in the peer's tls directory that are referenced by peer startup config
+cp "${PWD}/organizations/peerOrganizations/service1.moss.com/peers/peer0.service1.moss.com/tls/tlscacerts/"* "${PWD}/organizations/peerOrganizations/service1.moss.com/peers/peer0.service1.moss.com/tls/ca.crt"
+cp "${PWD}/organizations/peerOrganizations/service1.moss.com/peers/peer0.service1.moss.com/tls/signcerts/"* "${PWD}/organizations/peerOrganizations/service1.moss.com/peers/peer0.service1.moss.com/tls/server.crt"
+cp "${PWD}/organizations/peerOrganizations/service1.moss.com/peers/peer0.service1.moss.com/tls/keystore/"* "${PWD}/organizations/peerOrganizations/service1.moss.com/peers/peer0.service1.moss.com/tls/server.key"
+
+# peer1
+# Copy the tls CA cert, server cert, server keystore to well known file names in the peer's tls directory that are referenced by peer startup config
+cp "${PWD}/organizations/peerOrganizations/service1.moss.com/peers/peer1.service1.moss.com/tls/tlscacerts/"* "${PWD}/organizations/peerOrganizations/service1.moss.com/peers/peer1.service1.moss.com/tls/ca.crt"
+cp "${PWD}/organizations/peerOrganizations/service1.moss.com/peers/peer1.service1.moss.com/tls/signcerts/"* "${PWD}/organizations/peerOrganizations/service1.moss.com/peers/peer1.service1.moss.com/tls/server.crt"
+cp "${PWD}/organizations/peerOrganizations/service1.moss.com/peers/peer1.service1.moss.com/tls/keystore/"* "${PWD}/organizations/peerOrganizations/service1.moss.com/peers/peer1.service1.moss.com/tls/server.key"
+```
 
 ## 개선 필요사항
 . 네트워크 환경 k8s로 변경
