@@ -1100,7 +1100,7 @@ orderer MSP 정의에서 사용하기 위해서 CA의 인증서를 /msp/tlscacer
 ```
 cd "$FABRIC_NETWORK_HOME"
 
-# Generating the orderer-tls certificates
+# Generating the tls certificates
 fabric-ca-client enroll -u https://osn1:osn1pw@localhost:7054 --caname ca.orderer1.moss.com -M "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn1.orderer1.moss.com/tls" --enrollment.profile tls --csr.hosts osn1.orderer1.moss.com --csr.hosts localhost --tls.certfiles "${PWD}/organizations/fabric-ca/orderer1/ca-cert.pem"
 fabric-ca-client enroll -u https://osn2:osn2pw@localhost:7054 --caname ca.orderer1.moss.com -M "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn2.orderer1.moss.com/tls" --enrollment.profile tls --csr.hosts osn2.orderer1.moss.com --csr.hosts localhost --tls.certfiles "${PWD}/organizations/fabric-ca/orderer1/ca-cert.pem"
 fabric-ca-client enroll -u https://osn3:osn3pw@localhost:7054 --caname ca.orderer1.moss.com -M "${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn3.orderer1.moss.com/tls" --enrollment.profile tls --csr.hosts osn3.orderer1.moss.com --csr.hosts localhost --tls.certfiles "${PWD}/organizations/fabric-ca/orderer1/ca-cert.pem"
@@ -1409,7 +1409,7 @@ enroll 후 결과
             │           │   └── 9f961a03e1db643234224515620ff692b5253945a303997f161ec4d23c01d9cf_sk
             │           ├── signcerts
             │           │   └── cert.pem
-            │           └── user
+            │           └── usergi
             └── users
                 ├── Admin@platform.moss.com
                 │   └── msp
@@ -1436,6 +1436,76 @@ enroll 후 결과
                         │   └── cert.pem
                         └── user
 ```
+
+node인 peer(peer0, peer1)는 TLS certificates를 생성합니다. +
+peer 시작시 설정에 의해 참조될 수 있도록, TLS CA cert, server cert, server keystore를 잘 알려임 이름으로 tls 폴더에 복사합니다.
+
+```
+cd "$FABRIC_NETWORK_HOME"
+
+# Generating the tls certificates
+fabric-ca-client enroll -u https://peer0:peer0pw@localhost:8054 --caname ca.platform.moss.com -M "${PWD}/organizations/peerOrganizations/platform.moss.com/peers/peer0.platform.moss.com/tls" --enrollment.profile tls --csr.hosts peer0.platform.moss.com --csr.hosts localhost --tls.certfiles "${PWD}/organizations/fabric-ca/platform/ca-cert.pem"
+fabric-ca-client enroll -u https://peer1:peer1pw@localhost:8054 --caname ca.platform.moss.com -M "${PWD}/organizations/peerOrganizations/platform.moss.com/peers/peer1.platform.moss.com/tls" --enrollment.profile tls --csr.hosts peer1.platform.moss.com --csr.hosts localhost --tls.certfiles "${PWD}/organizations/fabric-ca/platform/ca-cert.pem"
+
+# peer0
+# Copy the tls CA cert, server cert, server keystore to well known file names in the peer's tls directory that are referenced by peer startup config
+cp "${PWD}/organizations/peerOrganizations/platform.moss.com/peers/peer0.platform.moss.com/tls/tlscacerts/"* "${PWD}/organizations/peerOrganizations/platform.moss.com/peers/peer0.platform.moss.com/tls/ca.crt"
+cp "${PWD}/organizations/peerOrganizations/platform.moss.com/peers/peer0.platform.moss.com/tls/signcerts/"* "${PWD}/organizations/peerOrganizations/platform.moss.com/peers/peer0.platform.moss.com/tls/server.crt"
+cp "${PWD}/organizations/peerOrganizations/platform.moss.com/peers/peer0.platform.moss.com/tls/keystore/"* "${PWD}/organizations/peerOrganizations/platform.moss.com/peers/peer0.platform.moss.com/tls/server.key"
+
+# peer1
+# Copy the tls CA cert, server cert, server keystore to well known file names in the peer's tls directory that are referenced by peer startup config
+cp "${PWD}/organizations/peerOrganizations/platform.moss.com/peers/peer1.platform.moss.com/tls/tlscacerts/"* "${PWD}/organizations/peerOrganizations/platform.moss.com/peers/peer1.platform.moss.com/tls/ca.crt"
+cp "${PWD}/organizations/peerOrganizations/platform.moss.com/peers/peer1.platform.moss.com/tls/signcerts/"* "${PWD}/organizations/peerOrganizations/platform.moss.com/peers/peer1.platform.moss.com/tls/server.crt"
+cp "${PWD}/organizations/peerOrganizations/platform.moss.com/peers/peer1.platform.moss.com/tls/keystore/"* "${PWD}/organizations/peerOrganizations/platform.moss.com/peers/peer1.platform.moss.com/tls/server.key"
+
+```
+
+peer TLS certificates 생성 및 파일 복사 결과
+```
+./$FABRIC_NETWORK_HOME
+...
+└── organizations
+    ...
+    └── peerOrganizations
+        └── platform.moss.com
+            ...
+            └── peers
+                ├── peer0.platform.moss.com
+                │   ...
+                │   └── tls
+                │       ├── IssuerPublicKey
+                │       ├── IssuerRevocationPublicKey
+                │       ├── ca.crt
+                │       ├── cacerts
+                │       ├── keystore
+                │       │   └── a2b04a74fd95f3cf558054b4a1511d039138164faeb4592f85e6198b8baf7639_sk
+                │       ├── server.crt
+                │       ├── server.key
+                │       ├── signcerts
+                │       │   └── cert.pem
+                │       ├── tlscacerts
+                │       │   └── tls-localhost-8054-ca-platform-moss-com.pem
+                │       └── user
+                └── peer1.platform.moss.com
+                    ...
+                    └── tls
+                        ├── IssuerPublicKey
+                        ├── IssuerRevocationPublicKey
+                        ├── ca.crt
+                        ├── cacerts
+                        ├── keystore
+                        │   └── d94f101d2ab377884f0bf62c53619891db85688977c8e6b0fe020ab8913ad09c_sk
+                        ├── server.crt
+                        ├── server.key
+                        ├── signcerts
+                        │   └── cert.pem
+                        ├── tlscacerts
+                        │   └── tls-localhost-8054-ca-platform-moss-com.pem
+                        └── user
+            
+```
+
 ## 개선 필요사항
 . 네트워크 환경 k8s로 변경
 . CA adin 비밀번호 암호화
