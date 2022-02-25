@@ -1332,7 +1332,110 @@ cp "${PWD}/organizations/fabric-ca/platform/ca-cert.pem" "${PWD}/organizations/p
                 └── ca.platform.moss.com-cert.pem
 ```
 
+*platform - peer0, peer1, user1, admin을 CA에 register*
 
+platform 조직에 peer 'peer0, peer1', client 'user1' 및 admin 'platformAdmin'을 CA에 register 합니다.
+
+```
+cd "$FABRIC_NETWORK_HOME"
+
+fabric-ca-client register --caname ca.platform.moss.com --id.name peer0 --id.secret peer0pw --id.type peer --tls.certfiles "${PWD}/organizations/fabric-ca/platform/ca-cert.pem"
+fabric-ca-client register --caname ca.platform.moss.com --id.name peer1 --id.secret peer1pw --id.type peer --tls.certfiles "${PWD}/organizations/fabric-ca/platform/ca-cert.pem"
+
+fabric-ca-client register --caname ca.platform.moss.com --id.name user1 --id.secret user1pw --id.type client --tls.certfiles "${PWD}/organizations/fabric-ca/platform/ca-cert.pem"
+
+fabric-ca-client register --caname ca.platform.moss.com --id.name platformAdmin --id.secret platformAdminpw --id.type admin --tls.certfiles "${PWD}/organizations/fabric-ca/platform/ca-cert.pem"
+
+```
+
+*platform - peer0, peer1, user1, admin의 msp 생성 및 TLS 인증서 복사*
+
+peer0, peer1, user1, admin의 msp를 생성(enroll)하고, 조직의 msp/config.yaml을 복사합니다.
+
+```
+cd "$FABRIC_NETWORK_HOME"
+
+# enroll
+fabric-ca-client enroll -u https://peer0:peer0pw@localhost:8054 --caname ca.platform.moss.com -M "${PWD}/organizations/peerOrganizations/platform.moss.com/peers/peer0.platform.moss.com/msp" --csr.hosts peer0.platform.moss.com --csr.hosts localhost --tls.certfiles "${PWD}/organizations/fabric-ca/platform/ca-cert.pem"
+fabric-ca-client enroll -u https://peer1:peer1pw@localhost:8054 --caname ca.platform.moss.com -M "${PWD}/organizations/peerOrganizations/platform.moss.com/peers/peer1.platform.moss.com/msp" --csr.hosts peer1.platform.moss.com --csr.hosts localhost --tls.certfiles "${PWD}/organizations/fabric-ca/platform/ca-cert.pem"
+
+fabric-ca-client enroll -u https://user1:user1pw@localhost:8054 --caname ca.platform.moss.com -M "${PWD}/organizations/peerOrganizations/platform.moss.com/users/User1@platform.moss.com/msp" --tls.certfiles "${PWD}/organizations/fabric-ca/platform/ca-cert.pem"
+
+fabric-ca-client enroll -u https://platformAdmin:platformAdminpw@localhost:8054 --caname ca.platform.moss.com -M "${PWD}/organizations/peerOrganizations/platform.moss.com/users/Admin@platform.moss.com/msp" --tls.certfiles "${PWD}/organizations/fabric-ca/platform/ca-cert.pem"
+
+# copy msp/config.yaml
+cp "${PWD}/organizations/peerOrganizations/platform.moss.com/msp/config.yaml" "${PWD}/organizations/peerOrganizations/platform.moss.com/peers/peer0.platform.moss.com/msp/config.yaml"
+cp "${PWD}/organizations/peerOrganizations/platform.moss.com/msp/config.yaml" "${PWD}/organizations/peerOrganizations/platform.moss.com/peers/peer1.platform.moss.com/msp/config.yaml"
+
+cp "${PWD}/organizations/peerOrganizations/platform.moss.com/msp/config.yaml" "${PWD}/organizations/peerOrganizations/platform.moss.com/users/User1@platform.moss.com/msp/config.yaml"
+
+cp "${PWD}/organizations/peerOrganizations/platform.moss.com/msp/config.yaml" "${PWD}/organizations/peerOrganizations/platform.moss.com/users/Admin@platform.moss.com/msp/config.yaml"
+
+```
+
+enroll 후 결과
+```
+./$FABRIC_NETWORK_HOME
+...
+└── organizations
+    ...
+    └── peerOrganizations
+        └── platform.moss.com
+            ...
+            ├── msp
+                ...
+            │   └── config.yaml
+            ├── peers
+            │   ├── peer0.platform.moss.com
+            │   │   └── msp
+            │   │       ├── IssuerPublicKey
+            │   │       ├── IssuerRevocationPublicKey
+            │   │       ├── cacerts
+            │   │       │   └── localhost-8054-ca-platform-moss-com.pem
+            │   │       ├── config.yaml
+            │   │       ├── keystore
+            │   │       │   └── 5263783ae48b709e44189bdb2a35220d4ce2698ccf47e77563a29987c3b1f6b4_sk
+            │   │       ├── signcerts
+            │   │       │   └── cert.pem
+            │   │       └── user
+            │   └── peer1.platform.moss.com
+            │       └── msp
+            │           ├── IssuerPublicKey
+            │           ├── IssuerRevocationPublicKey
+            │           ├── cacerts
+            │           │   └── localhost-8054-ca-platform-moss-com.pem
+            │           ├── config.yaml
+            │           ├── keystore
+            │           │   └── 9f961a03e1db643234224515620ff692b5253945a303997f161ec4d23c01d9cf_sk
+            │           ├── signcerts
+            │           │   └── cert.pem
+            │           └── user
+            └── users
+                ├── Admin@platform.moss.com
+                │   └── msp
+                │       ├── IssuerPublicKey
+                │       ├── IssuerRevocationPublicKey
+                │       ├── cacerts
+                │       │   └── localhost-8054-ca-platform-moss-com.pem
+                │       ├── config.yaml
+                │       ├── keystore
+                │       │   └── 1884e29066c455c3681251b552492015307e218e5cb9e953a851a0e0b1821829_sk
+                │       ├── signcerts
+                │       │   └── cert.pem
+                │       └── user
+                └── User1@platform.moss.com
+                    └── msp
+                        ├── IssuerPublicKey
+                        ├── IssuerRevocationPublicKey
+                        ├── cacerts
+                        │   └── localhost-8054-ca-platform-moss-com.pem
+                        ├── config.yaml
+                        ├── keystore
+                        │   └── fbe3366f4f1c0a3bdf6062b614935aab5c336b0f1980141c46de9160917841c7_sk
+                        ├── signcerts
+                        │   └── cert.pem
+                        └── user
+```
 ## 개선 필요사항
 . 네트워크 환경 k8s로 변경
 . CA adin 비밀번호 암호화
