@@ -1,0 +1,11 @@
+
+### 채널 genesis block 생성
+configtxgen을 이용하여 채널 genesis block 생성(Configuration Block) /w configtx.yaml
+
+link:https://github.com/hyperledger/fabric-samples/blob/main/test-network/configtx/configtx.yaml[test-netwowrk - configtx/configtx.yaml] 을 참고하여 채널 genesis block 생성을 위한 채널 설정(Channel Configuration) 파일을 작성합니다.
+
+configtx/configtx.yaml
+```
+
+```
+
