@@ -42,7 +42,7 @@ Organizations:
             - osn3.orderer1.moss.com:7063
 
     - &Platform
-        Name: paltformMSP
+        Name: platformMSP
 
         # ID to load the MSP definition as
         ID: platformMSP

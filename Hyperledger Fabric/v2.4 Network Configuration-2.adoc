@@ -50,7 +50,7 @@ Organizations:
             - osn3.orderer1.moss.com:7063
 
     - &Platform
-        Name: paltformMSP
+        Name: platformMSP
 
         # ID to load the MSP definition as
         ID: platformMSP
@@ -383,15 +383,15 @@ Profiles:
 
 ### 채널 genesis block 생성
 
-configtxgen tool을 이용해서 ./configtx/configtx.yaml($FABRIC_CFG_PATH/configtx.yaml) 파일의 'MossApplicationGenesis' profile에 대한 채널의 genesis blcok을 ./channel-artifacts/mosschannel.blcok 에 생성합니다.
+configtxgen tool을 이용해서 ./configtx/configtx.yaml($FABRIC_CFG_PATH/configtx.yaml) 파일의 'MossApplicationGenesis' profile에 대한 채널의 genesis blcok을 ./channel-artifacts/mosschannel3.blcok 에 생성합니다.
 
 configtxgen 실행 전에 FABRIC_CFG_PATH가 confgixtx.yaml 경로로 설정되어야 합니다.
 
-여기서는 채널명을 'mosschannel'로 생성합니다.
+여기서는 채널명을 'mosschannel3'로 생성합니다.
 
 편의를 위해서 채널명을 환경변수로 설정합니다.
 ```
-export CHANNEL_NAME=mosschannel
+export CHANNEL_NAME=mosschannel3
 ```
 
 ====
@@ -467,8 +467,8 @@ osnadmin channel join --channelID ${CHANNEL_NAME} --config-block ./channel-artif
 ```
 Status: 201
 {
-        "name": "mosschannel",
-        "url": "/participation/v1/channels/mosschannel",
+        "name": "mosschannel3",
+        "url": "/participation/v1/channels/mosschannel3",
         "consensusRelation": "consenter",
         "status": "active",
         "height": 1
@@ -592,20 +592,59 @@ export ORDERER_CA=${PWD}/organizations/ordererOrganizations/orderer1.moss.com/or
 ```
 
 
-cofig 정보 조회
+cofig 정보 조회 후, anchor peer 정보 추가 후 update 합니다.
+
+```
+$ peer channel getinfo -c ${CHANNEL_NAME}
+0001 INFO [channelCmd] InitCmdFactory -> Endorser and orderer connections initialized
+Blockchain info: {"height":1,"currentBlockHash":"aurwPlTb77XIMeNij80D3nda0+XTi5Z7rvAQ8W48Hhw="}
+```
+
 ```
 cd "$FABRIC_NETWORK_HOME"
 
 . ./scripts/setPlatformPeer0.sh
 peer channel fetch config channel-artifacts/config_block.pb -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} -c ${CHANNEL_NAME} --tls --cafile "$ORDERER_CA"
-```
 
-channel-artfiacts 폴더로 이동 후 config_block pb(proto buffer) 파일을 json 파일로 변환 후, config 부분만 분리합니다.
-```
 cd channel-artifacts
 configtxlator proto_decode --input config_block.pb --type common.Block --output config_block.json
 jq '.data.data[0].payload.data.config' config_block.json > config.json
+cp config.json config_copy.json
+jq '.channel_group.groups.Application.groups.platformMSP.values += {"AnchorPeers":{"mod_policy": "Admins","value":{"anchor_peers": [{"host": "peer0.platform.moss.com","port": 8060}]},"version": "0"}}' config_copy.json > modified_config.json
+
+configtxlator proto_encode --input config.json --type common.Config --output config.pb
+configtxlator proto_encode --input modified_config.json --type common.Config --output modified_config.pb
+configtxlator compute_update --channel_id ${CHANNEL_NAME} --original config.pb --updated modified_config.pb --output config_update.pb
+
+configtxlator proto_decode --input config_update.pb --type common.ConfigUpdate --output config_update.json
+echo '{"payload":{"header":{"channel_header":{"channel_id":"mosschannel3", "type":2}},"data":{"config_update":'$(cat config_update.json)'}}}' | jq . > config_update_in_envelope.json
+configtxlator proto_encode --input config_update_in_envelope.json --type common.Envelope --output config_update_in_envelope.pb
+
+cd ..
+peer channel update -f channel-artifacts/config_update_in_envelope.pb -c ${CHANNEL_NAME} -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA"
 ```
+
+실행결과 (blockchain height가 1에서 2로 변경되었다)
+```
+0001 INFO [channelCmd] InitCmdFactory -> Endorser and orderer connections initialized
+0002 INFO [channelCmd] update -> Successfully submitted channel update
+
+$ peer channel getinfo -c ${CHANNEL_NAME}
+0001 INFO [channelCmd] InitCmdFactory -> Endorser and orderer connections initialized
+Blockchain info: {"height":2,"currentBlockHash":"swziQPYzNNZJS5ez0Aa7jb/2+dJEvF9GnyUzkYQ8Ut8=","previousBlockHash":"aurwPlTb77XIMeNij80D3nda0+XTi5Z7rvAQ8W48Hhw="}
+```
+
+config 조회 로그
+```
+0001 INFO [channelCmd] InitCmdFactory -> Endorser and orderer connections initialized
+0002 INFO [cli.common] readBlock -> Received block: 0
+0003 INFO [channelCmd] fetch -> Retrieving last config block: 0
+0004 INFO [cli.common] readBlock -> Received block: 0
+```
+
+동일한 방법으로 customer, service1, service2 Peer 조직에 대해서도 AnchorPeer 설정을 진행한다.
+
+
 
 
 

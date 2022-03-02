@@ -114,7 +114,7 @@ docker container ls
 
 ### configtxgen을 이용하여 채널 genesis block 생성(Configuration Block) /w configtx.yaml
 
-. 채널명 환경변수 설정 : CHANNEL_NAME="mosschannel"
+. 채널명 환경변수 설정 : CHANNEL_NAME="mosschannel3"
 . ./../config/configtx.yaml 채널 설정 파일을 작성한다. 참고: link:https://github.com/hyperledger/fabric-samples/blob/main/test-network/configtx/configtx.yaml[configtx.yaml]
 . 환경변수 설정 - FABRIC_CFG_PATH=${PWD}/configtx
 . block 생성 +
@@ -176,7 +176,7 @@ peer channel update -o orderer.example.com:7050 --ordererTLSHostnameOverride ord
 컨테이너 환경은 docker, docker-compose를 이용합니다.
 
 * domain: moss.com
-* channel : mosschannel
+* channel : mosschannel3
 ** ordererOrganizations: oderer1
 ** peerOrganizations: platform, customer, service1, service2
 ** policy: test-network default policy
