@@ -155,6 +155,18 @@
               }
             },
             "values": {
+              "AnchorPeers": {
+                "mod_policy": "Admins",
+                "value": {
+                  "anchor_peers": [
+                    {
+                      "host": "peer0.customer.moss.com",
+                      "port": 9060
+                    }
+                  ]
+                },
+                "version": "0"
+              },
               "MSP": {
                 "mod_policy": "Admins",
                 "value": {
@@ -201,7 +213,7 @@
                 "version": "0"
               }
             },
-            "version": "0"
+            "version": "1"
           },
           "platformMSP": {
             "groups": {},
@@ -355,6 +367,18 @@
               }
             },
             "values": {
+              "AnchorPeers": {
+                "mod_policy": "Admins",
+                "value": {
+                  "anchor_peers": [
+                    {
+                      "host": "peer0.platform.moss.com",
+                      "port": 8060
+                    }
+                  ]
+                },
+                "version": "0"
+              },
               "MSP": {
                 "mod_policy": "Admins",
                 "value": {
@@ -399,21 +423,9 @@
                   "type": 0
                 },
                 "version": "0"
-              },
-              "AnchorPeers": {
-                "mod_policy": "Admins",
-                "value": {
-                  "anchor_peers": [
-                    {
-                      "host": "peer0.platform.moss.com",
-                      "port": 8060
-                    }
-                  ]
-                },
-                "version": "0"
               }
             },
-            "version": "0"
+            "version": "1"
           },
           "service1MSP": {
             "groups": {},
@@ -567,6 +579,18 @@
               }
             },
             "values": {
+              "AnchorPeers": {
+                "mod_policy": "Admins",
+                "value": {
+                  "anchor_peers": [
+                    {
+                      "host": "peer0.service1.moss.com",
+                      "port": 10060
+                    }
+                  ]
+                },
+                "version": "0"
+              },
               "MSP": {
                 "mod_policy": "Admins",
                 "value": {
@@ -613,7 +637,7 @@
                 "version": "0"
               }
             },
-            "version": "0"
+            "version": "1"
           },
           "service2MSP": {
             "groups": {},
@@ -809,6 +833,18 @@
                     ]
                   },
                   "type": 0
+                },
+                "version": "0"
+              },
+              "AnchorPeers": {
+                "mod_policy": "Admins",
+                "value": {
+                  "anchor_peers": [
+                    {
+                      "host": "peer0.service2.moss.com",
+                      "port": 11060
+                    }
+                  ]
                 },
                 "version": "0"
               }
@@ -1235,5 +1271,5 @@
     },
     "version": "0"
   },
-  "sequence": "0"
+  "sequence": "3"
 }

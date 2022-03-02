@@ -644,6 +644,72 @@ config 조회 로그
 
 동일한 방법으로 customer, service1, service2 Peer 조직에 대해서도 AnchorPeer 설정을 진행한다.
 
+```
+# customer
+. ./scripts/setCustomerPeer0.sh
+peer channel fetch config channel-artifacts/config_block.pb -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} -c ${CHANNEL_NAME} --tls --cafile "$ORDERER_CA"
+
+cd channel-artifacts
+configtxlator proto_decode --input config_block.pb --type common.Block --output config_block.json
+jq '.data.data[0].payload.data.config' config_block.json > config.json
+cp config.json config_copy.json
+jq '.channel_group.groups.Application.groups.customerMSP.values += {"AnchorPeers":{"mod_policy": "Admins","value":{"anchor_peers": [{"host": "peer0.customer.moss.com","port": 9060}]},"version": "0"}}' config_copy.json > modified_config.json
+
+configtxlator proto_encode --input config.json --type common.Config --output config.pb
+configtxlator proto_encode --input modified_config.json --type common.Config --output modified_config.pb
+configtxlator compute_update --channel_id ${CHANNEL_NAME} --original config.pb --updated modified_config.pb --output config_update.pb
+
+configtxlator proto_decode --input config_update.pb --type common.ConfigUpdate --output config_update.json
+echo '{"payload":{"header":{"channel_header":{"channel_id":"mosschannel3", "type":2}},"data":{"config_update":'$(cat config_update.json)'}}}' | jq . > config_update_in_envelope.json
+configtxlator proto_encode --input config_update_in_envelope.json --type common.Envelope --output config_update_in_envelope.pb
+
+cd ..
+peer channel update -f channel-artifacts/config_update_in_envelope.pb -c ${CHANNEL_NAME} -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA"
+
+# service1
+. ./scripts/setService1Peer0.sh
+peer channel fetch config channel-artifacts/config_block.pb -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} -c ${CHANNEL_NAME} --tls --cafile "$ORDERER_CA"
+
+cd channel-artifacts
+configtxlator proto_decode --input config_block.pb --type common.Block --output config_block.json
+jq '.data.data[0].payload.data.config' config_block.json > config.json
+cp config.json config_copy.json
+jq '.channel_group.groups.Application.groups.service1MSP.values += {"AnchorPeers":{"mod_policy": "Admins","value":{"anchor_peers": [{"host": "peer0.service1.moss.com","port": 10060}]},"version": "0"}}' config_copy.json > modified_config.json
+
+configtxlator proto_encode --input config.json --type common.Config --output config.pb
+configtxlator proto_encode --input modified_config.json --type common.Config --output modified_config.pb
+configtxlator compute_update --channel_id ${CHANNEL_NAME} --original config.pb --updated modified_config.pb --output config_update.pb
+
+configtxlator proto_decode --input config_update.pb --type common.ConfigUpdate --output config_update.json
+echo '{"payload":{"header":{"channel_header":{"channel_id":"mosschannel3", "type":2}},"data":{"config_update":'$(cat config_update.json)'}}}' | jq . > config_update_in_envelope.json
+configtxlator proto_encode --input config_update_in_envelope.json --type common.Envelope --output config_update_in_envelope.pb
+
+cd ..
+peer channel update -f channel-artifacts/config_update_in_envelope.pb -c ${CHANNEL_NAME} -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA"
+
+# service2
+. ./scripts/setService2Peer0.sh
+peer channel fetch config channel-artifacts/config_block.pb -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} -c ${CHANNEL_NAME} --tls --cafile "$ORDERER_CA"
+
+cd channel-artifacts
+configtxlator proto_decode --input config_block.pb --type common.Block --output config_block.json
+jq '.data.data[0].payload.data.config' config_block.json > config.json
+cp config.json config_copy.json
+jq '.channel_group.groups.Application.groups.service2MSP.values += {"AnchorPeers":{"mod_policy": "Admins","value":{"anchor_peers": [{"host": "peer0.service2.moss.com","port": 11060}]},"version": "0"}}' config_copy.json > modified_config.json
+
+configtxlator proto_encode --input config.json --type common.Config --output config.pb
+configtxlator proto_encode --input modified_config.json --type common.Config --output modified_config.pb
+configtxlator compute_update --channel_id ${CHANNEL_NAME} --original config.pb --updated modified_config.pb --output config_update.pb
+
+configtxlator proto_decode --input config_update.pb --type common.ConfigUpdate --output config_update.json
+echo '{"payload":{"header":{"channel_header":{"channel_id":"mosschannel3", "type":2}},"data":{"config_update":'$(cat config_update.json)'}}}' | jq . > config_update_in_envelope.json
+configtxlator proto_encode --input config_update_in_envelope.json --type common.Envelope --output config_update_in_envelope.pb
+
+cd ..
+peer channel update -f channel-artifacts/config_update_in_envelope.pb -c ${CHANNEL_NAME} -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA"
+
+```
+
 
 
 

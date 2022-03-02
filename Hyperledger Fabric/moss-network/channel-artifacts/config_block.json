@@ -161,6 +161,18 @@
 													}
 												},
 												"values": {
+													"AnchorPeers": {
+														"mod_policy": "Admins",
+														"value": {
+															"anchor_peers": [
+																{
+																	"host": "peer0.customer.moss.com",
+																	"port": 9060
+																}
+															]
+														},
+														"version": "0"
+													},
 													"MSP": {
 														"mod_policy": "Admins",
 														"value": {
@@ -207,7 +219,7 @@
 														"version": "0"
 													}
 												},
-												"version": "0"
+												"version": "1"
 											},
 											"platformMSP": {
 												"groups": {},
@@ -361,6 +373,18 @@
 													}
 												},
 												"values": {
+													"AnchorPeers": {
+														"mod_policy": "Admins",
+														"value": {
+															"anchor_peers": [
+																{
+																	"host": "peer0.platform.moss.com",
+																	"port": 8060
+																}
+															]
+														},
+														"version": "0"
+													},
 													"MSP": {
 														"mod_policy": "Admins",
 														"value": {
@@ -407,7 +431,7 @@
 														"version": "0"
 													}
 												},
-												"version": "0"
+												"version": "1"
 											},
 											"service1MSP": {
 												"groups": {},
@@ -561,6 +585,18 @@
 													}
 												},
 												"values": {
+													"AnchorPeers": {
+														"mod_policy": "Admins",
+														"value": {
+															"anchor_peers": [
+																{
+																	"host": "peer0.service1.moss.com",
+																	"port": 10060
+																}
+															]
+														},
+														"version": "0"
+													},
 													"MSP": {
 														"mod_policy": "Admins",
 														"value": {
@@ -607,7 +643,7 @@
 														"version": "0"
 													}
 												},
-												"version": "0"
+												"version": "1"
 											},
 											"service2MSP": {
 												"groups": {},
@@ -1229,40 +1265,196 @@
 								},
 								"version": "0"
 							},
-							"sequence": "0"
+							"sequence": "3"
 						},
-						"last_update": null
+						"last_update": {
+							"payload": {
+								"data": {
+									"config_update": {
+										"channel_id": "mosschannel3",
+										"isolated_data": {},
+										"read_set": {
+											"groups": {
+												"Application": {
+													"groups": {
+														"service1MSP": {
+															"groups": {},
+															"mod_policy": "",
+															"policies": {
+																"Admins": {
+																	"mod_policy": "",
+																	"policy": null,
+																	"version": "0"
+																},
+																"Endorsement": {
+																	"mod_policy": "",
+																	"policy": null,
+																	"version": "0"
+																},
+																"Readers": {
+																	"mod_policy": "",
+																	"policy": null,
+																	"version": "0"
+																},
+																"Writers": {
+																	"mod_policy": "",
+																	"policy": null,
+																	"version": "0"
+																}
+															},
+															"values": {
+																"MSP": {
+																	"mod_policy": "",
+																	"value": null,
+																	"version": "0"
+																}
+															},
+															"version": "0"
+														}
+													},
+													"mod_policy": "",
+													"policies": {},
+													"values": {},
+													"version": "0"
+												}
+											},
+											"mod_policy": "",
+											"policies": {},
+											"values": {},
+											"version": "0"
+										},
+										"write_set": {
+											"groups": {
+												"Application": {
+													"groups": {
+														"service1MSP": {
+															"groups": {},
+															"mod_policy": "Admins",
+															"policies": {
+																"Admins": {
+																	"mod_policy": "",
+																	"policy": null,
+																	"version": "0"
+																},
+																"Endorsement": {
+																	"mod_policy": "",
+																	"policy": null,
+																	"version": "0"
+																},
+																"Readers": {
+																	"mod_policy": "",
+																	"policy": null,
+																	"version": "0"
+																},
+																"Writers": {
+																	"mod_policy": "",
+																	"policy": null,
+																	"version": "0"
+																}
+															},
+															"values": {
+																"AnchorPeers": {
+																	"mod_policy": "Admins",
+																	"value": {
+																		"anchor_peers": [
+																			{
+																				"host": "peer0.service1.moss.com",
+																				"port": 10060
+																			}
+																		]
+																	},
+																	"version": "0"
+																},
+																"MSP": {
+																	"mod_policy": "",
+																	"value": null,
+																	"version": "0"
+																}
+															},
+															"version": "1"
+														}
+													},
+													"mod_policy": "",
+													"policies": {},
+													"values": {},
+													"version": "0"
+												}
+											},
+											"mod_policy": "",
+											"policies": {},
+											"values": {},
+											"version": "0"
+										}
+									},
+									"signatures": [
+										{
+											"signature": "MEQCIEYieJQ4myQSn5x2ePnmWz6RcO/bj69ro0hQuumWeNffAiBct+knKgN3GPZfZfuLF0RJviq232MiNI4e6cPHV4nlNw==",
+											"signature_header": {
+												"creator": {
+													"id_bytes": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNtekNDQWtLZ0F3SUJBZ0lVUHhnd1NvU3hzN3IyRkU3a25SRlNUbkkzcm1nd0NnWUlLb1pJemowRUF3SXcKWGpFTE1Ba0dBMVVFQmhNQ1MxSXhGREFTQmdOVkJBY1RDMU5sYjI1bmJtRnRMWE5wTVJvd0dBWURWUVFLRXhGegpaWEoyYVdObE1TNXRiM056TG1OdmJURWRNQnNHQTFVRUF4TVVZMkV1YzJWeWRtbGpaVEV1Ylc5emN5NWpiMjB3CkhoY05Nakl3TWpJek1EZ3lOekF3V2hjTk1qTXdNakkxTURrd09EQXdXakJrTVFzd0NRWURWUVFHRXdKVlV6RVgKTUJVR0ExVUVDQk1PVG05eWRHZ2dRMkZ5YjJ4cGJtRXhGREFTQmdOVkJBb1RDMGg1Y0dWeWJHVmtaMlZ5TVE0dwpEQVlEVlFRTEV3VmhaRzFwYmpFV01CUUdBMVVFQXhNTmMyVnlkbWxqWlRGQlpHMXBiakJaTUJNR0J5cUdTTTQ5CkFnRUdDQ3FHU000OUF3RUhBMElBQk1GT2NGMFFNUC9ZS0pYRkREZUJmOTc2Q0pmUGc1WXBvMHIxdHpZUk9JeXgKZE02N3dCNEtWL2lOb0VnWko4clBTZkFiREZCTjF2cVVtVGtYQi9PeXUxbWpnZGN3Z2RRd0RnWURWUjBQQVFILwpCQVFEQWdlQU1Bd0dBMVVkRXdFQi93UUNNQUF3SFFZRFZSME9CQllFRk5uUWZrZE00ZFVKdFVLT1ZtMjMvdXI5Ci9EQ1dNQjhHQTFVZEl3UVlNQmFBRk1zYnpNR1U2UjdrK1Rsb3k0cC82cnR4cG5hRE1CTUdBMVVkRVFRTU1BcUMKQ0cxdmMzTXdPREF4TUY4R0NDb0RCQVVHQndnQkJGTjdJbUYwZEhKeklqcDdJbWhtTGtGbVptbHNhV0YwYVc5dQpJam9pSWl3aWFHWXVSVzV5YjJ4c2JXVnVkRWxFSWpvaWMyVnlkbWxqWlRGQlpHMXBiaUlzSW1obUxsUjVjR1VpCk9pSmhaRzFwYmlKOWZUQUtCZ2dxaGtqT1BRUURBZ05IQURCRUFpQTF1ZzlpOEtZdnd1ZHUyTFpGZ3YwQk1QV00KNytVNE1vc25CZHhTMHExL2VnSWdJYzBaZTJQbk5BM0N3NndtNko3NjZjTlM2ckxXZnJtcEZKUDkzbE5DRWV3PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==",
+													"mspid": "service1MSP"
+												},
+												"nonce": "SZPpa8YLeFWwMIoXNhmfw6b/gMkMS+ko"
+											}
+										}
+									]
+								},
+								"header": {
+									"channel_header": {
+										"channel_id": "mosschannel3",
+										"epoch": "0",
+										"extension": null,
+										"timestamp": "2022-03-02T14:58:35Z",
+										"tls_cert_hash": null,
+										"tx_id": "",
+										"type": 2,
+										"version": 0
+									},
+									"signature_header": {
+										"creator": {
+											"id_bytes": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNtekNDQWtLZ0F3SUJBZ0lVUHhnd1NvU3hzN3IyRkU3a25SRlNUbkkzcm1nd0NnWUlLb1pJemowRUF3SXcKWGpFTE1Ba0dBMVVFQmhNQ1MxSXhGREFTQmdOVkJBY1RDMU5sYjI1bmJtRnRMWE5wTVJvd0dBWURWUVFLRXhGegpaWEoyYVdObE1TNXRiM056TG1OdmJURWRNQnNHQTFVRUF4TVVZMkV1YzJWeWRtbGpaVEV1Ylc5emN5NWpiMjB3CkhoY05Nakl3TWpJek1EZ3lOekF3V2hjTk1qTXdNakkxTURrd09EQXdXakJrTVFzd0NRWURWUVFHRXdKVlV6RVgKTUJVR0ExVUVDQk1PVG05eWRHZ2dRMkZ5YjJ4cGJtRXhGREFTQmdOVkJBb1RDMGg1Y0dWeWJHVmtaMlZ5TVE0dwpEQVlEVlFRTEV3VmhaRzFwYmpFV01CUUdBMVVFQXhNTmMyVnlkbWxqWlRGQlpHMXBiakJaTUJNR0J5cUdTTTQ5CkFnRUdDQ3FHU000OUF3RUhBMElBQk1GT2NGMFFNUC9ZS0pYRkREZUJmOTc2Q0pmUGc1WXBvMHIxdHpZUk9JeXgKZE02N3dCNEtWL2lOb0VnWko4clBTZkFiREZCTjF2cVVtVGtYQi9PeXUxbWpnZGN3Z2RRd0RnWURWUjBQQVFILwpCQVFEQWdlQU1Bd0dBMVVkRXdFQi93UUNNQUF3SFFZRFZSME9CQllFRk5uUWZrZE00ZFVKdFVLT1ZtMjMvdXI5Ci9EQ1dNQjhHQTFVZEl3UVlNQmFBRk1zYnpNR1U2UjdrK1Rsb3k0cC82cnR4cG5hRE1CTUdBMVVkRVFRTU1BcUMKQ0cxdmMzTXdPREF4TUY4R0NDb0RCQVVHQndnQkJGTjdJbUYwZEhKeklqcDdJbWhtTGtGbVptbHNhV0YwYVc5dQpJam9pSWl3aWFHWXVSVzV5YjJ4c2JXVnVkRWxFSWpvaWMyVnlkbWxqWlRGQlpHMXBiaUlzSW1obUxsUjVjR1VpCk9pSmhaRzFwYmlKOWZUQUtCZ2dxaGtqT1BRUURBZ05IQURCRUFpQTF1ZzlpOEtZdnd1ZHUyTFpGZ3YwQk1QV00KNytVNE1vc25CZHhTMHExL2VnSWdJYzBaZTJQbk5BM0N3NndtNko3NjZjTlM2ckxXZnJtcEZKUDkzbE5DRWV3PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==",
+											"mspid": "service1MSP"
+										},
+										"nonce": "1kaTtqCPkhEsQOsZ4KNEr4wWU+V14j6w"
+									}
+								}
+							},
+							"signature": "MEUCIQD2Dcy+C4R65jI/Ll1g3P05ja/RBYyYz90noZzkOkvQHwIgE8YL8hAj+LDbKHzQs4Kk8J5CKBXVcXHAD5StVM+z4yE="
+						}
 					},
 					"header": {
 						"channel_header": {
 							"channel_id": "mosschannel3",
 							"epoch": "0",
 							"extension": null,
-							"timestamp": "2022-03-02T13:38:45Z",
+							"timestamp": "2022-03-02T14:58:35Z",
 							"tls_cert_hash": null,
-							"tx_id": "e5654fd34a920bb1a25b0303a6bad3ea3cdd43ad7b31045a561e7278f525586b",
+							"tx_id": "",
 							"type": 1,
-							"version": 1
+							"version": 0
 						},
 						"signature_header": {
-							"creator": null,
-							"nonce": "OtKFjn66dFxqsJrmaprrY1xxgTp8JWgg"
+							"creator": {
+								"id_bytes": "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNwakNDQWsyZ0F3SUJBZ0lVTUQ5d1FCVDllcmZkTlBuRFNiMVpnQnV2SWdNd0NnWUlLb1pJemowRUF3SXcKWGpFTE1Ba0dBMVVFQmhNQ1MxSXhGREFTQmdOVkJBY1RDMU5sYjI1bmJtRnRMWE5wTVJvd0dBWURWUVFLRXhGdgpjbVJsY21WeU1TNXRiM056TG1OdmJURWRNQnNHQTFVRUF4TVVZMkV1YjNKa1pYSmxjakV1Ylc5emN5NWpiMjB3CkhoY05Nakl3TWpJek1EY3pPVEF3V2hjTk1qTXdNakkwTURrek9UQXdXakJkTVFzd0NRWURWUVFHRXdKVlV6RVgKTUJVR0ExVUVDQk1PVG05eWRHZ2dRMkZ5YjJ4cGJtRXhGREFTQmdOVkJBb1RDMGg1Y0dWeWJHVmtaMlZ5TVJBdwpEZ1lEVlFRTEV3ZHZjbVJsY21WeU1RMHdDd1lEVlFRREV3UnZjMjR4TUZrd0V3WUhLb1pJemowQ0FRWUlLb1pJCnpqMERBUWNEUWdBRWRKMUlHK1NmSURoM0JZSElPU0JFTnJxaGd0Z3hEbTNnK3RnRWN5cklpOFhscGhkNEdzREIKbDAwT2h5NThKbUJUMDUvYXcxM0xldmNsTUt3dkl0OUNFS09CNlRDQjVqQU9CZ05WSFE4QkFmOEVCQU1DQjRBdwpEQVlEVlIwVEFRSC9CQUl3QURBZEJnTlZIUTRFRmdRVUROc3ZTZSswVmdEM0RFd3JucTl6M2pVSVZSb3dId1lEClZSMGpCQmd3Rm9BVUZTMGZiU29QNDl6MzJ0ZHRaZ24rbkplQ0RMVXdMQVlEVlIwUkJDVXdJNElXYjNOdU1TNXYKY21SbGNtVnlNUzV0YjNOekxtTnZiWUlKYkc5allXeG9iM04wTUZnR0NDb0RCQVVHQndnQkJFeDdJbUYwZEhKegpJanA3SW1obUxrRm1abWxzYVdGMGFXOXVJam9pSWl3aWFHWXVSVzV5YjJ4c2JXVnVkRWxFSWpvaWIzTnVNU0lzCkltaG1MbFI1Y0dVaU9pSnZjbVJsY21WeUluMTlNQW9HQ0NxR1NNNDlCQU1DQTBjQU1FUUNJSDFqSC9GWWRiSDcKMnpuQ1JXNlh2b2hLUldmZmlZQWxULzZUNkdhNTAxOHhBaUJzeDZ2U2RNTDM3ZStxTHQxakF6N0Y5c3R5UkpTbAowOEJXMkkwbkorSVc3UT09Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K",
+								"mspid": "orderer1MSP"
+							},
+							"nonce": "mlHkJYQyerZMfOx9SQf2heqaFJ3yWOx7"
 						}
 					}
 				},
-				"signature": null
+				"signature": "MEQCIB4350uqkjrXJLaXKTrRxfTsIsqez+Z9cQiB3lK2tR2mAiADukP6htQxhNC078lpgPIkVlleUO5nP2lQxhFSERUjsw=="
 			}
 		]
 	},
 	"header": {
-		"data_hash": "lts+c6XKL5CkaTm7fni6qyA8pKE0JvLjmX7mVFSe6m0=",
-		"number": "0",
-		"previous_hash": null
+		"data_hash": "IicozGqkALblxhubYUZZaRHqYjfCCP+/wbnP3Uzrv9c=",
+		"number": "3",
+		"previous_hash": "B33NUvP3vIl1eIi85z3mAUEDDq/vYKQvbGn9yUa87Qc="
 	},
 	"metadata": {
 		"metadata": [
-			"CgIKAA==",
-			"",
+			"ChEKAggDEgsKCQoDAQIDEAQYBxLNCAqCCArlBwoLb3JkZXJlcjFNU1AS1QctLS0tLUJFR0lOIENFUlRJRklDQVRFLS0tLS0KTUlJQ3BqQ0NBazJnQXdJQkFnSVVNRDl3UUJUOWVyZmROUG5EU2IxWmdCdXZJZ013Q2dZSUtvWkl6ajBFQXdJdwpYakVMTUFrR0ExVUVCaE1DUzFJeEZEQVNCZ05WQkFjVEMxTmxiMjVuYm1GdExYTnBNUm93R0FZRFZRUUtFeEZ2CmNtUmxjbVZ5TVM1dGIzTnpMbU52YlRFZE1Cc0dBMVVFQXhNVVkyRXViM0prWlhKbGNqRXViVzl6Y3k1amIyMHcKSGhjTk1qSXdNakl6TURjek9UQXdXaGNOTWpNd01qSTBNRGt6T1RBd1dqQmRNUXN3Q1FZRFZRUUdFd0pWVXpFWApNQlVHQTFVRUNCTU9UbTl5ZEdnZ1EyRnliMnhwYm1FeEZEQVNCZ05WQkFvVEMwaDVjR1Z5YkdWa1oyVnlNUkF3CkRnWURWUVFMRXdkdmNtUmxjbVZ5TVEwd0N3WURWUVFERXdSdmMyNHhNRmt3RXdZSEtvWkl6ajBDQVFZSUtvWkkKemowREFRY0RRZ0FFZEoxSUcrU2ZJRGgzQllISU9TQkVOcnFoZ3RneERtM2crdGdFY3lySWk4WGxwaGQ0R3NEQgpsMDBPaHk1OEptQlQwNS9hdzEzTGV2Y2xNS3d2SXQ5Q0VLT0I2VENCNWpBT0JnTlZIUThCQWY4RUJBTUNCNEF3CkRBWURWUjBUQVFIL0JBSXdBREFkQmdOVkhRNEVGZ1FVRE5zdlNlKzBWZ0QzREV3cm5xOXozalVJVlJvd0h3WUQKVlIwakJCZ3dGb0FVRlMwZmJTb1A0OXozMnRkdFpnbituSmVDRExVd0xBWURWUjBSQkNVd0k0SVdiM051TVM1dgpjbVJsY21WeU1TNXRiM056TG1OdmJZSUpiRzlqWVd4b2IzTjBNRmdHQ0NvREJBVUdCd2dCQkV4N0ltRjBkSEp6CklqcDdJbWhtTGtGbVptbHNhV0YwYVc5dUlqb2lJaXdpYUdZdVJXNXliMnhzYldWdWRFbEVJam9pYjNOdU1TSXMKSW1obUxsUjVjR1VpT2lKdmNtUmxjbVZ5SW4xOU1Bb0dDQ3FHU000OUJBTUNBMGNBTUVRQ0lIMWpIL0ZZZGJINwoyem5DUlc2WHZvaEtSV2ZmaVlBbFQvNlQ2R2E1MDE4eEFpQnN4NnZTZE1MMzdlK3FMdDFqQXo3RjlzdHlSSlNsCjA4QlcySTBuSitJVzdRPT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQoSGLobzKP6sDZHK570wtwbOWIziE633U2x4xJGMEQCICH8TkacFsiUjRXVtuY3A7EeCaVBz1d6WwrNRJS5gbn3AiAzG5SkU6PPpgwUOmYAeGUba9/3H5hVffc7mW0aAKEKUg==",
+			"CgIIAw==",
 			"",
 			"",
 			""
