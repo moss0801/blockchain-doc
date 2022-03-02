@@ -56,9 +56,9 @@ services:
     working_dir: /root
     command: orderer
     volumes:
-        - ../organizations/ordererOrganizations/orderer1.moss.com/orderers/osn1.orderer1.moss.com/msp:/var/hyperledger/orderer/msp
-        - ../organizations/ordererOrganizations/orderer1.moss.com/orderers/osn1.orderer1.moss.com/tls/:/var/hyperledger/orderer/tls
-        - osn1.orderer1.moss.com:/var/hyperledger/production/orderer
+      - ../organizations/ordererOrganizations/orderer1.moss.com/orderers/osn1.orderer1.moss.com/msp:/var/hyperledger/orderer/msp
+      - ../organizations/ordererOrganizations/orderer1.moss.com/orderers/osn1.orderer1.moss.com/tls/:/var/hyperledger/orderer/tls
+      - osn1.orderer1.moss.com:/var/hyperledger/production/orderer
     ports:
       - 7061:7061
       - 7071:7071
@@ -154,6 +154,8 @@ services:
     labels:
       service: hyperledger-fabric
     environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric_moss
       - FABRIC_CFG_PATH=/etc/hyperledger/peercfg
       - FABRIC_LOGGING_SPEC=INFO
       #- FABRIC_LOGGING_SPEC=DEBUG
@@ -177,8 +179,10 @@ services:
       - CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG={"peername":"peer0platform"}
       - CORE_CHAINCODE_EXECUTETIMEOUT=300s
     volumes:
-        - ../organizations/peerOrganizations/platform.moss.com/peers/peer0.platform.moss.com:/etc/hyperledger/fabric
-        - peer0.platform.moss.com:/var/hyperledger/production
+      - ./docker/peercfg:/etc/hyperledger/peercfg
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ../organizations/peerOrganizations/platform.moss.com/peers/peer0.platform.moss.com:/etc/hyperledger/fabric
+      - peer0.platform.moss.com:/var/hyperledger/production
     working_dir: /root
     command: peer node start
     ports:
@@ -192,6 +196,8 @@ services:
     labels:
       service: hyperledger-fabric
     environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric_moss
       - FABRIC_CFG_PATH=/etc/hyperledger/peercfg
       - FABRIC_LOGGING_SPEC=INFO
       #- FABRIC_LOGGING_SPEC=DEBUG
@@ -215,8 +221,10 @@ services:
       - CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG={"peername":"peer1platform"}
       - CORE_CHAINCODE_EXECUTETIMEOUT=300s
     volumes:
-        - ../organizations/peerOrganizations/platform.moss.com/peers/peer1.platform.moss.com:/etc/hyperledger/fabric
-        - peer1.platform.moss.com:/var/hyperledger/production
+      - ./docker/peercfg:/etc/hyperledger/peercfg
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ../organizations/peerOrganizations/platform.moss.com/peers/peer1.platform.moss.com:/etc/hyperledger/fabric
+      - peer1.platform.moss.com:/var/hyperledger/production
     working_dir: /root
     command: peer node start
     ports:
@@ -231,6 +239,8 @@ services:
     labels:
       service: hyperledger-fabric
     environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric_moss
       - FABRIC_CFG_PATH=/etc/hyperledger/peercfg
       - FABRIC_LOGGING_SPEC=INFO
       #- FABRIC_LOGGING_SPEC=DEBUG
@@ -254,8 +264,10 @@ services:
       - CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG={"peername":"peer0customer"}
       - CORE_CHAINCODE_EXECUTETIMEOUT=300s
     volumes:
-        - ../organizations/peerOrganizations/customer.moss.com/peers/peer0.customer.moss.com:/etc/hyperledger/fabric
-        - peer0.customer.moss.com:/var/hyperledger/production
+      - ./docker/peercfg:/etc/hyperledger/peercfg
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ../organizations/peerOrganizations/customer.moss.com/peers/peer0.customer.moss.com:/etc/hyperledger/fabric
+      - peer0.customer.moss.com:/var/hyperledger/production
     working_dir: /root
     command: peer node start
     ports:
@@ -269,6 +281,8 @@ services:
     labels:
       service: hyperledger-fabric
     environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric_moss
       - FABRIC_CFG_PATH=/etc/hyperledger/peercfg
       - FABRIC_LOGGING_SPEC=INFO
       #- FABRIC_LOGGING_SPEC=DEBUG
@@ -292,8 +306,10 @@ services:
       - CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG={"peername":"peer1customer"}
       - CORE_CHAINCODE_EXECUTETIMEOUT=300s
     volumes:
-        - ../organizations/peerOrganizations/customer.moss.com/peers/peer1.customer.moss.com:/etc/hyperledger/fabric
-        - peer1.customer.moss.com:/var/hyperledger/production
+      - ./docker/peercfg:/etc/hyperledger/peercfg
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ../organizations/peerOrganizations/customer.moss.com/peers/peer1.customer.moss.com:/etc/hyperledger/fabric
+      - peer1.customer.moss.com:/var/hyperledger/production
     working_dir: /root
     command: peer node start
     ports:
@@ -308,6 +324,8 @@ services:
     labels:
       service: hyperledger-fabric
     environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric_moss
       - FABRIC_CFG_PATH=/etc/hyperledger/peercfg
       - FABRIC_LOGGING_SPEC=INFO
       #- FABRIC_LOGGING_SPEC=DEBUG
@@ -331,8 +349,10 @@ services:
       - CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG={"peername":"peer0service1"}
       - CORE_CHAINCODE_EXECUTETIMEOUT=300s
     volumes:
-        - ../organizations/peerOrganizations/service1.moss.com/peers/peer0.service1.moss.com:/etc/hyperledger/fabric
-        - peer0.service1.moss.com:/var/hyperledger/production
+      - ./docker/peercfg:/etc/hyperledger/peercfg
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ../organizations/peerOrganizations/service1.moss.com/peers/peer0.service1.moss.com:/etc/hyperledger/fabric
+      - peer0.service1.moss.com:/var/hyperledger/production
     working_dir: /root
     command: peer node start
     ports:
@@ -346,6 +366,8 @@ services:
     labels:
       service: hyperledger-fabric
     environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric_moss
       - FABRIC_CFG_PATH=/etc/hyperledger/peercfg
       - FABRIC_LOGGING_SPEC=INFO
       #- FABRIC_LOGGING_SPEC=DEBUG
@@ -369,8 +391,10 @@ services:
       - CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG={"peername":"peer1service1"}
       - CORE_CHAINCODE_EXECUTETIMEOUT=300s
     volumes:
-        - ../organizations/peerOrganizations/service1.moss.com/peers/peer1.service1.moss.com:/etc/hyperledger/fabric
-        - peer1.service1.moss.com:/var/hyperledger/production
+      - ./docker/peercfg:/etc/hyperledger/peercfg
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ../organizations/peerOrganizations/service1.moss.com/peers/peer1.service1.moss.com:/etc/hyperledger/fabric
+      - peer1.service1.moss.com:/var/hyperledger/production
     working_dir: /root
     command: peer node start
     ports:
@@ -385,6 +409,8 @@ services:
     labels:
       service: hyperledger-fabric
     environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric_moss
       - FABRIC_CFG_PATH=/etc/hyperledger/peercfg
       - FABRIC_LOGGING_SPEC=INFO
       #- FABRIC_LOGGING_SPEC=DEBUG
@@ -408,8 +434,10 @@ services:
       - CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG={"peername":"peer0service2"}
       - CORE_CHAINCODE_EXECUTETIMEOUT=300s
     volumes:
-        - ../organizations/peerOrganizations/service2.moss.com/peers/peer0.service2.moss.com:/etc/hyperledger/fabric
-        - peer0.service2.moss.com:/var/hyperledger/production
+      - ./docker/peercfg:/etc/hyperledger/peercfg
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ../organizations/peerOrganizations/service2.moss.com/peers/peer0.service2.moss.com:/etc/hyperledger/fabric
+      - peer0.service2.moss.com:/var/hyperledger/production
     working_dir: /root
     command: peer node start
     ports:
@@ -423,6 +451,8 @@ services:
     labels:
       service: hyperledger-fabric
     environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric_moss
       - FABRIC_CFG_PATH=/etc/hyperledger/peercfg
       - FABRIC_LOGGING_SPEC=INFO
       #- FABRIC_LOGGING_SPEC=DEBUG
@@ -446,8 +476,10 @@ services:
       - CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG={"peername":"peer1service2"}
       - CORE_CHAINCODE_EXECUTETIMEOUT=300s
     volumes:
-        - ../organizations/peerOrganizations/service2.moss.com/peers/peer1.service2.moss.com:/etc/hyperledger/fabric
-        - peer1.service2.moss.com:/var/hyperledger/production
+      - ./docker/peercfg:/etc/hyperledger/peercfg
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ../organizations/peerOrganizations/service2.moss.com/peers/peer1.service2.moss.com:/etc/hyperledger/fabric
+      - peer1.service2.moss.com:/var/hyperledger/production
     working_dir: /root
     command: peer node start
     ports:
@@ -471,8 +503,8 @@ services:
     working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
     command: /bin/bash
     volumes:
-        - ../organizations:/opt/gopath/src/github.com/hyperledger/fabric/peer/organizations
-        - ../scripts:/opt/gopath/src/github.com/hyperledger/fabric/peer/scripts/
+      - ../organizations:/opt/gopath/src/github.com/hyperledger/fabric/peer/organizations
+      - ../scripts:/opt/gopath/src/github.com/hyperledger/fabric/peer/scripts/
     depends_on:
       - peer0.platform.moss.com
       - peer0.customer.moss.com

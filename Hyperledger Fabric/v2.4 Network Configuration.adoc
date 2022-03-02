@@ -2081,9 +2081,12 @@ OvygIgIgC/dDyD5KG4tIAB9GaPCOeOBwswLDgnV67e0Rkgqj8hQ=
 *organizations/peerOrganizations/service2.moss.com/connection-service2.yaml*
 
 ### network docker-compose 작성 및 실행
-orderer, peer, cli node를 위한 docker-compose를 작성하고 실행하여 container를 실행시킵니다.
+orderer, peer, cli node를 위한 docker-compose 설정 파일을 작성하고 실행하여 container를 실행시킵니다.
 
-compose/compose-moss-net.yaml 파일을 참고 합니다.
+* compose/compose-moss-net.yaml 파일 작성: docker-compose 파일 +
+test-network - compose/compose-test.net.yaml, compose/docker/docker-compose-test-net.yaml 를 참고하여 작성
+* compose/docker/peercfg/core.yaml: peer 공통 설정 파일, link:https://github.com/hyperledger/fabric-samples/blob/main/test-network/compose/docker/peercfg/core.yaml[test-network - core.yaml] +
+volumes의 '${DOCKER_SOCK}:/host/var/run/docker.sock'는 'network.sh'를 참고하여 '/var/run/docker.sock:/host/var/run/docker.sock'로 수정
 
 docker-compose 실행 결과
 
@@ -2116,7 +2119,6 @@ $ docker-compose -f compose/compose-moss-net.yaml up -d 2>&1
  ⠿ Container peer0.customer.moss.com         Started    9.5s
  ⠿ Container cli                             Started    9.4s
 ```
-
 
 ## 개선 필요사항
 . 네트워크 환경 k8s로 변경
