@@ -2120,6 +2120,28 @@ $ docker-compose -f compose/compose-moss-net.yaml up -d 2>&1
  ⠿ Container cli                             Started    9.4s
 ```
 
+```
+$ docker container ls --format "table {{.ID}}\t{{.Names}}\t{{.Ports}}\t{{.Image}}"
+CONTAINER ID   NAMES                     PORTS                                                                              IMAGE
+0ea5388d6abe   ca_orderer1               0.0.0.0:7054->7054/tcp, 0.0.0.0:17054->17054/tcp                                   hyperledger/fabric-ca:1.5.2
+414b7700e08a   ca_platform               0.0.0.0:8054->8054/tcp, 7054/tcp, 0.0.0.0:18054->18054/tcp                         hyperledger/fabric-ca:1.5.2
+153a91bcfef0   ca_customer               0.0.0.0:9054->9054/tcp, 7054/tcp, 0.0.0.0:19054->19054/tcp                         hyperledger/fabric-ca:1.5.2
+24db57a05517   ca_service1               0.0.0.0:10054->10054/tcp, 7054/tcp, 0.0.0.0:20054->20054/tcp                       hyperledger/fabric-ca:1.5.2
+5df3dd83ca83   ca_service2               0.0.0.0:11054->11054/tcp, 7054/tcp, 0.0.0.0:21054->21054/tcp                       hyperledger/fabric-ca:1.5.2
+f42a796f2abe   osn1.orderer1.moss.com    0.0.0.0:7061->7061/tcp, 0.0.0.0:7071->7071/tcp, 7050/tcp, 0.0.0.0:7081->7081/tcp   hyperledger/fabric-orderer:2.4.2
+0dad9f16a3ca   osn2.orderer1.moss.com    0.0.0.0:7062->7062/tcp, 0.0.0.0:7072->7072/tcp, 7050/tcp, 0.0.0.0:7082->7082/tcp   hyperledger/fabric-orderer:2.4.2
+9b6893f9720f   osn3.orderer1.moss.com    0.0.0.0:7063->7063/tcp, 0.0.0.0:7073->7073/tcp, 7050/tcp, 0.0.0.0:7083->7083/tcp   hyperledger/fabric-orderer:2.4.2
+8f8ea162f1c5   peer0.platform.moss.com   0.0.0.0:8060->8060/tcp, 7051/tcp, 0.0.0.0:8090->8090/tcp                           hyperledger/fabric-peer:2.4.2
+c903c8d12365   peer1.platform.moss.com   0.0.0.0:8061->8061/tcp, 7051/tcp, 0.0.0.0:8091->8091/tcp                           hyperledger/fabric-peer:2.4.2
+484c868d4c6a   peer0.customer.moss.com   0.0.0.0:9060->9060/tcp, 7051/tcp, 0.0.0.0:9090->9090/tcp                           hyperledger/fabric-peer:2.4.2
+ed6431051058   peer1.customer.moss.com   0.0.0.0:9061->9061/tcp, 7051/tcp, 0.0.0.0:9091->9091/tcp                           hyperledger/fabric-peer:2.4.2
+eddd08717488   peer0.service1.moss.com   0.0.0.0:10060->10060/tcp, 7051/tcp, 0.0.0.0:10090->10090/tcp                       hyperledger/fabric-peer:2.4.2
+4b8b7c4aa441   peer1.service1.moss.com   0.0.0.0:10061->10061/tcp, 7051/tcp, 0.0.0.0:10091->10091/tcp                       hyperledger/fabric-peer:2.4.2
+1cb63925cd72   peer0.service2.moss.com   0.0.0.0:11060->11060/tcp, 7051/tcp, 0.0.0.0:11090->11090/tcp                       hyperledger/fabric-peer:2.4.2
+e78e15908490   peer1.service2.moss.com   0.0.0.0:11061->11061/tcp, 7051/tcp, 0.0.0.0:11091->11091/tcp                       hyperledger/fabric-peer:2.4.2
+f0f36cfff00d   cli                                                                                                          hyperledger/fabric-tools:2.4.2
+```
+
 ## 개선 필요사항
 . 네트워크 환경 k8s로 변경
 . CA adin 비밀번호 암호화
