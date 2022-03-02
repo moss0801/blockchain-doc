@@ -261,15 +261,15 @@ Orderer: &OrdererDefaults
 
     EtcdRaft:
         Consenters:
-        - Host: osn1.orderer1.example.com
+        - Host: osn1.orderer1.moss.com
           Port: 7061
           ClientTLSCert: ../organizations/ordererOrganizations/orderer1.moss.com/orderers/osn1.orderer1.moss.com/tls/server.crt
           ServerTLSCert: ../organizations/ordererOrganizations/orderer1.moss.com/orderers/osn1.orderer1.moss.com/tls/server.crt
-        - Host: osn2.orderer1.example.com
+        - Host: osn2.orderer1.moss.com
           Port: 7062
           ClientTLSCert: ../organizations/ordererOrganizations/orderer1.moss.com/orderers/osn2.orderer1.moss.com/tls/server.crt
           ServerTLSCert: ../organizations/ordererOrganizations/orderer1.moss.com/orderers/osn2.orderer1.moss.com/tls/server.crt
-        - Host: osn3.orderer1.example.com
+        - Host: osn3.orderer1.moss.com
           Port: 7063
           ClientTLSCert: ../organizations/ordererOrganizations/orderer1.moss.com/orderers/osn3.orderer1.moss.com/tls/server.crt
           ServerTLSCert: ../organizations/ordererOrganizations/orderer1.moss.com/orderers/osn3.orderer1.moss.com/tls/server.crt

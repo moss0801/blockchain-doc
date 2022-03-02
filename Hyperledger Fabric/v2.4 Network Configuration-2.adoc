@@ -451,6 +451,7 @@ Join an Ordering Service Node (OSN) to a channel. If the channel does not yet ex
 join 시 채널이 존재하지 않으면 생성 후, 참여한다.
 ====
 
+채널 생성 및 OSN Join
 ```
 cd "$FABRIC_NETWORK_HOME"
 
@@ -475,15 +476,17 @@ Status: 201
 ```
 
 ### peer를 채널에 join
+link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/create_channel/create_channel_test_net.html?highlight=anchor%20peer#join-peers-to-the-channel[join peers to the channel]
 
 'peer channel'를 이용하여 peer들을 채널에 join 시킵니다.
 
 환경변수를 각 peer 맞게 설정 후 'peerchannel join' 명령어를 수행합니다.
 
+* CORE_PEER_TLS_ENABLED
+* CORE_PEER_TLS_ROOTCERT_FILE
 * CORE_PEER_ADDRESS
 * CORE_PEER_LOCALMSPID
 * CORE_PEER_MSPCONFIGPATH
-* CORE_PEER_TLS_ROOTCERT_FILE
 
 peer의 환경변수 설정을 위해서 script/setPeer.sh 를 사용합니다. (test-network의 script/setGlobals를 참조하여 작성되었습니다.)
 
@@ -495,8 +498,10 @@ DOMAIN=$1
 ORG=$2
 ADDRESS=$3
 ADMIN=$4
+PEER=$5
 MSP=${ORG}MSP
 ORG_DOMAIN=${ORG}.${DOMAIN}
+PEER_DOMAIN=${PEER}.${ORG_DOMAIN}
 
 export CORE_PEER_TLS_ENABLED=true
 export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/${ORG_DOMAIN}/tlsca/tlsca.${ORG_DOMAIN}-cert.pem
@@ -506,6 +511,7 @@ export CORE_PEER_ADDRESS=${ADDRESS}
 ```
 
 peer별 파라미털 설정한 실행파일도 추가되어 있습니다.
+
 * scripts/setPlatformPeer0.sh
 * scripts/setPlatformPeer1.sh
 * scripts/setCustomerPeer0.sh
@@ -515,6 +521,7 @@ peer별 파라미털 설정한 실행파일도 추가되어 있습니다.
 * scripts/setService2Peer0.sh
 * scripts/setService2Peer1.sh
 
+환경변수 변경이 필요하기에 peer별로 구분하여 실행합니다.
 ```
 cd "$FABRIC_NETWORK_HOME"
 
@@ -553,6 +560,53 @@ peer channel join - tls 설정 오류
 ```
 0001 ERRO [comm.tls] ClientHandshake -> Client TLS handshake failed after 5.7948ms with error: x509: certificate signed by unknown authority remoteaddress=127.0.0.1:11060
 0002 ERRO [comm.tls] ClientHandshake -> Client TLS handshake failed after 1.3901ms with error: x509: certificate signed by unknown authority remoteaddress=127.0.0.1:11060
-KST 0003 ERRO [comm.tls] ClientHandshake -> Client TLS handshake failed after 1.5418ms with error: x509: certificate signed by unknown authority remoteaddress=127.0.0.1:11060
+0003 ERRO [comm.tls] ClientHandshake -> Client TLS handshake failed after 1.5418ms with error: x509: certificate signed by unknown authority remoteaddress=127.0.0.1:11060
 Error: error getting endorser client for channel: endorser client failed to connect to localhost:11060: failed to create new connection: context deadline exceeded
 ```
+
+## AnchorPeer 설정
+link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/commands/configtxlator.html[configtxlator] +
+link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/create_channel/create_channel_test_net.html?highlight=anchor%20peer#set-anchor-peer[Creating a channel - Set anchor peer] +
+link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/gossip.html?highlight=anchor%20peer#anchor-peers[Gossip data dissemination protocol - Anchor peers]
+
+configtxlator를 이용하여 Peer 조직의 0번 peer를 AnchorPeer로 설정합니다.
+
+각 조직별로 아래 단계를 거쳐서 Anchor Peer 설정을 수정합니다.
+
+. 채널 config를 조회
+. anchor peer에 추가를 위한 설정 수정
+. 현재 설정과 수정된 설정의 diff로 config update tx(Org1MSPconfig.json) 생성
+. AnchorPeer 수정
+
+편의를 위해서 osn1의 정보를 환경변수로 설정합니다.
+
+* ORDERER_ADDRESS
+* ORDERER_DOMAIN
+* ORDERER_CA
+```
+cd "$FABRIC_NETWORK_HOME"
+
+export ORDERER_ADDRESS=localhost:7061
+export ORDERER_DOMAIN=osn1.orderer1.moss.com
+export ORDERER_CA=${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn1.orderer1.moss.com/msp/tlscacerts/tlsca.orderer1.moss.com-cert.pem
+```
+
+
+cofig 정보 조회
+```
+cd "$FABRIC_NETWORK_HOME"
+
+. ./scripts/setPlatformPeer0.sh
+peer channel fetch config channel-artifacts/config_block.pb -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} -c ${CHANNEL_NAME} --tls --cafile "$ORDERER_CA"
+```
+
+channel-artfiacts 폴더로 이동 후 config_block pb(proto buffer) 파일을 json 파일로 변환 후, config 부분만 분리합니다.
+```
+cd channel-artifacts
+configtxlator proto_decode --input config_block.pb --type common.Block --output config_block.json
+jq '.data.data[0].payload.data.config' config_block.json > config.json
+```
+
+
+
+

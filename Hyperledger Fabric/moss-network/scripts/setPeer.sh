@@ -2,10 +2,12 @@
 
 DOMAIN=$1
 ORG=$2
-ADDRESS=$3
-ADMIN=$4
+PEER=$3
+ADDRESS=$4
+ADMIN=$5
 MSP=${ORG}MSP
 ORG_DOMAIN=${ORG}.${DOMAIN}
+PEER_DOMAIN=${PEER}.${ORG_DOMAIN}
 
 export CORE_PEER_TLS_ENABLED=true
 export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/${ORG_DOMAIN}/tlsca/tlsca.${ORG_DOMAIN}-cert.pem
