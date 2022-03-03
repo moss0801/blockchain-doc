@@ -1,0 +1,1 @@
+[34m2022-03-03 17:42:20.307 KST 0001 INFO[0m [chaincodeCmd] [34;1mchaincodeInvokeOrQuery[0m -> Chaincode invoke successful. result: status:200 
