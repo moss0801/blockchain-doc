@@ -1,0 +1,109 @@
+
+### basic 체인코드 배포 및 테스트
+fabric-samples의 asset-transfer-basic 체인코드(chaincode, CC)를 배포하고 호출하여 네트워크가 정상 구성되었는지 테스트해본다.
+
+fabric-samples의 asset-transfer-basic을 moss-network가 위치한 폴더에 복사한다. +
+link:https://github.com/hyperledger/fabric-samples/tree/main/asset-transfer-basic[asset-transfer-basic]
+
+link:https://github.com/hyperledger/fabric-shttps://github.com/hyperledger/fabric-samples/blob/main/test-network/scripts/deployCC.shamples/blob/main/test-network/scripts/deployCC.sh[deplyCC.sh] 
+link:https://github.com/hyperledger/fabric-samples/blob/main/test-network/scripts/ccutils.sh[ccutils.sh]
+
+
+Vendoring Go dependencies
+```
+cd "$FABRIC_NETWORK_HOME"
+
+CC_NAME=basic
+CC_SRC_PATH=../asset-transfer-basic/chaincode-go
+CC_RUNTIME_LANGUAGE=golang
+CC_VERSION=1.0
+
+pushd $CC_SRC_PATH
+GO111MODULE=on go mod vendor
+popd
+```
+
+실행 결과
+```
+/moss-network$ pushd ../asset-transfer-basic/chaincode-go
+/asset-transfer-basic/chaincode-go /moss-network
+/chaincode-go$ GO111MODULE=on go mod vendor
+go: downloading github.com/hyperledger/fabric-contract-api-go v1.1.0
+go: downloading github.com/stretchr/testify v1.5.1
+go: downloading github.com/hyperledger/fabric-chaincode-go v0.0.0-20200424173110-d7076418f212
+go: downloading github.com/hyperledger/fabric-protos-go v0.0.0-20200424173316-dd554ba3746e
+go: downloading github.com/golang/protobuf v1.3.2
+go: downloading github.com/davecgh/go-spew v1.1.1
+go: downloading github.com/pmezard/go-difflib v1.0.0
+go: downloading gopkg.in/yaml.v2 v2.2.8
+go: downloading google.golang.org/grpc v1.23.0
+go: downloading github.com/xeipuuv/gojsonschema v1.2.0
+go: downloading github.com/go-openapi/spec v0.19.4
+go: downloading github.com/gobuffalo/packr v1.30.1
+go: downloading github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415
+go: downloading github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f
+go: downloading github.com/gobuffalo/packd v0.3.0
+go: downloading github.com/gobuffalo/envy v1.7.0
+go: downloading github.com/go-openapi/jsonpointer v0.19.3
+go: downloading github.com/go-openapi/jsonreference v0.19.2
+go: downloading github.com/go-openapi/swag v0.19.5
+go: downloading google.golang.org/genproto v0.0.0-20180831171423-11092d34479b
+go: downloading golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297
+go: downloading golang.org/x/sys v0.0.0-20190710143415-6ec70d6a5542
+go: downloading github.com/mailru/easyjson v0.0.0-20190626092158-b2ccc519800e
+go: downloading github.com/joho/godotenv v1.3.0
+go: downloading github.com/rogpeppe/go-internal v1.3.0
+go: downloading github.com/PuerkitoBio/purell v1.1.1
+go: downloading github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578
+go: downloading golang.org/x/text v0.3.2
+/chaincode-go$ popd
+/moss-network
+/moss-network$
+```
+
+package
+```
+peer lifecycle chaincode package ${CC_NAME}.tar.gz --path "${CC_SRC_PATH}" --lang ${CC_RUNTIME_LANGUAGE} --label ${CC_NAME}_${CC_VERSION}
+# peer lifecycle chaincode package basic.tar.gz --path ../asset-transfer-basic/chaincode-go --lang golang --label basic_1.0
+```
+
+install chaincode on peer0 of platform, customer, service1, service2
+```
+. ./scripts/setPlatformPeer0.sh
+peer lifecycle chaincode install ${CC_NAME}.tar.gz
+
+. ./scripts/setCustomerPeer0.sh
+peer lifecycle chaincode install ${CC_NAME}.tar.gz
+
+. ./scripts/setService1Peer0.sh
+peer lifecycle chaincode install ${CC_NAME}.tar.gz
+
+. ./scripts/setService2Peer0.sh
+peer lifecycle chaincode install ${CC_NAME}.tar.gz
+
+```
+
+실행결과
+```
+$ . ./scripts/setPlatformPeer0.sh
+$ peer lifecycle chaincode install ${CC_NAME}.tar.gz
+0001 INFO [cli.lifecycle.chaincode] submitInstallProposal -> Installed remotely: response:<status:200 payload:"\nJbasic_1.0:3e57920250e0dd0887a324f1a381f1846a30ce17ec42942b168932113f292817\022\tbasic_1.0" >
+0002 INFO [cli.lifecycle.chaincode] submitInstallProposal -> Chaincode code package identifier: basic_1.0:3e57920250e0dd0887a324f1a381f1846a30ce17ec42942b168932113f292817
+$ . ./scripts/setCustomerPeer0.sh
+$ peer lifecycle chaincode install ${CC_NAME}.tar.gz
+0001 INFO [cli.lifecycle.chaincode] submitInstallProposal -> Installed remotely: response:<status:200 payload:"\nJbasic_1.0:3e57920250e0dd0887a324f1a381f1846a30ce17ec42942b168932113f292817\022\tbasic_1.0" >
+0002 INFO [cli.lifecycle.chaincode] submitInstallProposal -> Chaincode code package identifier: basic_1.0:3e57920250e0dd0887a324f1a381f1846a30ce17ec42942b168932113f292817
+$ . ./scripts/setService1Peer0.sh
+$ peer lifecycle chaincode install ${CC_NAME}.tar.gz
+0001 INFO [cli.lifecycle.chaincode] submitInstallProposal -> Installed remotely: response:<status:200 payload:"\nJbasic_1.0:3e57920250e0dd0887a324f1a381f1846a30ce17ec42942b168932113f292817\022\tbasic_1.0" >
+0002 INFO [cli.lifecycle.chaincode] submitInstallProposal -> Chaincode code package identifier: basic_1.0:3e57920250e0dd0887a324f1a381f1846a30ce17ec42942b168932113f292817
+$ . ./scripts/setService2Peer0.sh
+$ peer lifecycle chaincode install ${CC_NAME}.tar.gz
+0001 INFO [cli.lifecycle.chaincode] submitInstallProposal -> Installed remotely: response:<status:200 payload:"\nJbasic_1.0:3e57920250e0dd0887a324f1a381f1846a30ce17ec42942b168932113f292817\022\tbasic_1.0" >
+0002 INFO [cli.lifecycle.chaincode] submitInstallProposal -> Chaincode code package identifier: basic_1.0:3e57920250e0dd0887a324f1a381f1846a30ce17ec42942b168932113f292817
+```
+
+
+
+
+
