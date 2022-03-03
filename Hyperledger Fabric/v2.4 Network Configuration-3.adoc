@@ -288,7 +288,18 @@ cat log.txt
 commit chaincode
 ```
 . ./scripts/setPlatformPeer0.sh
-peer lifecycle chaincode commit -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" --channelID $CHANNEL_NAME --name ${CC_NAME} --peerAddresses localhost:8060 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/platform.moss.com/tlsca/tlsca.platform.moss.com-cert.pem" --peerAddresses localhost:8061 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/platform.moss.com/tlsca/tlsca.platform.moss.com-cert.pem" --peerAddresses localhost:9060 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/customer.moss.com/tlsca/tlsca.customer.moss.com-cert.pem" --peerAddresses localhost:9061 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/customer.moss.com/tlsca/tlsca.customer.moss.com-cert.pem" --peerAddresses localhost:10060 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/service1.moss.com/tlsca/tlsca.service1.moss.com-cert.pem" --peerAddresses localhost:10061 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/service1.moss.com/tlsca/tlsca.service1.moss.com-cert.pem" --peerAddresses localhost:11060 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/service2.moss.com/tlsca/tlsca.service2.moss.com-cert.pem" --peerAddresses localhost:11061 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/service2.moss.com/tlsca/tlsca.service2.moss.com-cert.pem" --version ${CC_VERSION} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} ${CC_END_POLICY} ${CC_COLL_CONFIG}
+
+PEER_CONN_PARAMS=(--peerAddresses localhost:8060 --tlsRootCertFiles "./organizations/peerOrganizations/platform.moss.com/tlsca/tlsca.platform.moss.com-cert.pem")
+PEER_CONN_PARAMS+=(--peerAddresses localhost:8061 --tlsRootCertFiles "./organizations/peerOrganizations/platform.moss.com/tlsca/tlsca.platform.moss.com-cert.pem")
+PEER_CONN_PARAMS+=(--peerAddresses localhost:9060 --tlsRootCertFiles "./organizations/peerOrganizations/customer.moss.com/tlsca/tlsca.customer.moss.com-cert.pem")
+PEER_CONN_PARAMS+=(--peerAddresses localhost:9061 --tlsRootCertFiles "./organizations/peerOrganizations/customer.moss.com/tlsca/tlsca.customer.moss.com-cert.pem")
+PEER_CONN_PARAMS+=(--peerAddresses localhost:10060 --tlsRootCertFiles "./organizations/peerOrganizations/service1.moss.com/tlsca/tlsca.service1.moss.com-cert.pem" )
+PEER_CONN_PARAMS+=(--peerAddresses localhost:10061 --tlsRootCertFiles "./organizations/peerOrganizations/service1.moss.com/tlsca/tlsca.service1.moss.com-cert.pem" )
+PEER_CONN_PARAMS+=(--peerAddresses localhost:11060 --tlsRootCertFiles "./organizations/peerOrganizations/service2.moss.com/tlsca/tlsca.service2.moss.com-cert.pem")
+PEER_CONN_PARAMS+=(--peerAddresses localhost:11061 --tlsRootCertFiles "./organizations/peerOrganizations/service2.moss.com/tlsca/tlsca.service2.moss.com-cert.pem")
+
+
+peer lifecycle chaincode commit -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" --channelID $CHANNEL_NAME --name ${CC_NAME} "${PEER_CONN_PARAMS[@]}" --version ${CC_VERSION} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} ${CC_END_POLICY} ${CC_COLL_CONFIG}
 
 ```
 
@@ -381,7 +392,7 @@ chaincode init 호출
 fcn_call='{"function":"'${CC_INIT_FCN}'","Args":[]}'
 
 . ./scripts/setPlatformPeer0.sh
-peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} --peerAddresses localhost:8060 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/platform.moss.com/tlsca/tlsca.platform.moss.com-cert.pem" --peerAddresses localhost:8061 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/platform.moss.com/tlsca/tlsca.platform.moss.com-cert.pem" --peerAddresses localhost:9060 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/customer.moss.com/tlsca/tlsca.customer.moss.com-cert.pem" --peerAddresses localhost:9061 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/customer.moss.com/tlsca/tlsca.customer.moss.com-cert.pem" --peerAddresses localhost:10060 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/service1.moss.com/tlsca/tlsca.service1.moss.com-cert.pem" --peerAddresses localhost:10061 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/service1.moss.com/tlsca/tlsca.service1.moss.com-cert.pem" --peerAddresses localhost:11060 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/service2.moss.com/tlsca/tlsca.service2.moss.com-cert.pem" --peerAddresses localhost:11061 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/service2.moss.com/tlsca/tlsca.service2.moss.com-cert.pem"  -c ${fcn_call} >&log.txt
+peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}"  -c ${fcn_call} >&log.txt
 cat log.txt
 ```
 
@@ -409,7 +420,7 @@ Asset 목록 조회 결과
 
 Asset Transfer : assert6의 owner를 'Christopher'로 변경
 ```
-peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} --peerAddresses localhost:8060 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/platform.moss.com/tlsca/tlsca.platform.moss.com-cert.pem" --peerAddresses localhost:8061 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/platform.moss.com/tlsca/tlsca.platform.moss.com-cert.pem" --peerAddresses localhost:9060 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/customer.moss.com/tlsca/tlsca.customer.moss.com-cert.pem" --peerAddresses localhost:9061 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/customer.moss.com/tlsca/tlsca.customer.moss.com-cert.pem" --peerAddresses localhost:10060 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/service1.moss.com/tlsca/tlsca.service1.moss.com-cert.pem" --peerAddresses localhost:10061 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/service1.moss.com/tlsca/tlsca.service1.moss.com-cert.pem" --peerAddresses localhost:11060 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/service2.moss.com/tlsca/tlsca.service2.moss.com-cert.pem" --peerAddresses localhost:11061 --tlsRootCertFiles "${PWD}/organizations/peerOrganizations/service2.moss.com/tlsca/tlsca.service2.moss.com-cert.pem" -c '{"function":"TransferAsset","Args":["asset6","Christopher"]}'
+peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"TransferAsset","Args":["asset6","Christopher"]}'
 ```
 
 Asset Transfer 결과
