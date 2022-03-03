@@ -131,7 +131,7 @@ NVM(Node Version Manager)를 설치해서 Node.js를 설치한다. +
 설치 후, 재시작 또는 터미널을 재접속한다.
 이후 nodejs를 설치한다. npm은 nodejs와 함께 설치된다.
 ```
-$ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+$ curl -fsSL https://deb.nodesource.com/setup_16.x | sudo bash -
 ...
 ## Run `sudo apt-get install -y nodejs` to install Node.js 16.x and npm
 ## You may also need development tools to build native addons:

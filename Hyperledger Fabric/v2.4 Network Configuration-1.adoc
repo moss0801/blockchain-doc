@@ -235,6 +235,7 @@ moss-network 또는 임의의 폴더 생성 후, fabric, fabric-ca linux 바이�
 mkdir moss-network
 cd moss-network
 export FABRIC_NETWORK_HOME=${PWD}
+echo 'export FABRIC_NETWORK_HOME='$FABRIC_NETWORK_HOME | tee -a $HOME/.bashrc
 
 curl -L https://github.com/hyperledger/fabric/releases/download/v2.4.2/hyperledger-fabric-linux-amd64-2.4.2.tar.gz -o hyperledger-fabric-linux-amd64-2.4.2.tar.gz
 curl -L https://github.com/hyperledger/fabric-ca/releases/download/v1.5.2/hyperledger-fabric-ca-linux-amd64-1.5.2.tar.gz -o hyperledger-fabric-ca-linux-amd64-1.5.2.tar.gz
@@ -243,6 +244,7 @@ sudo tar -zxvf hyperledger-fabric-linux-amd64-2.4.2.tar.gz
 sudo tar -zxvf hyperledger-fabric-ca-linux-amd64-1.5.2.tar.gz
 
 export PATH=${PWD}/bin:$PATH
+echo 'export PATH='$PWD'/bin:$PATH' | tee -a $HOME/.bashrc
 
 ```
 
