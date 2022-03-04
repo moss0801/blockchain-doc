@@ -1,8 +1,7 @@
 
 ### 채널 설정(channel configuration) 작성
-configtxgen을 이용하여 채널 genesis block 생성(Configuration Block) /w configtx.yaml
 
-link:https://github.com/hyperledger/fabric-samples/blob/main/test-network/configtx/configtx.yaml[test-netwowrk - configtx/configtx.yaml] 을 참고하여 채널 genesis block 생성을 위한 채널 설정(Channel Configuration) 파일을 작성합니다.
+link:https://github.com/hyperledger/fabric-samples/blob/main/test-network/configtx/configtx.yaml[test-netwowrk - configtx/configtx.yaml] 을 참고하여 mosschannel 채널의 genesis block 생성을 위한 MossApplicationGenesis Profile을 채널 설정(Channel Configuration) 파일에 작성합니다.
 
 configtx/configtx.yaml
 ```
@@ -269,15 +268,15 @@ Orderer: &OrdererDefaults
 
     EtcdRaft:
         Consenters:
-        - Host: osn1.orderer1.example.com
+        - Host: osn1.orderer1.moss.com
           Port: 7061
           ClientTLSCert: ../organizations/ordererOrganizations/orderer1.moss.com/orderers/osn1.orderer1.moss.com/tls/server.crt
           ServerTLSCert: ../organizations/ordererOrganizations/orderer1.moss.com/orderers/osn1.orderer1.moss.com/tls/server.crt
-        - Host: osn2.orderer1.example.com
+        - Host: osn2.orderer1.moss.com
           Port: 7062
           ClientTLSCert: ../organizations/ordererOrganizations/orderer1.moss.com/orderers/osn2.orderer1.moss.com/tls/server.crt
           ServerTLSCert: ../organizations/ordererOrganizations/orderer1.moss.com/orderers/osn2.orderer1.moss.com/tls/server.crt
-        - Host: osn3.orderer1.example.com
+        - Host: osn3.orderer1.moss.com
           Port: 7063
           ClientTLSCert: ../organizations/ordererOrganizations/orderer1.moss.com/orderers/osn3.orderer1.moss.com/tls/server.crt
           ServerTLSCert: ../organizations/ordererOrganizations/orderer1.moss.com/orderers/osn3.orderer1.moss.com/tls/server.crt
@@ -383,7 +382,7 @@ Profiles:
 
 ### 채널 genesis block 생성
 
-configtxgen tool을 이용해서 ./configtx/configtx.yaml($FABRIC_CFG_PATH/configtx.yaml) 파일의 'MossApplicationGenesis' profile에 대한 채널의 genesis blcok을 ./channel-artifacts/mosschannel3.blcok 에 생성합니다.
+configtxgen tool을 이용해서 ./configtx/configtx.yaml($FABRIC_CFG_PATH/configtx.yaml) 파일의 'MossApplicationGenesis' profile로 채널의 genesis blcok을 ./channel-artifacts/mosschannel3.blcok 로 생성합니다.
 
 configtxgen 실행 전에 FABRIC_CFG_PATH가 confgixtx.yaml 경로로 설정되어야 합니다.
 
@@ -391,7 +390,7 @@ configtxgen 실행 전에 FABRIC_CFG_PATH가 confgixtx.yaml 경로로 설정되�
 
 편의를 위해서 채널명을 환경변수로 설정합니다.
 ```
-export CHANNEL_NAME=mosschannel3
+echo 'export CHANNEL_NAME=mosschannel3' | tee -a $HOME/.bashrc
 ```
 
 ====
@@ -421,10 +420,8 @@ configtxgen -profile MossApplicationGenesis -outputBlock ./channel-artifacts/${C
 ```
 
 ### FABRIC_CFG_PATH 재설정 및 BLOCKFILE 설정
-편의를 취해서 채널이름을 환경변수로 설정합니다.
 
-
-genesis block 생성을 위해서 지정한 FABRIC_CFG_PATH 경로를 config 로 변경합니다. (변경된 경로는 Orderer의 채널 생성 및 참여(join)시 사용됩니다.)
+genesis block 생성을 위해서 지정한 FABRIC_CFG_PATH 경로를 peer(core.yaml) 및 orderer(orderer.yaml) 기본설정이 위치한 config 로 변경합니다. (변경된 경로는 Orderer의 채널 생성 및 참여(join)시 사용됩니다.)
 
 편의를 위해 생성된 genesis block 파일 경로를 $BLOCKFILE 환경변수로 지정합니다.
 
@@ -433,6 +430,9 @@ cd "$FABRIC_NETWORK_HOME"
 
 export FABRIC_CFG_PATH=${PWD}/config
 export BLOCKFILE=${PWD}/channel-artifacts/${CHANNEL_NAME}.block
+
+echo 'export FABRIC_CFG_PATH='$FABRIC_CFG_PATH | tee -a $HOME/.bashrc
+echo 'export BLOCKFILE='$BLOCKFILE | tee -a $HOME/.bashrc
 ```
 
 ### 채널생성
@@ -475,12 +475,12 @@ Status: 201
 }
 ```
 
-### peer를 채널에 join
+### 채널에 Peer Join
 link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/create_channel/create_channel_test_net.html?highlight=anchor%20peer#join-peers-to-the-channel[join peers to the channel]
 
 'peer channel'를 이용하여 peer들을 채널에 join 시킵니다.
 
-환경변수를 각 peer 맞게 설정 후 'peerchannel join' 명령어를 수행합니다.
+환경변수를 각 peer 맞게 설정 후 'peer channel join' 명령어를 수행합니다.
 
 * CORE_PEER_TLS_ENABLED
 * CORE_PEER_TLS_ROOTCERT_FILE
@@ -488,29 +488,29 @@ link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/create_channel/cre
 * CORE_PEER_LOCALMSPID
 * CORE_PEER_MSPCONFIGPATH
 
-peer의 환경변수 설정을 위해서 script/setPeer.sh 를 사용합니다. (test-network의 script/setGlobals를 참조하여 작성되었습니다.)
+peer의 환경변수 설정을 위해서 scripts/setPeer.sh 를 작성하여 사용합니다. (test-network의 link:https://github.com/hyperledger/fabric-samples/blob/main/test-network/scripts/envVar.sh#L22[scripts/envVar.sh setGlobals()]를 참조하여 작성되었습니다.)
 
-script/setPeer.sh
+scripts/setPeer.sh
 ```
 #!/bin/bash
 
 DOMAIN=$1
 ORG=$2
-ADDRESS=$3
-ADMIN=$4
-PEER=$5
+PEER=$3
+ADDRESS=$4
+ADMIN=$5
 MSP=${ORG}MSP
 ORG_DOMAIN=${ORG}.${DOMAIN}
 PEER_DOMAIN=${PEER}.${ORG_DOMAIN}
 
 export CORE_PEER_TLS_ENABLED=true
-export CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/organizations/peerOrganizations/${ORG_DOMAIN}/tlsca/tlsca.${ORG_DOMAIN}-cert.pem
+export CORE_PEER_TLS_ROOTCERT_FILE=${FABRIC_NETWORK_HOME}/organizations/peerOrganizations/${ORG_DOMAIN}/tlsca/tlsca.${ORG_DOMAIN}-cert.pem
 export CORE_PEER_LOCALMSPID=${MSP}
-export CORE_PEER_MSPCONFIGPATH=${PWD}/organizations/peerOrganizations/${ORG_DOMAIN}/users/${ADMIN}@${ORG_DOMAIN}/msp
+export CORE_PEER_MSPCONFIGPATH=${FABRIC_NETWORK_HOME}/organizations/peerOrganizations/${ORG_DOMAIN}/users/${ADMIN}@${ORG_DOMAIN}/msp
 export CORE_PEER_ADDRESS=${ADDRESS}
 ```
 
-peer별 파라미털 설정한 실행파일도 추가되어 있습니다.
+peer별 파라미터 설정하여 setPeer.sh를 호출하는 파일도 추가합니다
 
 * scripts/setPlatformPeer0.sh
 * scripts/setPlatformPeer1.sh
@@ -520,6 +520,12 @@ peer별 파라미털 설정한 실행파일도 추가되어 있습니다.
 * scripts/setService1Peer1.sh
 * scripts/setService2Peer0.sh
 * scripts/setService2Peer1.sh
+
+생성한 파일에 실행권한을 추가합니다.
+```
+cd "$FABRIC_NETWORK_HOME"
+
+```
 
 환경변수 변경이 필요하기에 peer별로 구분하여 실행합니다.
 ```
@@ -564,6 +570,19 @@ peer channel join - tls 설정 오류
 Error: error getting endorser client for channel: endorser client failed to connect to localhost:11060: failed to create new connection: context deadline exceeded
 ```
 
+추후 사용의 편의를 위해서 platform.peer0 을 기본 peer로 설정합니다.
+
+```
+cd "$FABRIC_NETWORK_HOME"
+. ./scripts/setPlatformPeer0.sh
+
+echo 'export CORE_PEER_TLS_ENABLED='$CORE_PEER_TLS_ENABLED | tee -a $HOME/.bashrc
+echo 'export CORE_PEER_TLS_ROOTCERT_FILE='$CORE_PEER_TLS_ROOTCERT_FILE | tee -a $HOME/.bashrc
+echo 'export CORE_PEER_LOCALMSPID='$CORE_PEER_LOCALMSPID | tee -a $HOME/.bashrc
+echo 'export CORE_PEER_MSPCONFIGPATH='$CORE_PEER_MSPCONFIGPATH | tee -a $HOME/.bashrc
+echo 'export CORE_PEER_ADDRESS='$CORE_PEER_ADDRESS | tee -a $HOME/.bashrc
+```
+
 ## AnchorPeer 설정
 link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/commands/configtxlator.html[configtxlator] +
 link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/create_channel/create_channel_test_net.html?highlight=anchor%20peer#set-anchor-peer[Creating a channel - Set anchor peer] +
@@ -574,8 +593,8 @@ configtxlator를 이용하여 Peer 조직의 0번 peer를 AnchorPeer로 설정�
 각 조직별로 아래 단계를 거쳐서 Anchor Peer 설정을 수정합니다.
 
 . 채널 config를 조회
-. anchor peer에 추가를 위한 설정 수정
-. 현재 설정과 수정된 설정의 diff로 config update tx(Org1MSPconfig.json) 생성
+. anchor peer 설정을 위한 config 수정
+. 현재 config와 수정된 config의 diff로 config update tx 생성
 . AnchorPeer 수정
 
 편의를 위해서 osn1의 정보를 환경변수로 설정합니다.
@@ -589,17 +608,20 @@ cd "$FABRIC_NETWORK_HOME"
 export ORDERER_ADDRESS=localhost:7061
 export ORDERER_DOMAIN=osn1.orderer1.moss.com
 export ORDERER_CA=${PWD}/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn1.orderer1.moss.com/msp/tlscacerts/tlsca.orderer1.moss.com-cert.pem
+
+echo 'export ORDERER_ADDRESS='$ORDERER_ADDRESS | tee -a $HOME/.bashrc
+echo 'export ORDERER_DOMAIN='$ORDERER_DOMAIN | tee -a $HOME/.bashrc
+echo 'export ORDERER_CA='$ORDERER_CA | tee -a $HOME/.bashrc
 ```
 
-
-cofig 정보 조회 후, anchor peer 정보 추가 후 update 합니다.
-
+현재 Blockchain height(1) 확인
 ```
 $ peer channel getinfo -c ${CHANNEL_NAME}
 0001 INFO [channelCmd] InitCmdFactory -> Endorser and orderer connections initialized
 Blockchain info: {"height":1,"currentBlockHash":"aurwPlTb77XIMeNij80D3nda0+XTi5Z7rvAQ8W48Hhw="}
 ```
 
+anchor peer 설정 트랜잭션을 생성 후 Update 합니다.
 ```
 cd "$FABRIC_NETWORK_HOME"
 
@@ -617,7 +639,7 @@ configtxlator proto_encode --input modified_config.json --type common.Config --o
 configtxlator compute_update --channel_id ${CHANNEL_NAME} --original config.pb --updated modified_config.pb --output config_update.pb
 
 configtxlator proto_decode --input config_update.pb --type common.ConfigUpdate --output config_update.json
-echo '{"payload":{"header":{"channel_header":{"channel_id":"mosschannel3", "type":2}},"data":{"config_update":'$(cat config_update.json)'}}}' | jq . > config_update_in_envelope.json
+echo '{"payload":{"header":{"channel_header":{"channel_id":"'$CHANNEL_NAME'", "type":2}},"data":{"config_update":'$(cat config_update.json)'}}}' | jq . > config_update_in_envelope.json
 configtxlator proto_encode --input config_update_in_envelope.json --type common.Envelope --output config_update_in_envelope.pb
 
 cd ..
@@ -660,7 +682,7 @@ configtxlator proto_encode --input modified_config.json --type common.Config --o
 configtxlator compute_update --channel_id ${CHANNEL_NAME} --original config.pb --updated modified_config.pb --output config_update.pb
 
 configtxlator proto_decode --input config_update.pb --type common.ConfigUpdate --output config_update.json
-echo '{"payload":{"header":{"channel_header":{"channel_id":"mosschannel3", "type":2}},"data":{"config_update":'$(cat config_update.json)'}}}' | jq . > config_update_in_envelope.json
+echo '{"payload":{"header":{"channel_header":{"channel_id":"'$CHANNEL_NAME'", "type":2}},"data":{"config_update":'$(cat config_update.json)'}}}' | jq . > config_update_in_envelope.json
 configtxlator proto_encode --input config_update_in_envelope.json --type common.Envelope --output config_update_in_envelope.pb
 
 cd ..
@@ -681,7 +703,7 @@ configtxlator proto_encode --input modified_config.json --type common.Config --o
 configtxlator compute_update --channel_id ${CHANNEL_NAME} --original config.pb --updated modified_config.pb --output config_update.pb
 
 configtxlator proto_decode --input config_update.pb --type common.ConfigUpdate --output config_update.json
-echo '{"payload":{"header":{"channel_header":{"channel_id":"mosschannel3", "type":2}},"data":{"config_update":'$(cat config_update.json)'}}}' | jq . > config_update_in_envelope.json
+echo '{"payload":{"header":{"channel_header":{"channel_id":"'$CHANNEL_NAME'", "type":2}},"data":{"config_update":'$(cat config_update.json)'}}}' | jq . > config_update_in_envelope.json
 configtxlator proto_encode --input config_update_in_envelope.json --type common.Envelope --output config_update_in_envelope.pb
 
 cd ..
@@ -702,7 +724,7 @@ configtxlator proto_encode --input modified_config.json --type common.Config --o
 configtxlator compute_update --channel_id ${CHANNEL_NAME} --original config.pb --updated modified_config.pb --output config_update.pb
 
 configtxlator proto_decode --input config_update.pb --type common.ConfigUpdate --output config_update.json
-echo '{"payload":{"header":{"channel_header":{"channel_id":"mosschannel3", "type":2}},"data":{"config_update":'$(cat config_update.json)'}}}' | jq . > config_update_in_envelope.json
+echo '{"payload":{"header":{"channel_header":{"channel_id":"'$CHANNEL_NAME'", "type":2}},"data":{"config_update":'$(cat config_update.json)'}}}' | jq . > config_update_in_envelope.json
 configtxlator proto_encode --input config_update_in_envelope.json --type common.Envelope --output config_update_in_envelope.pb
 
 cd ..

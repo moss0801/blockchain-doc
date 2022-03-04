@@ -1816,10 +1816,11 @@ peer의 port는 아래와 같이 사용합니다.
 
 tlsCACerts.pem은 각각 아래 파일을 참조 합니다.
 
-* peers."{peer}.{organization}.{networkn}".tlsCACerts.pem : tlsca.{organization}.moss.com-cert.pem
-* certificateAuthorities.{ca}.tlsCACerts:pem: ca.{organization}.moss.com-cert.pem
+* peers.{peer}.tlsCACerts.pem : tlsca/tlsca.{organization}.nc.com-cert.pem
+* certificateAuthorities.{ca}.tlsCACerts:pem: ca/ca.{organization}.nc.com-cert.pem
 
 예) platform peer0
+
 * peers.peer0.tlsCACerts.pem : organizations/peerOrganizations/platform.moss.com/tlsca/tlsca.platform.moss.com-cert.pem
 * certificateAuthorities."ca.platform.moss.com".tlsCACerts:pem: organizations/peerOrganizations/platform.moss.com/ca/ca.platform.moss.com-cert.pem
 
@@ -2082,6 +2083,27 @@ OvygIgIgC/dDyD5KG4tIAB9GaPCOeOBwswLDgnV67e0Rkgqj8hQ=
 ```
 
 *organizations/peerOrganizations/service2.moss.com/connection-service2.yaml*
+
+*CCP 파일 생성 결과*
+```
+./$FABRIC_NETWORK_HOME
+...
+└── organizations
+    ...
+    └── peerOrganizations
+        ├── customer.moss.com
+        │    ...
+        │   └── connection-customer.yaml
+        ├── platform.moss.com
+        │    ...
+        │   └── connection-platform.yaml
+        ├── service1.moss.com
+        │    ...
+        │   └── connection-service1.yaml
+        └── service2.moss.com
+             ...
+             └── connection-service2.yaml
+```
 
 ### network docker-compose 작성 및 실행
 orderer, peer, cli node를 위한 docker-compose 설정 파일을 작성하고 실행하여 container를 실행시킵니다.

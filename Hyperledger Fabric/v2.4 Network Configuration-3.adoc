@@ -97,7 +97,7 @@ peer lifecycle chaincode install ${CC_NAME}.tar.gz
 
 ```
 
-실행결과
+install 실행 로그
 ```
 $ . ./scripts/setPlatformPeer0.sh
 $ peer lifecycle chaincode install ${CC_NAME}.tar.gz
@@ -392,7 +392,7 @@ chaincode init 호출
 fcn_call='{"function":"'${CC_INIT_FCN}'","Args":[]}'
 
 . ./scripts/setPlatformPeer0.sh
-peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}"  -c ${fcn_call} >&log.txt
+peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" --isInit  -c ${fcn_call} >&log.txt
 cat log.txt
 ```
 
