@@ -793,7 +793,8 @@ t0Y6h0RHvGWXstYO/VY/R7Jp7ZnqCpWrd6kaoNJ1WqlMsm8yQ4V1U97a
 
 . *Orderer 조직*
 .. enroll 이용하여 CA admin 등록
-.. 기본 설정 파일(fabric-ca-client-config.yaml) 수정 (CA Admin enroll시 생성)
+.. 필요한 경우 기본 설정 파일(fabric-ca-client-config.yaml) 수정 (CA Admin enroll시 생성) - 명령어 수행시 옵션으로 추가 조정
+... 여기서는 수정을 생략합니다.
 .. register 이용하여 Admin 등록 (orderer1Admin)
 .. enroll 이용하여 Admin msp 생성 (orderer1Admin)
 .. register 이용하여 Orderer 등록(osn1.orerder1, osn2.orerder1, osn3.orerder1)
@@ -802,7 +803,8 @@ t0Y6h0RHvGWXstYO/VY/R7Jp7ZnqCpWrd6kaoNJ1WqlMsm8yQ4V1U97a
 
 . *Peer 조직*
 .. enroll 이용하여 CA admin 등록(enroll)
-.. 기본 설정 파일(fabric-ca-client-config.yaml) 수정 (CA Admin enroll시 생성)
+.. 필요한 경우 기본 설정 파일(fabric-ca-client-config.yaml) 수정 (CA Admin enroll시 생성) - 명령어 수행시 옵션으로 추가 조정
+... 여기서는 수정을 생략합니다.
 .. register 이용하여 Peer 등록(register) (peer0, peer1)
 .. enroll 이용하여 Peer msp 생성 (peer0, peer1)
 .. enroll 이용하여 Peer TLS certificates 생성 (peer0-tls, peer1-tls)
@@ -952,7 +954,7 @@ NodeOUs:
 Identity classification은 'NodeOUs.Enable'을 'true'로 설정하면 활성화 되고, client(admin, peer, orderer) OU Identifier가 'NodeOUs.ClientOUIdentifier' ('NodeOUs.AdminOUIdentifier', 'NodeOUs.PeerOUIdentifier', 'NodeOUs.OrdererOUIdentifier') 키의 속성 값으로 정의됩니다.
 
 * *OrganizationalUnitIdentifier*: x509 인증서가 client(admin, peer, orderer)로 간주되기 위해 포함해야 하는 OU 값입니다. 필드가 비어 있으면 적용되지 않습니다.
-* *Certificate*: (Optional) CA 또는 intermedicate CA 인증서 경로를 MSP root 폴더의 상대경로로 지정합니다. 오직 하나의 인증서만 설정할 수 있고, 값을 설정하지 않으면 조직의 MSP 설정에 정의된 CA 중 하나에서만 유효하면 됩니다.
+* *Certificate*: (Optional) CA 또는 intermediate CA 인증서 경로를 MSP root 폴더의 상대경로로 지정합니다. 오직 하나의 인증서만 설정할 수 있고, 값을 설정하지 않으면 조직의 MSP 설정에 정의된 CA 중 하나에서만 유효하면 됩니다.
 
  파일에서 'Certificate'는 CA 또는 intermediate CA 인증서 경로를 나타냅니다. 경로는 MSP root 폴더를 기준으로 상대적 경로이고 규칙을 따른다면 생략 가능합니다.
 
@@ -1096,7 +1098,7 @@ enroll 후 결과
 ```
 
 node인 orderer(osn1, osn2, osn3)는 TLS certificates를 생성합니다. +
-orderer 시작시 설정에 의해 참조될 수 있도록, TLS CA cert, server cert, server keystore를 잘 알려임 이름으로 tls 폴더에 복사합니다. +
+orderer 시작시 설정에 의해 참조될 수 있도록, TLS CA cert, server cert, server keystore를 잘 알려진 이름으로 tls 폴더에 복사합니다. +
 orderer MSP 정의에서 사용하기 위해서 CA의 인증서를 /msp/tlscacerts 폴더로 복사합니다.
 
 ```
@@ -1214,7 +1216,7 @@ orderer TLS certificates 생성 및 파일 복사 결과
 
 platform 조직을 기준으로 작업하고, 나머지 조직은 동일한 방식으로 진행합니다.
 
-*paltform - eroll CA Admin*
+*platform - enroll CA Admin*
 
 피어조직 폴더를 생성하고, 해당 경로를 FABRIC_CA_CLINET_HOME 환경변수로 설정 후, enroll 명령을 수행합니다.
 
@@ -1310,14 +1312,6 @@ cp "${PWD}/organizations/fabric-ca/platform/ca-cert.pem" "${PWD}/organizations/p
     │   ├── orderer1
     │   │   ├── ca-cert.pem # orderer1 CA Certificateion
     ...
-    └── ordererOrganizations
-        └── orderer1.moss.com
-            ...
-            ├── msp
-            ...
-            │   ├── config.yaml
-            └── tlsca
-                └── tlsca.orderer1.moss.com-cert.pem
     └── peerOrganizations
         └── platform.moss.com
             ...
@@ -1437,8 +1431,8 @@ enroll 후 결과
                         └── user
 ```
 
-node인 peer(peer0, peer1)는 TLS certificates를 생성합니다. +
-peer 시작시 설정에 의해 참조될 수 있도록, TLS CA cert, server cert, server keystore를 잘 알려임 이름으로 tls 폴더에 복사합니다.
+*node인 peer(peer0, peer1)는 TLS certificates를 생성합니다.* +
+peer 시작시 설정에 의해 참조될 수 있도록, TLS CA cert, server cert, server keystore를 잘 알려진 이름으로 tls 폴더에 복사합니다.
 
 ```
 cd "$FABRIC_NETWORK_HOME"
@@ -1549,6 +1543,8 @@ NodeOUs:
 
 customer - copy CA cert, register and enroll identity
 ```
+cd "$FABRIC_NETWORK_HOME"
+
 # Copy CA cert to /msp/tlscacerts (for use in the channel MSP definition)
 mkdir -p "${PWD}/organizations/peerOrganizations/customer.moss.com/msp/tlscacerts"
 cp "${PWD}/organizations/fabric-ca/customer/ca-cert.pem" "${PWD}/organizations/peerOrganizations/customer.moss.com/msp/tlscacerts/ca.crt"
@@ -1642,6 +1638,8 @@ NodeOUs:
 
 service1 - copy CA cert, register and enroll identity
 ```
+cd "$FABRIC_NETWORK_HOME"
+
 # Copy CA cert to /msp/tlscacerts (for use in the channel MSP definition)
 mkdir -p "${PWD}/organizations/peerOrganizations/service1.moss.com/msp/tlscacerts"
 cp "${PWD}/organizations/fabric-ca/service1/ca-cert.pem" "${PWD}/organizations/peerOrganizations/service1.moss.com/msp/tlscacerts/ca.crt"
@@ -1735,6 +1733,9 @@ NodeOUs:
 
 service2 - copy CA cert, register and enroll identity
 ```
+cd "$FABRIC_NETWORK_HOME"
+
+
 # Copy CA cert to /msp/tlscacerts (for use in the channel MSP definition)
 mkdir -p "${PWD}/organizations/peerOrganizations/service2.moss.com/msp/tlscacerts"
 cp "${PWD}/organizations/fabric-ca/service2/ca-cert.pem" "${PWD}/organizations/peerOrganizations/service2.moss.com/msp/tlscacerts/ca.crt"
