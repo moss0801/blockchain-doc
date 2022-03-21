@@ -11,9 +11,9 @@ xref:Introduction.adoc[Hyperledger Fabric 소개]
 
 ### 네트워크 & 채널 구성
 
-* xref:v2.4 Network Configuration-1.adoc[Network Configuration 1]
-* xref:v2.4 Network Configuration-2.adoc[Network Configuration 2]
-* xref:v2.4 Network Configuration-3.adoc[Network Configuration 3]
+* xref:v2.4 Network Configuration-1.adoc[Network Configuration 1 - 네트워크 구성]
+* xref:v2.4 Network Configuration-2.adoc[Network Configuration 2 - 채널 생성]
+* xref:v2.4 Network Configuration-3.adoc[Network Configuration 3 - 체인코드 테스트]
 * 참고
 ** [공식문서] link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/getting_started.html[Install]
 ** [공식문서] link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/test_network.html[Using the Fabric test network]
