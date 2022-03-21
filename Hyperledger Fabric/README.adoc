@@ -7,7 +7,7 @@ xref:Introduction.adoc[Hyperledger Fabric 소개]
 
 ### 리뷰
 
-* link:https://./Hyperledger-Fabric-v2.4-with-Java.pdf[리뷰 자료]
+* link:Hyperledger-Fabric-v2.4-with-Java.pdf[리뷰 자료]
 
 ### 네트워크 & 채널 구성
 
