@@ -1,9 +1,16 @@
+## 전체문서
+** xref:v2.4 Network Configuration-1.adoc[Network Configuration 1]
+** xref:v2.4 Network Configuration-2.adoc[Network Configuration 2]
+** xref:v2.4 Network Configuration-3.adoc[Network Configuration 3]
 
+## 개요
 Hyperledeger Fabric v2.4 Custom Network 구성
 
 * Docker Compose 사용 (Docker Compose 성공하면 k8s로 변경하여 수정 예정)
 * Fabric CA 사용
 * LevelDB 사용 (LevelDB 성공하면 CouchDB로 변경하여 수정 예정)
+
+
 
 ## 네트워크 구성 요소
 * Orderer 1개

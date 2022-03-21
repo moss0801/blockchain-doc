@@ -1,6 +1,7 @@
 link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/txflow.html[Transaction Flow]
 
 **시나리오 - 자산 거래(asset exchange)**
+
 * 자산: 무(radish)
 * 클라이언트 A(구매자), B(판매자)
 * 각 클라이언트는 원장과 상호작용 및 트랜잭션을 전송할 수 있는 네트워크상 피어를 가집니다.
@@ -46,7 +47,7 @@ image:https://hyperledger-fabric.readthedocs.io/en/release-2.4/_images/step2.png
 [NOTE]
 ====
 MSP는 피어가 클라이언트로 부터 도착하는 트랜잭션 요청을 검증하고, 트랜잭션 결과(보증)에 서명할 수 있도록 하는 피어 컴포넌트입니다.
-쓰기 정책(writing policy)은 채널 생성 시 정의되고, 채널에 트랜잭션을 제출할 자격이 있는 사용자를 결정합니다.
+쓰기 정책(writing policy)은 채널 생성 시 정의되고, 채널에 트랜잭션을 제출할 자격이 있는 사용자를 결정합니다. +
 참고: link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/membership/membership.html[Membership Service Provider (MSP)]
 ====
 

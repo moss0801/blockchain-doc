@@ -66,9 +66,9 @@ chaincode는 다수의 contract를 가지고, contract 중 하나를 default con
 
 ### Chaincode
 
-go: https://pkg.go.dev/github.com/hyperledger/fabric-chaincode-go/shim#Chaincode
-Java: https://github.com/hyperledger/fabric-chaincode-java/blob/main/fabric-chaincode-shim/src/main/java/org/hyperledger/fabric/shim/Chaincode.java
-node: https://github.com/hyperledger/fabric-chaincode-node/blob/9b800780c5d47a0f4e5f5b7254cb947ae838314b/libraries/fabric-shim/lib/chaincode.js
+* go: https://pkg.go.dev/github.com/hyperledger/fabric-chaincode-go/shim#Chaincode
+* Java: https://github.com/hyperledger/fabric-chaincode-java/blob/main/fabric-chaincode-shim/src/main/java/org/hyperledger/fabric/shim/Chaincode.java
+* node: https://github.com/hyperledger/fabric-chaincode-node/blob/9b800780c5d47a0f4e5f5b7254cb947ae838314b/libraries/fabric-shim/lib/chaincode.js
 
 
 ```
@@ -118,9 +118,9 @@ public interface Chaincode {
 
 ### ChaincodeStub
 
-go: https://github.com/hyperledger/fabric-chaincode-go/blob/1476cf1d3206/shim/interfaces.go#L14
-Java: https://github.com/hyperledger/fabric-chaincode-java/blob/main/fabric-chaincode-shim/src/main/java/org/hyperledger/fabric/shim/ChaincodeStub.java
-node: https://github.com/hyperledger/fabric-chaincode-node/blob/9b800780c5d47a0f4e5f5b7254cb947ae838314b/libraries/fabric-shim/lib/stub.js
+* go: https://github.com/hyperledger/fabric-chaincode-go/blob/1476cf1d3206/shim/interfaces.go#L14
+* Java: https://github.com/hyperledger/fabric-chaincode-java/blob/main/fabric-chaincode-shim/src/main/java/org/hyperledger/fabric/shim/ChaincodeStub.java
+* node: https://github.com/hyperledger/fabric-chaincode-node/blob/9b800780c5d47a0f4e5f5b7254cb947ae838314b/libraries/fabric-shim/lib/stub.js
 
 
 ```

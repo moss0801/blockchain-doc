@@ -1,4 +1,6 @@
 
+## 채널 생성
+
 ### 채널 설정(channel configuration) 작성
 
 link:https://github.com/hyperledger/fabric-samples/blob/main/test-network/configtx/configtx.yaml[test-netwowrk - configtx/configtx.yaml] 을 참고하여 service1 채널의 genesis block 생성을 위한 Service1ApplicationGenesis Profile을 채널 설정(Channel Configuration) 파일에 작성합니다.

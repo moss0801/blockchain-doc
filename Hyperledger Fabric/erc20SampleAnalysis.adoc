@@ -62,8 +62,12 @@ openzeppelin link:https://github.com/OpenZeppelin/openzeppelin-contracts/blob/ma
 |함수 이름이 다름. +
 Fabric Contract의 name parameter와 충돌하여서 대신 TokenName을 사용
 
-|SetOption(ctx, name, symbol, decimals)	name, symbol, decimals 수정
-|mint(address to, unit256 amount)	Mint(ctx, amount)
+|
+|SetOption(ctx, name, symbol, decimals)
+|name, symbol, decimals 수정
+
+|mint(address to, unit256 amount)
+|Mint(ctx, amount)
 |openzeppelin 구현은 mint 대상을 지정하지만, +
 fabric 구현은 호출자에게 mint한다.
 
@@ -94,10 +98,10 @@ fabric 구현은 호출자에게 mint한다.
 *** 코드: Java , Node.js, golang
 * 이더리움은 소유권이 address 기준이고, Fabric은 clientIdentitiy.getID() 이다.
 ** ID 예)
-*** x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com
-*** x509::/C=US/ST=North Carolina/O=Hyperledger/OU=client/CN=user1::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com
-*** x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.customer.moss.com
-*** x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=service1Admin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.service1.moss.com
+*** x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.platform.moss.com
+*** x509::/C=US/ST=North Carolina/O=Hyperledger/OU=client/CN=user1::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.platform.moss.com
+*** x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.customer.moss.com
+*** x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=service1Admin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.service1.moss.com
 * ID의 유효성 체크는 어떻게 하는가?
 
 ## 고려사항
@@ -231,39 +235,39 @@ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["ClientAccoun
 peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["TotalSupply"]}'
 
 # BalanceOf
-peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["BalanceOf", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com"]}'
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["BalanceOf", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.platform.moss.com"]}'
 
 # Transfer
-peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"Transfer","Args":["x509::/C=US/ST=North Carolina/O=Hyperledger/OU=client/CN=user1::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com", "100000000"]}'
+peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"Transfer","Args":["x509::/C=US/ST=North Carolina/O=Hyperledger/OU=client/CN=user1::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.platform.moss.com", "100000000"]}'
 
 # BalanceOf
-peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["BalanceOf", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com"]}'
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["BalanceOf", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.platform.moss.com"]}'
 
 # BalanceOf
-peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["BalanceOf", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=client/CN=user1::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com"]}'
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["BalanceOf", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=client/CN=user1::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.platform.moss.com"]}'
 
 # Transfer platformAdmin -> customerAdmin: 300000000
-peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"Transfer","Args":["x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.customer.moss.com", "300000000"]}'
+peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"Transfer","Args":["x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.customer.moss.com", "300000000"]}'
 
 # Approve customerAdmin -> platformAdmin: 200000000
 . ./scripts/setCustomerPeer0.sh
-peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"Approve","Args":["x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com", "200000000"]}'
+peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"Approve","Args":["x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.platform.moss.com", "200000000"]}'
 
 # Allowance
-peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["Allowance", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.customer.moss.com", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com"]}'
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["Allowance", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.customer.moss.com", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.platform.moss.com"]}'
 
 # TransferFrom platformAdmin, customerAdmin -> service1Admin: 200000000
 . ./scripts/setPlatformPeer0.sh
-peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"TransferFrom","Args":["x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.customer.moss.com", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=service1Admin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.service1.moss.com", "200000000"]}'
+peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"TransferFrom","Args":["x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.customer.moss.com", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=service1Admin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.service1.moss.com", "200000000"]}'
 
 # BalanceOf customerAdmin
-peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["BalanceOf", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.customer.moss.com"]}'
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["BalanceOf", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.customer.moss.com"]}'
 
 # BalanceOf service1Admin
-peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["BalanceOf", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=service1Admin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.service1.moss.com"]}'
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["BalanceOf", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=service1Admin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.service1.moss.com"]}'
 
 # Allowance customerAdmin -> platformAdmin
-peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["Allowance", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.customer.moss.com", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com"]}'
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["Allowance", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.customer.moss.com", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.platform.moss.com"]}'
 
 # Burn
 . ./scripts/setPlatformPeer0.sh
@@ -291,10 +295,10 @@ $ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["TotalSuppl
 NaN
 
 $ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["ClientAccountID"]}'
-x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com
+x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.platform.moss.com
 
 $ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["ClientAccountBalance"]}'
-Error: endorsement failure during query. response: status:500 message:"error in simulation: transaction returned with failure: Error: the account x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com does not exist
+Error: endorsement failure during query. response: status:500 message:"error in simulation: transaction returned with failure: Error: the account x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.platform.moss.com does not exist
 
 $ peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"Mint","Args":["1000000000"]}'
 2022-03-11 18:17:26.362 KST 0001 INFO [chaincodeCmd] chaincodeInvokeOrQuery -> Chaincode invoke successful. result: status:200 payload:"true"
@@ -305,38 +309,38 @@ $ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["ClientAcco
 $ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["TotalSupply"]}'
 1000000000
 
-$ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["BalanceOf", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com"]}'
+$ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["BalanceOf", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.platform.moss.com"]}'
 1000000000
 
-$ peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} $ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"Transfer","Args":["x509::/C=US/ST=North Carolina/O=Hyperledger/OU=client/CN=user1::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com", "100000000"]}'
+$ peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} $ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"Transfer","Args":["x509::/C=US/ST=North Carolina/O=Hyperledger/OU=client/CN=user1::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.platform.moss.com", "100000000"]}'
 0001 INFO [chaincodeCmd] chaincodeInvokeOrQuery -> Chaincode invoke successful. result: status:200 payload:"true"
 
-$ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["BalanceOf", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com"]}'
+$ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["BalanceOf", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.platform.moss.com"]}'
 900000000
 
-$ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["BalanceOf", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=client/CN=user1::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com"]}'
+$ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["BalanceOf", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=client/CN=user1::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.platform.moss.com"]}'
 100000000
 
-$ peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"Transfer","Args":["x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.customer.moss.com", "300000000"]}'
+$ peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"Transfer","Args":["x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.customer.moss.com", "300000000"]}'
 0001 INFO [chaincodeCmd] chaincodeInvokeOrQuery -> Chaincode invoke successful. result: status:200 payload:"true"
 
 $ . ./scripts/setCustomerPeer0.sh
-$ peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"Approve","Args":["x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com", "200000000"]}'
+$ peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"Approve","Args":["x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.platform.moss.com", "200000000"]}'
 0001 INFO [chaincodeCmd] chaincodeInvokeOrQuery -> Chaincode invoke successful. result: status:200 payload:"true"
 
-$ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["Allowance", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.customer.moss.com", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com"]}'
+$ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["Allowance", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.customer.moss.com", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.platform.moss.com"]}'
 200000000
 
-$ peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"TransferFrom","Args":["x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.customer.moss.com", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=service1Admin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.service1.moss.com", "200000000"]}'
+$ peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"TransferFrom","Args":["x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.customer.moss.com", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=service1Admin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.service1.moss.com", "200000000"]}'
 2022-03-11 18:53:48.628 KST 0001 INFO [chaincodeCmd] chaincodeInvokeOrQuery -> Chaincode invoke successful. result: status:200 payload:"true"
 
-$ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["BalanceOf", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.customer.moss.com"]}'
+$ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["BalanceOf", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.customer.moss.com"]}'
 100000000
 
-${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["BalanceOf", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=service1Admin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.service1.moss.com"]}'
+${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["BalanceOf", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=service1Admin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.service1.moss.com"]}'
 200000000
 
-${CC_NAME} -c '{"Args":["Allowance", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.customer.moss.com", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com"]}'
+${CC_NAME} -c '{"Args":["Allowance", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.customer.moss.com", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=MOSS Corporation/CN=ca.platform.moss.com"]}'
 0
 
 $ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["ClientAccountBalance"]}'

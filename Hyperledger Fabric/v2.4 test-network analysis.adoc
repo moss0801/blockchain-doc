@@ -1,5 +1,6 @@
 
-test-network 분석
+## 개요
+Hyperledger Fabric custom 네트워크 구축 방법을 확인하기 위하여 fabric-samples의 test-network 분석
 
 https://github.com/hyperledger/fabric-samples/tree/main/test-network
 
@@ -186,7 +187,7 @@ function networkUp() {
 
   COMPOSE_FILES="-f compose/${COMPOSE_FILE_BASE} -f compose/${CONTAINER_CLI}/${CONTAINER_CLI}-${COMPOSE_FILE_BASE}"
   # COMPOSE_FILES="-f compose/compose-test-net.yaml -f compose/docker/docker-compose-test-net.yaml"
-  
+
   if [ "${DATABASE}" == "couchdb" ]; then
     COMPOSE_FILES="${COMPOSE_FILES} -f compose/${COMPOSE_FILE_COUCH} -f compose/${CONTAINER_CLI}/${CONTAINER_CLI}-${COMPOSE_FILE_COUCH}"
     # COMPOSE_FILES="${COMPOSE_FILES} -f compose/compose-couch.yaml -f compose/docker/docker-compose-couch.yaml"
@@ -194,7 +195,7 @@ function networkUp() {
 
   DOCKER_SOCK="${DOCKER_SOCK}" ${CONTAINER_CLI_COMPOSE} ${COMPOSE_FILES} up -d 2>&1
   # docker-compose -f compose/compose-test-net.yaml -f compose/docker/docker-compose-test-net.yaml up -d 2>&1
-  
+
   $CONTAINER_CLI ps -a
   if [ $? -ne 0 ]; then
     fatalln "Unable to start network"
@@ -494,7 +495,7 @@ certificateAuthorities:
     url: https://localhost:${CAPORT}
     caName: ca-org${ORG}
     tlsCACerts:
-      pem: 
+      pem:
         - |
           ${CAPEM}
     httpOptions:
@@ -632,7 +633,7 @@ services:
       - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.org2.example.com:9051
       - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.org2.example.com:9051
       - CORE_PEER_LOCALMSPID=Org2MSP
-      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp      
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/msp
       - CORE_OPERATIONS_LISTENADDRESS=peer0.org2.example.com:9445
       - CORE_METRICS_PROVIDER=prometheus
       - CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG={"peername":"peer0org2"}
@@ -708,7 +709,7 @@ services:
     volumes:
       - ./docker/peercfg:/etc/hyperledger/peercfg
       - ${DOCKER_SOCK}:/host/var/run/docker.sock
-  
+
   cli:
     container_name: cli
     image: hyperledger/fabric-tools:latest
@@ -769,20 +770,20 @@ network 구성 여부 확인 후, 'script/createChannel.sh' 실행
 # call the script to create the channel, join the peers of org1 and org2,
 # and then update the anchor peers for each organization
 function createChannel() {
-  # Bring up the network if it is not already up. 
+  # Bring up the network if it is not already up.
   bringUpNetwork="false"
 
   if ! $CONTAINER_CLI info > /dev/null 2>&1 ; then
     fatalln "$CONTAINER_CLI network is required to be running to create a channel"
   fi
 
-  # check if all containers are present 
+  # check if all containers are present
   CONTAINERS=($($CONTAINER_CLI ps | grep hyperledger/ | awk '{print $2}'))
   len=$(echo ${#CONTAINERS[@]})
-  
+
   if [[ $len -ge 4 ]] && [[ ! -d "organizations/peerOrganizations" ]]; then
     echo "Bringing network down to sync certs with containers"
-    networkDown 
+    networkDown
   fi
 
   [[ $len -lt 4 ]] || [[ ! -d "organizations/peerOrganizations" ]] && bringUpNetwork="true" || echo "Network Running Already"
@@ -812,7 +813,7 @@ function createChannel() {
 . 채널의 각 조직별 anchor peer 설정 - setAnchorPeer 1, setAnchorPeer 2
 
 ```
-# imports  
+# imports
 . scripts/envVar.sh
 . scripts/utils.sh
 
@@ -1042,7 +1043,7 @@ cli container 내 setAnchorPeer.sh를 실행하여 채널의 조직별 Anchor Pe
 ```
 setAnchorPeer() {
   ORG=$1
-  ${CONTAINER_CLI} exec cli ./scripts/setAnchorPeer.sh $ORG $CHANNEL_NAME 
+  ${CONTAINER_CLI} exec cli ./scripts/setAnchorPeer.sh $ORG $CHANNEL_NAME
 }
 ```
 
@@ -1063,7 +1064,7 @@ The **configtxlator** command allows users to translate between protobuf and JSO
 . scripts/configUpdate.sh
 
 
-# NOTE: this must be run in a CLI container since it requires jq and configtxlator 
+# NOTE: this must be run in a CLI container since it requires jq and configtxlator
 createAnchorPeerUpdate() {
   infoln "Fetching channel config for channel $CHANNEL_NAME"
   fetchChannelConfig $ORG $CHANNEL_NAME ${CORE_PEER_LOCALMSPID}config.json
@@ -1084,11 +1085,11 @@ createAnchorPeerUpdate() {
   fi
 
   set -x
-  # Modify the configuration to append the anchor peer 
+  # Modify the configuration to append the anchor peer
   jq '.channel_group.groups.Application.groups.'${CORE_PEER_LOCALMSPID}'.values += {"AnchorPeers":{"mod_policy": "Admins","value":{"anchor_peers": [{"host": "'$HOST'","port": '$PORT'}]},"version": "0"}}' ${CORE_PEER_LOCALMSPID}config.json > ${CORE_PEER_LOCALMSPID}modified_config.json
   { set +x; } 2>/dev/null
 
-  # Compute a config update, based on the differences between 
+  # Compute a config update, based on the differences between
   # {orgmsp}config.json and {orgmsp}modified_config.json, write
   # it as a transaction to {orgmsp}anchors.tx
   createConfigUpdate ${CHANNEL_NAME} ${CORE_PEER_LOCALMSPID}config.json ${CORE_PEER_LOCALMSPID}modified_config.json ${CORE_PEER_LOCALMSPID}anchors.tx
@@ -1107,9 +1108,9 @@ CHANNEL_NAME=$2
 
 setGlobalsCLI $ORG
 
-createAnchorPeerUpdate 
+createAnchorPeerUpdate
 
-updateAnchorPeer 
+updateAnchorPeer
 ```
 
 #### Org1 수행 명령어 (setAnchorPeer 1)
@@ -1139,7 +1140,7 @@ configtxlator proto_decode --input config_update.pb --type common.ConfigUpdate -
 echo '{"payload":{"header":{"channel_header":{"channel_id":"'mychannel'", "type":2}},"data":{"config_update":'$(cat config_update.json)'}}}' | jq . >config_update_in_envelope.json
 configtxlator proto_encode --input config_update_in_envelope.json --type common.Envelope --output "Org1MSPanchors.tx"
 
-# updateAnchorPeer 
+# updateAnchorPeer
 peer channel update -o orderer.example.com:7050 --ordererTLSHostnameOverride orderer.example.com -c mychannel -f Org1MSPanchors.tx --tls --cafile "./organizations/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem" >&log.txt
 ```
 
