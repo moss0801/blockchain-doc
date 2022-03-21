@@ -1,0 +1,1191 @@
+## 개요
+체인코드 개발 방법 정리 +
+Fabric의 스마트 컨트랙트는 ChainCode 인터페이스를 구현한 것이다.
+
+Writing Your First Chaincode: https://hyperledger-fabric.readthedocs.io/en/release-2.4/chaincode4ade.html
+
+## 사전작업
+* 네트워크 구성: xref:v2.4 Network Configuration-1.adoc[네트워크 구성]
+
+## chaincode lifecycle
+v2.0 부터 chaincode lifecycle이 변경되었다.
+
+link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/chaincode_lifecycle.html[Fabric chaincode lifecycle]
+
+Develop -> Build -> Package -> Install -> Approve -> Commit -> Init -> Transaction
+
+* Develop: chaincode 개발
+* Build
+** Java: gradle installDist
+** node(javascript): npm install
+** node(typescript): npm install && tsc
+** go: GO111MODULE=on go mod vendor (Vendoring Go dependencies)
+* Package: tar.gz 로 묶음
+* Install: chaincode를 운영할 Peer에 설치
+* Approve: 채널에 참여한 Organization들의 과반수가 동의 (--init-required: init이 필요한 경우 지정)
+* Commit: run chaincode as container per peer
+* Init: 초기화(옵션: approve 시 --init-required을 지정하지 않으면 생략가능)
+* Transaction: 트랜잭션 Evaludate 또는 Submit
+
+
+## chaincode & contract
+chaincode는 다수의 contract를 가지고, contract 중 하나를 default contract로 지정할 수 있다.
+
+* Chaincode
+** Contract1(Default)
+** Contract2
+** Contract3
+
+## 주요 인터페이스
+* **ChainCode**
+** **Init()** : 초기화 (v2.0 부터 ContractRounter를 사용함에 따라 명시적 Init 구현을 하지 않음. Init이 필요하다면 approve시 --init-required으로 init이 필요함을 표시하고, peer chaincode invoke --isInit 을 통해서 init 함수를 호출 후 다름 함수 호출 가능. chaincode 별로 한번만 init이 가능하다.)
+** **Invoke()**: 트랜잭션
+*** **TransactionType**(link:https://github.com/hyperledger/fabric-chaincode-java/blob/main/fabric-chaincode-shim/src/main/java/org/hyperledger/fabric/contract/routing/TransactionType.java[SourceCode])
+**** **SUBMIT** : 추가,수정,삭제 (이전 INVOKE)
+**** **EVALUATE** : 조회 (이전 QUERY)
+* **ChaincodeStub** : Request 조회 및 Ledger와 상호작용
+** Ledger
+*** **GetState**(key) : 조회
+*** **GetStateByRange**(startKey, endKey) : 범위 조회
+*** **PutState**(key, value) : 수정 (존재하지 않으면 추가) - 편의함수(PutStringState())
+*** **DelState**(key): 삭제
+** Event : 트랜잭션당 1개의 이벤트만 설정 가능
+*** **SetEvent**(name, payload)
+*** GetEvent()
+** Request
+*** getFunction() : 호출 함수 조회
+*** getArgs() : Request call의 arguments 조회  - 편의함수(GetStringArgs(), GetParameters())
+** 기타
+*** GetChannelId()
+*** GetMspId()
+*** GetTxId()
+*** GetTxTimestamp()
+*** GetSignedProposoal()
+* Value : JSON in **alphabetic order**.
+** link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/chaincode4ade.html#json-determinism[JSON determinism]
+
+### Chaincode
+
+go: https://pkg.go.dev/github.com/hyperledger/fabric-chaincode-go/shim#Chaincode
+Java: https://github.com/hyperledger/fabric-chaincode-java/blob/main/fabric-chaincode-shim/src/main/java/org/hyperledger/fabric/shim/Chaincode.java
+node: https://github.com/hyperledger/fabric-chaincode-node/blob/9b800780c5d47a0f4e5f5b7254cb947ae838314b/libraries/fabric-shim/lib/chaincode.js
+
+
+```
+/**
+ * Defines methods that all chaincodes must implement.
+ */
+public interface Chaincode {
+    /**
+     * Called during an instantiate transaction after the container has been
+     * established, allowing the chaincode to initialize its internal data.
+     *
+     * @param stub the chaincode stub
+     * @return the chaincode response
+     */
+    Response init(ChaincodeStub stub);
+
+    /**
+     * Called for every Invoke transaction. The chaincode may change its state
+     * variables.
+     *
+     * @param stub the chaincode stub
+     * @return the chaincode response
+     */
+    Response invoke(ChaincodeStub stub);
+    ...
+}
+```
+
+### Reponse
+```
+public interface Chaincode {
+    ...
+    public static class Response {
+        private final int statusCode;
+        private final String message;
+        private final byte[] payload;
+        ...
+        public static enum Status {
+            SUCCESS(200),
+            ERROR_THRESHOLD(400),
+            INTERNAL_SERVER_ERROR(500);
+            ...
+        }
+    }
+}
+```
+
+### ChaincodeStub
+
+go: https://github.com/hyperledger/fabric-chaincode-go/blob/1476cf1d3206/shim/interfaces.go#L14
+Java: https://github.com/hyperledger/fabric-chaincode-java/blob/main/fabric-chaincode-shim/src/main/java/org/hyperledger/fabric/shim/ChaincodeStub.java
+node: https://github.com/hyperledger/fabric-chaincode-node/blob/9b800780c5d47a0f4e5f5b7254cb947ae838314b/libraries/fabric-shim/lib/stub.js
+
+
+```
+/**
+ * An object which manages the transaction context, provides access to state variables, and supports calls to other chaincode implementations.
+ */
+public interface ChaincodeStub {
+    /**
+     * Returns the value of the specified <code>key</code> from the ledger.
+     * <p>
+     * Note that getState doesn't read data from the writeset, which has not been
+     * committed to the ledger. In other words, GetState doesn't consider data
+     * modified by PutState that has not been committed.
+     *
+     * @param key name of the value
+     * @return value the value read from the ledger
+     */
+    byte[] getState(String key);
+
+    /**
+     * Puts the specified <code>key</code> and <code>value</code> into the
+     * transaction's writeset as a data-write proposal.
+     * <p>
+     * putState doesn't effect the ledger until the transaction is validated and
+     * successfully committed. Simple keys must not be an empty string and must not
+     * start with 0x00 character, in order to avoid range query collisions with
+     * composite keys
+     *
+     * @param key   name of the value
+     * @param value the value to write to the ledger
+     */
+    void putState(String key, byte[] value);
+
+    /**
+     * Returns all existing keys, and their values, that are lexicographically
+     * between <code>startkey</code> (inclusive) and the <code>endKey</code>
+     * (exclusive).
+     * <p>
+     * The keys are returned by the iterator in lexical order. Note that startKey
+     * and endKey can be empty string, which implies unbounded range query on start
+     * or end.
+     * <p>
+     * Call close() on the returned {@link QueryResultsIterator#close()} object when
+     * done.
+     *
+     * @param startKey key as the start of the key range (inclusive)
+     * @param endKey   key as the end of the key range (exclusive)
+     * @return an {@link Iterable} of {@link KeyValue}
+     */
+    QueryResultsIterator<KeyValue> getStateByRange(String startKey, String endKey);
+
+    /**
+     * Records the specified <code>key</code> to be deleted in the writeset of the
+     * transaction proposal.
+     * <p>
+     * The <code>key</code> and its value will be deleted from the ledger when the
+     * transaction is validated and successfully committed.
+     *
+     * @param key name of the value to be deleted
+     */
+    void delState(String key);
+    ...
+}
+```
+
+### ContractRouter(Java)
+ChaincodeBase를 상속받아 v2.0 lifecycle를 구현한 클래스
+
+* ContractInterface 를 구현 및 @Contract annotation이 존재하는 Class를 찾아서 Contract Class로 등록한다. (RoutingRegistry) +
+```
+public final class RoutingRegistryImpl implements RoutingRegistry {
+     ...
+     public void findAndSetContracts(final TypeRegistry typeRegistry) {
+        ...
+        try (ScanResult scanResult = classGraph.scan()) {
+            for (final ClassInfo classInfo : scanResult.getClassesWithAnnotation(Contract.class.getCanonicalName())) {
+                logger.debug("Found class with contract annotation: " + classInfo.getName());
+                try {
+                    final Class<?> contractClass = classInfo.loadClass();
+                    logger.debug("Loaded class");
+                    final Contract annotation = contractClass.getAnnotation(Contract.class);
+                    if (annotation == null) {
+                        // Since we check by name above, it makes sense to check it's actually
+                        // compatible,
+                        // and not some random class with the same name.
+                        logger.debug("Class does not have compatible contract annotation");
+                    } else if (!ContractInterface.class.isAssignableFrom(contractClass)) {
+                        logger.debug("Class is not assignable from ContractInterface");
+                    } else {
+                        logger.debug("Class is assignable from ContractInterface");
+                        contractClasses.add((Class<ContractInterface>) contractClass);
+                    }
+                } catch (final IllegalArgumentException e) {
+                    logger.debug("Failed to load class: " + e);
+                }
+            }
+            ...
+        }
+        ...
+    }
+    ...
+}
+```
+* Contract class에 @Transaction annotation이 존재하는 method는 트랜잭션 함수로 간주됩니다. +
+functionName은 method name이 되고 대소문자를 구분한다. +
+변경을 하고 싶다면 @Transaction.name() 을 이용해서 지정한다. +
+```
+public final class RoutingRegistryImpl implements RoutingRegistry {
+    ...
+    private void addContracts(final List<Class<ContractInterface>> contractClasses) {
+        ...
+                for (final Method m : contractClass.getMethods()) {
+                    if (m.getAnnotation(Transaction.class) != null) {
+                        logger.debug("Found annotated method " + m.getName());
+
+                        contract.addTxFunction(m);
+
+                    }
+                }
+        ...
+    }
+    ....
+}
+```
+* namespace가 정의되지 않으면 @Default annotation이 명시된 Contract가 호출됩니다. +
+ContractInvocationRequest 참고시 chaincode 호출 시 function 값을 "{namespace}:{function}" 포맷으로 namespace를 지정할 수 있습니다. +
+```
+public class ContractInvocationRequest implements InvocationRequest {
+    ...
+    public ContractInvocationRequest(ChaincodeStub context) {
+        String func = context.getStringArgs().size() > 0 ? (String)context.getStringArgs().get(0) : null;
+        String[] funcParts = func.split(":");
+        logger.debug(func);
+        if (funcParts.length == 2) {
+            this.namespace = funcParts[0];
+            this.method = funcParts[1];
+        } else {
+            this.namespace = "default";
+            this.method = funcParts[0];
+        }
+
+        this.args = (List)context.getArgs().stream().skip(1L).collect(Collectors.toList());
+        logger.debug(this.namespace + " " + this.method + " " + this.args);
+    }
+}
+
+...
+public final class ContractRouter extends ChaincodeBase {
+    ...
+    TxFunction getRouting(final InvocationRequest request) {
+        // request name is the fully qualified 'name:txname'
+        if (registry.containsRoute(request)) {
+            return registry.getTxFn(request);
+        } else {
+            logger.fine(() -> "Namespace is " + request);
+            final ContractDefinition contract = registry.getContract(request.getNamespace());
+            return contract.getUnknownRoute();
+        }
+    }
+    ...
+}
+```
+* Chaincode 호출시의 Args는 Context 파라미터 이후, 순서대로 Binding 됩니다. +
+트랜잭션 함수 실행 전 beforeTransaction, 트랜잭션 함수 실행 후 afterTransaction 함수가 호출됩니다. +
+```
+public class ContractExecutionService implements ExecutionService {
+    ...
+    public Chaincode.Response executeRequest(final TxFunction txFn, final InvocationRequest req, final ChaincodeStub stub) {
+        logger.fine(() -> "Routing Request" + txFn);
+        final TxFunction.Routing rd = txFn.getRouting();
+        Chaincode.Response response;
+
+        try {
+            final ContractInterface contractObject = rd.getContractInstance();
+            final Context context = contractObject.createContext(stub);
+
+            final List<Object> args = convertArgs(req.getArgs(), txFn);
+            args.add(0, context); // force context into 1st position, other elements move up
+
+            contractObject.beforeTransaction(context);
+            final Object value = rd.getMethod().invoke(contractObject, args.toArray());
+            contractObject.afterTransaction(context, value);
+
+            if (value == null) {
+                response = ResponseUtils.newSuccessResponse();
+            } else {
+                response = ResponseUtils.newSuccessResponse(convertReturn(value, txFn));
+            }
+        }
+        ...
+    }
+    ...
+}
+```
+* 정의되지 않은 함수 예외처리를 위해서는 unknownTransaction(Context) 함수를 정의하면 됩니다. +
+```
+public final class ContractDefinitionImpl implements ContractDefinition {
+    ...
+    public ContractDefinitionImpl(final Class<? extends ContractInterface> cl) {
+        ...
+        try {
+            final Method m = cl.getMethod("unknownTransaction", new Class<?>[] {Context.class});
+            unknownTx = new TxFunctionImpl(m, this);
+            unknownTx.setUnknownTx(true);
+        }
+        ...
+    }
+    ...
+}
+```
+## Counter
+간단한 Counter 구현
+
+### Solidity
+counter.sol
+```
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.7;
+// Counter Constract
+contract Counter {
+// counter name
+string counterName;
+
+    // number of counter
+    uint32 numberOfCounter;
+
+    // constructor
+    constructor (string memory name) {
+        counterName = name;
+    }
+
+    // count up
+    function countUp() public {
+        numberOfCounter++;
+    }
+
+    // get counter name
+    function getCounterName() public view returns (string memory) {
+        return counterName;
+    }
+
+    // get numberOfCounter
+    function getNumberOfCounter() public view returns (uint32) {
+        return numberOfCounter;
+    }
+}
+```
+### Java
+
+[NOTE]
+====
+예제에 사용된 Gradle 버전은 7.4 입니다.
+```
+$ gradle -v
+
+------------------------------------------------------------
+Gradle 7.4
+------------------------------------------------------------
+
+Build time: 2022-02-08 09:58:38 UTC
+Revision: f0d9291c04b90b59445041eaa75b2ee744162586
+
+Kotlin: 1.5.31
+Groovy: 3.0.9
+Ant: Apache Ant(TM) version 1.10.11 compiled on July 10 2021
+JVM: 11.0.13 (Ubuntu 11.0.13+8-Ubuntu-0ubuntu1.20.04)
+OS: Linux 5.10.16.3-microsoft-standard-WSL2 amd64
+```
+====
+
+#### java project init
+gradle init 으로 Java Application 생성시 app폴더가 생성되나 다중 프로젝트를 사용하지 않기에 제거 합니다.
+```
+gradle init --type java-application --dsl groovy --test-framework junit-jupiter
+mv app/* .
+rmdir app
+```
+
+```
+$ gradle init --type java-application --dsl groovy --test-framework junit-jupiter
+
+Generate build using new APIs and behavior (some features may change in the next minor release)? (default: no) [yes, no]
+no
+
+Project name (default: chaincode-java-basic): counter
+Source package (default: counter): com.moss.platform.fabric.chaincode.counter
+
+> Task :init
+Get more help with your project: https://docs.gradle.org/7.4/samples/sample_building_java_applications.html
+
+BUILD SUCCESSFUL in 16s
+2 actionable tasks: 2 executed
+
+$ mv app/* .
+$ rmdir app
+```
+
+실행결과
+```
+.
+├── build.gradle
+├── gradle
+│   └── wrapper
+│       ├── gradle-wrapper.jar
+│       └── gradle-wrapper.properties
+├── gradlew
+├── gradlew.bat
+├── settings.gradle
+└── src
+├── main
+│   ├── java
+│   │   └── com
+│   │       └── moss
+│   │           └── platform
+│   │               └── fabric
+│   │                   └── chaincode
+│   │                       └── counter
+│   │                           └── App.java
+│   └── resources
+└── test
+├── java
+│   └── com
+│       └── moss
+│           └── platform
+│               └── fabric
+│                   └── chaincode
+│                       └── counter
+│                           └── AppTest.java
+└── resources
+```
+
+#### settgins.gradle, buile.gradle 수정
+settings.gradle
+```
+rootProject.name = 'counter-java'
+```
+
+
+build.gradle
+```
+plugins {
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+    id 'java'
+    id 'application'
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        url 'https://jitpack.io'
+    }
+}
+
+group 'com.moss.platform.fabric.chaincode'
+version '1.0-SNAPSHOT'
+
+dependencies {
+    implementation 'org.hyperledger.fabric-chaincode-java:fabric-chaincode-shim:2.4.1'
+    implementation 'com.owlike:genson:1.6'
+
+    testImplementation 'org.hyperledger.fabric-chaincode-java:fabric-chaincode-shim:2.4.1'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
+    testImplementation 'org.assertj:assertj-core:3.22.0'
+    testImplementation 'org.mockito:mockito-core:4.3.1'
+}
+
+application {
+    mainClass = 'org.hyperledger.fabric.contract.ContractRouter'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+shadowJar {
+    archiveBaseName.set('chaincode')
+    archiveClassifier.set('')
+    archiveVersion.set('')
+
+    manifest {
+        attributes 'Main-Class': 'org.hyperledger.fabric.contract.ContractRouter'
+    }
+}
+```
+
+
+App 클래스를 삭제하고, Counter 클래스 생성 후, ContractInterface 를  구현(implements)하고 @Contract, @Default annotation을 추가합니다.
+
+* ContractInterface: Contract 클래스임을 표시 및 트랜잭션 처리를 위한 hook을 제공합니다.
+* @Contract : Contract 클래스임을 표시합니다.
+* @Default : 기본 Contract임을 표시합니다. Invoke시 Contract name을 명시할 필요가 없습니다.
+
+```
+package com.moss.platform.fabric.chaincode.counter;
+
+import org.hyperledger.fabric.contract.ContractInterface;
+import org.hyperledger.fabric.contract.annotation.Contract;
+import org.hyperledger.fabric.contract.annotation.Default;
+
+@Contract(name = "counter")
+@Default
+public class Counter implements ContractInterface {
+
+}
+```
+
+#### Init 구현
+v2.0 부터 새로운 chaincode lifecycle이 적용되면서 ChaincodeBase를 상속받은 구현을 사용하지 않고, Init이 필수가 아니게 변경됨에 따라서 Submit 함수 중 하나를 Init 함수로 사용합니다.
+
+Init 함수를 추가하고 Solidity Counter의 constructor 로직과 동일하게 name parameter를 받아서 counterName에 저장하고, count를 0으로 초기화 합니다.
+
+추후 approve시 --init-required 옵션을 이용해서 init이 필요함을 지정하고, peer chaincode invoke의 --isInit 옵션을 이용해서 init 함수를 호출 할 것입니다.
+```
+@Contract(name = "counter")
+@Default
+public class Counter implements ContractInterface {
+private static final String CounterName = "counterName";
+private static final String NumberOfCounter = "numberOfCounter";
+
+    /**
+     * 초기화
+     * @param ctx the transaction context
+     * @param name counter name
+     */
+    @Transaction(intent = Transaction.TYPE.SUBMIT)
+    public void init(final Context ctx, final String name) {
+        ChaincodeStub stub = ctx.getStub();
+
+        stub.putStringState(CounterName, name);
+        stub.putStringState(NumberOfCounter, String.valueOf(0));
+    }
+}
+```
+
+#### Transaction 함수 구현
+체인코드에 필요한 트랜잭션 함수를 구현합니다.
+
+* countUp
+* getCounterName
+* getNumberOfCount
+
+```
+public class Counter extends ChaincodeBase {
+...
+/**
+* 카운트 1 증가
+* @param ctx the transaction context
+*/
+@Transaction(intent = Transaction.TYPE.SUBMIT)
+public void countUp(final Context ctx) {
+ChaincodeStub stub = ctx.getStub();
+
+        Integer count = Integer.parseInt(stub.getStringState(NumberOfCounter));
+        count++;
+        stub.putStringState(NumberOfCounter, String.valueOf(count));
+    }
+
+    /**
+     * 카운터 이름 조회
+     * @param ctx the transaction context
+     * @return 카운터 이름
+     */
+    @Transaction(intent = Transaction.TYPE.EVALUATE)
+    public String getCounterName(final Context ctx) {
+        ChaincodeStub stub = ctx.getStub();
+
+        return stub.getStringState(CounterName);
+    }
+
+    /**
+     * 현재 카운트 조회
+     * @param ctx the transaction context
+     * @return 현재 카운트
+     */
+    @Transaction(intent = Transaction.TYPE.EVALUATE)
+    public Integer getNumberOfCounter(Context ctx) {
+        ChaincodeStub stub = ctx.getStub();
+
+        return Integer.parseInt(stub.getStringState(NumberOfCounter));
+    }
+}
+```
+
+#### Java 전체코드
+```
+package com.moss.platform.fabric.chaincode.counter;
+
+import org.hyperledger.fabric.contract.Context;
+import org.hyperledger.fabric.contract.ContractInterface;
+import org.hyperledger.fabric.contract.annotation.Contract;
+import org.hyperledger.fabric.contract.annotation.Default;
+import org.hyperledger.fabric.contract.annotation.Transaction;
+import org.hyperledger.fabric.shim.ChaincodeStub;
+
+@Contract(name = "counter")
+@Default
+public class Counter implements ContractInterface {
+private static final String CounterName = "counterName";
+private static final String NumberOfCounter = "numberOfCounter";
+
+    /**
+     * 초기화
+     * @param ctx the transaction context
+     * @param name 카운터 이름
+     */
+    @Transaction(intent = Transaction.TYPE.SUBMIT)
+    public void init(final Context ctx, final String name) {
+        ChaincodeStub stub = ctx.getStub();
+
+        stub.putStringState(CounterName, name);
+        stub.putStringState(NumberOfCounter, String.valueOf(0));
+    }
+
+    /**
+     * 카운트 1 증가
+     * @param ctx the transaction context
+     */
+    @Transaction(intent = Transaction.TYPE.SUBMIT)
+    public void countUp(final Context ctx) {
+        ChaincodeStub stub = ctx.getStub();
+
+        Integer count = Integer.parseInt(stub.getStringState(NumberOfCounter));
+        count++;
+        stub.putStringState(NumberOfCounter, String.valueOf(count));
+    }
+
+    /**
+     * 카운터 이름 조회
+     * @param ctx the transaction context
+     * @return 카운터 이름
+     */
+    @Transaction(intent = Transaction.TYPE.EVALUATE)
+    public String getCounterName(final Context ctx) {
+        ChaincodeStub stub = ctx.getStub();
+
+        return stub.getStringState(CounterName);
+    }
+
+    /**
+     * 현재 카운트 조회
+     * @param ctx the transaction context
+     * @return 현재 카운트
+     */
+    @Transaction(intent = Transaction.TYPE.EVALUATE)
+    public Integer getNumberOfCounter(Context ctx) {
+        ChaincodeStub stub = ctx.getStub();
+
+        return Integer.parseInt(stub.getStringState(NumberOfCounter));
+    }
+}
+```
+
+#### Test 코드 작성
+AppTest 클래스를 삭제하고, CounterTest 클래스를 생성한다.
+
+Test 코드 작성에 대한 아이디어 제공을 위해서 일부만 작성
+```
+package com.moss.platform.fabric.chaincode.counter;
+
+import org.hyperledger.fabric.contract.Context;
+import org.hyperledger.fabric.shim.ChaincodeStub;
+import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.*;
+
+public class CounterTest {
+
+    @Test
+    void init() {
+        // Arrange
+        Counter contract = new Counter();
+        Context context = mock(Context.class);
+        ChaincodeStub stub = mock(ChaincodeStub.class);
+        when(context.getStub()).thenReturn(stub);
+        String name = "counter1";
+
+        // Act
+        contract.init(context, name);
+
+        // Assert
+        InOrder inOrder = inOrder(stub);
+        inOrder.verify(stub).putStringState("counterName", "counter1");
+        inOrder.verify(stub).putStringState("numberOfCounter", "0");
+    }
+
+    @Test
+    void countUp() {
+        // Arrange
+        Counter contract = new Counter();
+        Context context = mock(Context.class);
+        ChaincodeStub stub = mock(ChaincodeStub.class);
+        when(context.getStub()).thenReturn(stub);
+
+        when(stub.getStringState("numberOfCounter")).thenReturn("0");
+
+        // Act
+        contract.countUp(context);
+
+        // Assert
+        InOrder inOrder = inOrder(stub);
+        inOrder.verify(stub).putStringState("numberOfCounter", "1");
+    }
+
+    @Test
+    void getCounterName() {
+        // Arrange
+        Counter contract = new Counter();
+        Context context = mock(Context.class);
+        ChaincodeStub stub = mock(ChaincodeStub.class);
+        when(context.getStub()).thenReturn(stub);
+
+        when(stub.getStringState("counterName")).thenReturn("counter1");
+
+        // Act
+        var result = contract.getCounterName(context);
+
+        // Assert
+        assertEquals("counter1", result);
+    }
+
+    @Test
+    void getNumberOfCounter() {
+        // Arrange
+        Counter contract = new Counter();
+        Context context = mock(Context.class);
+        ChaincodeStub stub = mock(ChaincodeStub.class);
+        when(context.getStub()).thenReturn(stub);
+
+        when(stub.getStringState("numberOfCounter")).thenReturn("1");
+
+        // Act
+        var result = contract.getNumberOfCounter(context);
+
+        // Assert
+        assertEquals(1, result);
+    }
+}
+```
+
+#### 배포 및 테스트
+아래 문서에서 'settings.gradle 파일 정보 수정'는 적용하지 않고, '환경변수'와 'init & invoke & query'만 수정하여 실행합니다.
+
+xref:sampleChaincodeTest.adoc#_java[체인코드 테스트 - Java]
+
+**환경변수**
+
+CC_SRC_PATH는 프로젝트 폴더로 지정한다.
+```
+export CC_SRC_PATH=${PWD}
+
+cd "$FABRIC_NETWORK_HOME"
+
+export CC_NAME=counter-java
+export CC_RUNTIME_LANGUAGE=java
+export CC_VERSION=1.0
+export CC_SEQUENCE=1
+export CC_INIT_FCN=init
+export CC_END_POLICY=""
+export CC_COLL_CONFIG=""
+export INIT_REQUIRED="--init-required"
+
+# 동일 CC_NAME으로 배포한 이력이 있다면 SEQUENCE 를 확인하여서 + 1 값으로 설정합니다.
+peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME}
+# export CC_SEQUENCE=2
+echo $CC_SEQUENCE
+```
+
+**init & invoke & query**
+```
+fcn_call='{"function":"'${CC_INIT_FCN}'","Args":["counter1"]}'
+
+peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" --isInit  -c ${fcn_call} >&log.txt
+cat log.txt
+
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["getCounterName"]}'
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["getNumberOfCounter"]}'
+peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"countUp","Args":[]}'
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["getNumberOfCounter"]}'
+```
+
+**init & invoke & query 실행 결과**
+```
+$ fcn_call='{"function":"'${CC_INIT_FCN}'","Args":["counter1"]}'
+
+$ peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" --isInit  -c ${fcn_call} >&log.txt
+# peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" --isInit  -c ${fcn_call}
+cat log.txt
+0001 INFO [chaincodeCmd] chaincodeInvokeOrQuery -> Chaincode invoke successful. result: status:200
+
+$ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["getCounterName"]}'
+counter1
+$ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["getNumberOfcounter"]}'
+Error: endorsement failure during query. response: status:500 message:"Undefined contract method called"
+$ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["getNumberOfCounter"]}'
+0
+$ peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"countUp","Args":[]}'
+0001 INFO [chaincodeCmd] chaincodeInvokeOrQuery -> Chaincode invoke successful. result: status:200
+$ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["getNumberOfCounter"]}'
+1
+```
+
+**init 명령문 전체**
+
+체인코드가 배포된 모든 peer 및 orderer 와 통신해야 한다는 점을 보자
+```
+peer chaincode invoke -o localhost:7061 --ordererTLSHostnameOverride osn1.orderer1.moss.com --tls --cafile /mnt/d/fabric/nc-network/organizations/ordererOrganizations/orderer1.moss.com/orderers/osn1.orderer1.moss.com/msp/tlscacerts/tlsca.orderer1.moss.com-cert.pem -C service1 -n counter-java --peerAddresses localhost:8060 --tlsRootCertFiles ./organizations/peerOrganizations/platform.moss.com/tlsca/tlsca.platform.moss.com-cert.pem --peerAddresses localhost:8061 --tlsRootCertFiles ./organizations/peerOrganizations/platform.moss.com/tlsca/tlsca.platform.moss.com-cert.pem --peerAddresses localhost:9060 --tlsRootCertFiles ./organizations/peerOrganizations/customer.moss.com/tlsca/tlsca.customer.moss.com-cert.pem --peerAddresses localhost:9061 --tlsRootCertFiles ./organizations/peerOrganizations/customer.moss.com/tlsca/tlsca.customer.moss.com-cert.pem --peerAddresses localhost:10060 --tlsRootCertFiles ./organizations/peerOrganizations/service1.moss.com/tlsca/tlsca.service1.moss.com-cert.pem --peerAddresses localhost:10061 --tlsRootCertFiles ./organizations/peerOrganizations/service1.moss.com/tlsca/tlsca.service1.moss.com-cert.pem --isInit -c {"function":"init","Args":["counter1"]}
+```
+
+### javascript
+javascript로 counter를 구현해 본다.
+
+link:https://github.com/hyperledger/fabric-chaincode-node/blob/main/TUTORIAL.md[fabric-chaincode-node tutorial]
+
+[NOTE]
+====
+**javascript to typescript**
+
+javascript를 이용하여 chaincode 구현을 고려하고 있다면, typescript를 이용해서 개발하는 것을 추천드립니다. +
+정적 언어의 장점을 취할 수 있고, decorator를 이용한 선언적 개발이 가능합니다.
+====
+
+#### mkdir & package.json
+폴더를 생성하고 package.json 파일을 생성합니다.
+
+javascript chaincode 개발을 위해서 'fabric-contract-api'와 'fabric-shim'이 필요합니다.
+
+```
+// package.json
+{
+  "name": "counter-javascript",
+  "version": "1.0.0",
+  "description": "counter-javascript",
+  "main": "index.js",
+  "engines": {
+    "node": ">=12",
+    "npm": ">=5"
+  },
+  "scripts": {
+    "start": "fabric-chaincode-node start"
+  },
+  "dependencies": {
+    "fabric-contract-api": "2.4.1",
+    "fabric-shim": "2.4.1"
+  },
+  "devDependencies": {
+
+  }
+}
+```
+
+#### npm install
+npm install을 이용하여 종속성 라이브러리들을 설치합니다.
+```
+npm install
+```
+#### chaincode 코드 작성
+lib/counter.js 파일 생성합니다.
+
+Contract를 상속 받은 후 함수들을 구현합니다.
+```
+'use strict';
+
+const { Contract } = require('fabric-contract-api');
+
+class Counter extends Contract {
+
+  /**
+   * 초기화
+   * @param ctx the transaction context
+   * @param name 카운터 이름
+   */
+  async init(ctx, name) {
+    await ctx.stub.putState('counterName', Buffer.from(name));
+    await ctx.stub.putState('numberOfCounter', Buffer.from("0"));
+  }
+
+  /**
+   * 카운트 1 증가
+   * @param ctx the transaction context
+   */
+  async countUp(ctx) {
+    const bytes = await ctx.stub.getState('numberOfCounter');
+    let count = bytes.toString()*1;
+    count++;
+    await ctx.stub.putState('numberOfCounter', Buffer.from(count.toString()));
+  }
+
+  /**
+   * 카운터 이름 조회
+   * @param ctx the transaction context
+   * @returns 카운트 이름
+   */
+  async getCounterName(ctx) {
+    const bytes = await ctx.stub.getState('counterName');
+    return bytes.toString();
+  }
+
+  /**
+   * 현재 카운트 조회
+   * @param ctx ctx the transaction context
+   * @returns 현재 카운트
+   */
+  async getNumberOfCounter(ctx) {
+    const bytes = await ctx.stub.getState('numberOfCounter');
+    return bytes.toString()*1;
+  }
+}
+
+module.exports = Counter;
+```
+
+#### index.js 생성
+contract를 index.js를 통해서 export 합니다.
+```
+'use strict';
+
+const Counter = require('./lib/counter');
+
+module.exports.counter = Counter;
+module.exports.contracts = [Counter];
+```
+
+#### 배포 및 테스트
+아래 문서에서 '환경변수'와 'init & invoke & query'만 수정하여 실행해 본다.
+
+xref:sampleChaincodeTest.adoc#_node_jsjavascript[체인코드 테스트 - javascript]
+
+**환경변수**
+
+CC_SRC_PATH는 프로젝트 폴더로 지정한다.
+```
+export CC_SRC_PATH=${PWD}
+
+cd "$FABRIC_NETWORK_HOME"
+
+export CC_NAME=counter-javascript
+export CC_RUNTIME_LANGUAGE=node
+export CC_VERSION=1.0
+export CC_SEQUENCE=1
+export CC_INIT_FCN=init
+export CC_END_POLICY=""
+export CC_COLL_CONFIG=""
+export INIT_REQUIRED="--init-required"
+```
+
+**init & invoke & query 실행 결과**
+
+java 버전과 동일합니다.
+```
+fcn_call='{"function":"'${CC_INIT_FCN}'","Args":["counter1"]}'
+peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" --isInit  -c ${fcn_call} >&log.txt
+cat log.txt
+
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["getCounterName"]}'
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["getNumberOfCounter"]}'
+peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"countUp","Args":[]}'
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["getNumberOfCounter"]}'
+```
+### typescript
+
+#### typescript 설치
+```
+npm install -g typescript
+```
+
+typescript 설치 결과
+```
+$ tsc -v
+Version 4.6.2
+```
+
+
+#### 폴더 생성 및 package.json, tsconfig.json
+체인코드 프로젝트 폴더를 생성하고 package.json와 tsconfig.json을 아래와 같이 생성합니다.
+```
+// package.json - typescript
+{
+  "name": "counter-typescript",
+  "version": "1.1.0",
+  "description": "counter-typescript",
+  "main": "dist/index.js",
+  "typings": "dsit/index.d.ts",
+  "engines": {
+    "node": ">=12",
+    "npm": ">=5"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "fabric-chaincode-node start"
+  },
+  "engineStrict": true,
+  "dependencies": {
+    "fabric-contract-api": "2.4.1",
+    "fabric-shim": "2.4.1"
+  },
+  "devDependencies": {
+
+  }
+}
+```
+
+```
+// tsconfig.json - typescript
+{
+    "compilerOptions": {
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+        "outDir": "dist",
+        "target": "es2017",
+        "moduleResolution": "node",
+        "module": "commonjs",
+        "esModuleInterop": true,
+        "declaration": true,
+        "sourceMap": true
+    },
+    "include": [
+        "./src/**/*"
+    ],
+    "exclude": [
+        "./src/**/*.spec.ts"
+    ]
+}
+```
+
+작업 결과
+```
+.$CC_SRC_PATH
+├── package.json
+└── tsconfig.json
+```
+
+#### npm install
+npm install을 이용하여 종속성 라이브러리들을 설치합니다.
+```
+npm install
+```
+
+#### chaincode 코드 작성
+src/counter.ts 파일을 생성합니다.
+
+Contract를 상속 받은 후 decorator를 이용하여서 함수들을 구현합니다.
+```
+import {Context, Contract, Info, Returns, Transaction} from 'fabric-contract-api'
+
+export class Counter extends Contract {
+
+    /**
+     * 초기화
+     * @param ctx the transaction context
+     * @param name 카운터 이름
+     */
+    @Transaction()
+    public async init(ctx: Context, name:string): Promise<void> {
+        await ctx.stub.putState('counterName', Buffer.from(name));
+        await ctx.stub.putState('numberOfCounter', Buffer.from("0"));
+    }
+
+    /**
+     * 카운트 1 증가
+     * @param ctx the transaction context
+     */
+    @Transaction()
+    async countUp(ctx: Context) {
+        const bytes = await ctx.stub.getState('numberOfCounter');
+        let count = Number(bytes.toString());
+        count++;
+        await ctx.stub.putState('numberOfCounter', Buffer.from(count.toString()));
+    }
+
+    /**
+     * 카운터 이름 조회
+     * @param ctx the transaction context
+     * @returns 카운트 이름
+     */
+    @Transaction(false)
+    async getCounterName(ctx: Context) {
+        const bytes = await ctx.stub.getState('counterName');
+        return bytes.toString();
+    }
+
+    /**
+     * 현재 카운트 조회
+     * @param ctx ctx the transaction context
+     * @returns 현재 카운트
+     */
+    @Transaction(false)
+    async getNumberOfCounter(ctx: Context) {
+        const bytes = await ctx.stub.getState('numberOfCounter');
+        return Number(bytes.toString());
+    }
+}
+```
+
+#### src/index.ts 생성
+contract를 index.js를 통해서 export 합니다.
+```
+import {Counter} from "./counter";
+
+export {Counter} from './counter'
+
+export const contracts: any[] = [Counter];
+```
+#### typescript 빌드
+프로젝트 폴더에서 'npm run build' 명령어로 typescript를 빌드 후, dist 폴더가 정상적으로 생성되었는지 확인합니다.
+```
+npm run build
+```
+실행 결과
+```
+$ npm run build
+
+> counter-typescript@1.0.0 build
+> tsc
+
+$ tree .
+.
+├── src
+│   ├── counter.ts
+│   └── index.ts
+├── dist
+│   ├── counter.d.ts
+│   ├── counter.js
+│   ├── counter.js.map
+│   ├── index.d.ts
+│   ├── index.js
+│   └── index.js.map
+├── package.json
+├── tsconfig.json
+...
+```
+#### 배포 및 테스트
+아래 문서에서 '환경변수'와 'init & invoke & query'만 수정하여 실행해 본다.
+
+link:sampleChaincodeTest.adoc#_node_jsjavascript[체인코드 테스트 - javascript]
+
+#### 환경변수
+
+CC_SRC_PATH는 프로젝트 폴더로 지정한다.
+```
+export CC_SRC_PATH=${PWD}
+
+cd "$FABRIC_NETWORK_HOME"
+
+export CC_NAME=counter-typescript
+export CC_RUNTIME_LANGUAGE=node
+export CC_VERSION=1.0
+export CC_SEQUENCE=1
+export CC_INIT_FCN=init
+export CC_END_POLICY=""
+export CC_COLL_CONFIG=""
+export INIT_REQUIRED="--init-required"
+```
+
+#### init & invoke & query 실행 결과
+
+java 버전과 동일합니다.
+```
+fcn_call='{"function":"'${CC_INIT_FCN}'","Args":["counter3"]}'
+peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" --isInit  -c ${fcn_call} >&log.txt
+cat log.txt
+
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["getCounterName"]}'
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["getNumberOfCounter"]}'
+peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"countUp","Args":[]}'
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["getNumberOfCounter"]}'
+```

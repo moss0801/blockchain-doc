@@ -1,7 +1,7 @@
 
 ### 채널 설정(channel configuration) 작성
 
-link:https://github.com/hyperledger/fabric-samples/blob/main/test-network/configtx/configtx.yaml[test-netwowrk - configtx/configtx.yaml] 을 참고하여 mosschannel 채널의 genesis block 생성을 위한 MossApplicationGenesis Profile을 채널 설정(Channel Configuration) 파일에 작성합니다.
+link:https://github.com/hyperledger/fabric-samples/blob/main/test-network/configtx/configtx.yaml[test-netwowrk - configtx/configtx.yaml] 을 참고하여 service1 채널의 genesis block 생성을 위한 Service1ApplicationGenesis Profile을 채널 설정(Channel Configuration) 파일에 작성합니다.
 
 configtx/configtx.yaml
 ```
@@ -363,7 +363,7 @@ Channel: &ChannelDefaults
 #
 ################################################################################
 Profiles:
-    MossApplicationGenesis:
+    Service1ApplicationGenesis:
         <<: *ChannelDefaults
         Orderer:
             <<: *OrdererDefaults
@@ -382,15 +382,15 @@ Profiles:
 
 ### 채널 genesis block 생성
 
-configtxgen tool을 이용해서 ./configtx/configtx.yaml($FABRIC_CFG_PATH/configtx.yaml) 파일의 'MossApplicationGenesis' profile로 채널의 genesis blcok을 ./channel-artifacts/mosschannel3.blcok 로 생성합니다.
+configtxgen tool을 이용해서 ./configtx/configtx.yaml($FABRIC_CFG_PATH/configtx.yaml) 파일의 'Service1ApplicationGenesis' profile로 채널의 genesis blcok을 ./channel-artifacts/service1.blcok 로 생성합니다.
 
 configtxgen 실행 전에 FABRIC_CFG_PATH가 confgixtx.yaml 경로로 설정되어야 합니다.
 
-여기서는 채널명을 'mosschannel3'로 생성합니다.
+여기서는 채널명을 'service1'로 생성합니다.
 
 편의를 위해서 채널명을 환경변수로 설정합니다.
 ```
-echo 'export CHANNEL_NAME=mosschannel3' | tee -a $HOME/.bashrc
+echo 'export CHANNEL_NAME=service1' | tee -a $HOME/.bashrc
 ```
 
 ====
@@ -405,7 +405,7 @@ cd "$FABRIC_NETWORK_HOME"
 
 export FABRIC_CFG_PATH=${PWD}/configtx
 mkdir -p channel-artifacts
-configtxgen -profile MossApplicationGenesis -outputBlock ./channel-artifacts/${CHANNEL_NAME}.block -channelID ${CHANNEL_NAME}
+configtxgen -profile Service1ApplicationGenesis -outputBlock ./channel-artifacts/${CHANNEL_NAME}.block -channelID ${CHANNEL_NAME}
 ```
 
 생성결과 로그
@@ -467,8 +467,8 @@ osnadmin channel join --channelID ${CHANNEL_NAME} --config-block ./channel-artif
 ```
 Status: 201
 {
-        "name": "mosschannel3",
-        "url": "/participation/v1/channels/mosschannel3",
+        "name": "service1",
+        "url": "/participation/v1/channels/service1",
         "consensusRelation": "consenter",
         "status": "active",
         "height": 1

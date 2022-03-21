@@ -1,0 +1,83 @@
+link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/txflow.html[Transaction Flow]
+
+**시나리오 - 자산 거래(asset exchange)**
+* 자산: 무(radish)
+* 클라이언트 A(구매자), B(판매자)
+* 각 클라이언트는 원장과 상호작용 및 트랜잭션을 전송할 수 있는 네트워크상 피어를 가집니다.
+
+### 가정 (Assumptions)
+image:https://hyperledger-fabric.readthedocs.io/en/release-2.4/_images/step0.png[]
+* 채널은 설정 및 운영중입니다.
+* 응용프로그램 사용자는 조직의 CA에 등록(register and enroll)되어 있고, 네트워크 인증에 필요한 암호학적 요소들을 가지고 있습니다.
+** link:https://english.stackexchange.com/questions/224632/difference-between-registration-and-enrollment[register and enroll]
+** Registration is the process of establishing your identity with an institution. For instance accepting your offer of a place.
+** Enrolment is when you provide your details and select your courses. Sometimes this can take place at the same time as registration though it may take place as a part of orientation (certainly did in my own experience!)
+* 무 마켓의 초기 상태를 표현하는 키-값 쌍을 포함하는 체인코드는 피어에 설치 및 채널에 배포되어 있습니다.
+* 체인코드는 거래 지시 세트와 무 가격을 정의하는 로직이 포함되어 있습니다.
+* 체인코드의 보증 정책(endorsement policy)는 peerA와 peerB가 모든 트랜잭션을 보증해야 하는 것으로 설정되어 있습니다.
+
+### 1. 클라이언트 A의 트랜잭션 시작 (Client A initiates a transaction)
+image:https://hyperledger-fabric.readthedocs.io/en/release-2.4/_images/step1.png[]
+
+* 클라이언트 A가 무 구매 요청을 보내고 있습니다.
+* 이 요청은 클라이언트 A와 B를 각각 대표하는 peerA와 peerB가 대상이 됩니다.
+* 보증 정책(endorsement policy)는 두 피어가 모든 트랜잭션을 보증해야 하기에, 요청을 peerA와 peerB로 갑니다.
+* 다음으로, 트랜잭션 제안(proposal)이 생성됩니다.
+* 클라이언트는 SDK(Node, Java, Go)를 활용하여 트랜잭션 제안(Proposal)를 생성합니다.
+* 제안은 특정 입력 파라미터와 함께 원장을 읽거나 수정할 수 있는 체인코드 함수를 발동(invoke)시키는 요청입니다.
+* SDK는 적절한 포맷(protocol buffer over gRPC)로 트랜잭션 제안을 패키징하는 shim을 제공합니다.
+* SDK는 사용자의 암호화 자격 증명을 사용하여 트랜잭션 제안에 고유한 서명을 생성합니다.
+* SDK는 클라이언트를 대신하여 트랜잭션 제출을 관리할 목표 피어(target peer)에 트랜잭션 제안을 제출합니다.
+* 목표 피어는 보증 정책에 따라 실행을 위해 트랜잭션 제안을 다른 피어에게 전달합니다.
+
+### 2. 보증 피어의 서명 확인 및 트랜잭션 실행 (Endorsing peers verify signature & execute the transaction)
+image:https://hyperledger-fabric.readthedocs.io/en/release-2.4/_images/step2.png[]
+
+* 보증 피어(endorsing peer)는 아래 4가지를 검증합니다.
+.. 트랜제안 제안이 잘 구성되었는지,
+.. 과거에 이미 제출된지 않았는지(replay-attck protection)
+.. 서명은 유효한지 (MSP 사용)
+.. 제출자(예에서 클라이언트 A)가 채널에서 제안한 동작을 수행할 권한이 있는지 (보증 피어는 제출자가 채널의 Writers policy를 만족하는지 확인합니다.)
+* 보증 피어는 트랜잭션 제안의 입력(input)을 체인코드 함수를 발동(invoke)할 때의 인자(arguments)로 사용합니다.
+* 다음으로 체인코드는 현재 상태 데이터베이스에 대해 실행되어 응답 값(response value), 읽기 세트(read set) 및 쓰기 세트(write set)를 포함하는 트랜잭션 결과를 생성합니다. (write set: 자산의 재성 및 업데이트를 표현하는 키/값 쌍(key/value pairs))
+* 이 시점에서 원장을 업데이트 되지 않습니다.
+* 보증 피어의 서명과 함께 목표 피어(target peer)에 "제안 응답(proposal response)"으로 다시 전달 됩니다.
+
+[NOTE]
+====
+MSP는 피어가 클라이언트로 부터 도착하는 트랜잭션 요청을 검증하고, 트랜잭션 결과(보증)에 서명할 수 있도록 하는 피어 컴포넌트입니다.
+쓰기 정책(writing policy)은 채널 생성 시 정의되고, 채널에 트랜잭션을 제출할 자격이 있는 사용자를 결정합니다.
+참고: link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/membership/membership.html[Membership Service Provider (MSP)]
+====
+
+### 3. 제안 응답들 검사 (Proposal responses are inspected)
+image:https://hyperledger-fabric.readthedocs.io/en/release-2.4/_images/step3.png[]
+
+* 목표 피어(target peer)는 트랜잭션 제출을 진행하기 전에 제안 응답들이 동일한지 검증합니다.
+* 아키텍처는 이 확인없이 트랜잭션이 제출된 경우에도 각 피어가 트랜잭션을 커밋하기 전에 유효성을 검사할 때 보증 정책을 확인(check)하고 강제(enforce)할 것입니다.
+
+### 4. 목표 피어가 보증들을 하나의 트랜잭션으로 조립 (Target peer assembles endorsements into a transaction)
+image:https://hyperledger-fabric.readthedocs.io/en/release-2.4/_images/step4.png[]
+
+* 목표 피어(target peer)는 "트랜잭션 메시지(transaction message)"내에 트랜잭션 제안과 응답을 정렬 서비스(ordering service)에 "전파(broadcat)" 합니다.
+* 트랜잭션은 Channel ID, the read/write sets 와 각 보증 피어의 서명이 포함됩니다.
+* 정렬 서비스(ordering service)는 작업 수행을 위해서 트랜잭션의 전체 내용을 검사할 필요가 없습니다.
+* 정렬 서비스는 단순히 트랜잭션을 받고, 정렬하고, 채널별 트랜잭션 블록을 생성합니다.
+
+### 5. 트랜잭션 검증 및 커밋 (Transaction is validated and committed)
+image:https://hyperledger-fabric.readthedocs.io/en/release-2.4/_images/step5.png[]
+
+* 트랜잭션 블록은 채널의 모든 피어에게 "전달(delivered)"됩니다.
+* 블록 내 트랜잭션은 보증 정책이 충족되었는지 확인하고, 트랜잭션 실행에 의해 읽기 세트가 생성된 이후 읽기 세트 변수에 대한 원장 상태가 변경되지 않았는지 검증되어 집니다.
+* 블록의 트랜잭션은 유효(valid)인지, 비유효(invalid)인지 태그가 지정됩니다.
+
+### 6. 원장 업데이트
+image:https://hyperledger-fabric.readthedocs.io/en/release-2.4/_images/step6.png[]
+
+* 각 피어는 채널의 체인에 블록을 추가하고, 유효한 각 트랜잭션의 쓰기 세트(write set)가 현재 상태 데이터베이스에 커밋됩니다.
+* 트랜잭션 (발동(invocation))이 체인에 불변(immutable)되게 추가 및 트랜잭션의 유효, 비유효 여부를 클라이언트 응용프로그램에 알리기 위해서 각 피어에서 이벤트를 내보냅니다(emit).
+
+[NOTE]
+====
+응용프로그램은 트랜잭션 제출 후 트랜잭션 이벤트를 수신(listen)해야 합니다. 예를 들면, 'submitTransation' API를 사용함으로서 자동으로 트랜잭션 이벤트들을 수신합니다. 트랜잭션 이벤트 수신없이는 트랜잭션이 실제로 정렬되고, 검증되고 원장에 커밋되었는지 알 수 없습니다.
+====

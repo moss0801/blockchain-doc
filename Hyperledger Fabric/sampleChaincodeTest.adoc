@@ -1,0 +1,712 @@
+## 개요
+구성한 네트워크가 정상 동작하는지 fabric-samples의 asset-transfer-basic를 배포하여 테스트 해본다.
+
+3개 언어를 테스트 한다.
+
+* go
+* javascript
+* java
+
+fabric-samples/test-network의
+link:https://github.com/hyperledger/fabric-samples/blob/main/test-network/network.sh[network.sh],
+link:https://github.com/hyperledger/fabric-samples/blob/main/test-network/scripts/deployCC.sh[deplyCC.sh],
+link:https://github.com/hyperledger/fabric-samples/blob/main/test-network/scripts/ccutils.sh[ccutils.sh] 참고하여 작성
+
+## 사전 준비
+xref:v2.4 Network Configuration-1.adoc[네트워크 구성]
+
+## 소스코드 다운로드
+```
+cd "$FABRIC_NETWORK_HOME"
+cd ..
+git clone https://github.com/hyperledger/fabric-samples.git
+```
+
+## go
+스마트컨트랙트 소스코드: link:https://github.com/hyperledger/fabric-samples/blob/main/asset-transfer-basic/chaincode-go/chaincode/smartcontract.go[smartcontract.go]
+
+문서상 go 버전은 1.17.5 - link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/prereqs.html#go[Prerequisites]
+
+### 환경변수
+편의를 위해 체인코드 관련 환경변수를 선언한다.
+```
+cd "$FABRIC_NETWORK_HOME"
+
+export CC_NAME=basic
+export CC_SRC_PATH=${PWD}/../fabric-samples/asset-transfer-basic/chaincode-go
+export CC_RUNTIME_LANGUAGE=golang
+export CC_VERSION=1.0
+export CC_SEQUENCE=1
+export CC_INIT_FCN=InitLedger
+export CC_END_POLICY=""
+export CC_COLL_CONFIG=""
+export INIT_REQUIRED="--init-required"
+```
+
+### Vendoring Go dependencies
+```
+cd "CC_SRC_PATH"
+GO111MODULE=on go mod vendor
+cd "$FABRIC_NETWORK_HOME"
+```
+
+
+### 실행결과
+
+fabric-samples을 clone 받아 asset-transfer-basic/chaincode-go 를 $FABRIC_NETWORK_HOME 으로 복사한다.
+```
+chaincode-go$ GO111MODULE=on go mod vendor
+go: downloading github.com/golang/protobuf v1.3.2
+go: downloading github.com/hyperledger/fabric-contract-api-go v1.1.0
+go: downloading github.com/hyperledger/fabric-chaincode-go v0.0.0-20200424173110-d7076418f212
+go: downloading github.com/hyperledger/fabric-protos-go v0.0.0-20200424173316-dd554ba3746e
+go: downloading github.com/stretchr/testify v1.5.1
+go: downloading google.golang.org/grpc v1.23.0
+go: downloading github.com/xeipuuv/gojsonschema v1.2.0
+go: downloading github.com/go-openapi/spec v0.19.4
+go: downloading github.com/gobuffalo/packr v1.30.1
+go: downloading github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415
+go: downloading github.com/gobuffalo/envy v1.7.0
+go: downloading github.com/gobuffalo/packd v0.3.0
+go: downloading github.com/go-openapi/jsonpointer v0.19.3
+go: downloading github.com/go-openapi/jsonreference v0.19.2
+go: downloading github.com/go-openapi/swag v0.19.5
+go: downloading github.com/davecgh/go-spew v1.1.1
+go: downloading github.com/pmezard/go-difflib v1.0.0
+go: downloading gopkg.in/yaml.v2 v2.2.8
+go: downloading google.golang.org/genproto v0.0.0-20180831171423-11092d34479b
+go: downloading golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297
+go: downloading github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f
+go: downloading github.com/joho/godotenv v1.3.0
+go: downloading github.com/rogpeppe/go-internal v1.3.0
+go: downloading github.com/mailru/easyjson v0.0.0-20190626092158-b2ccc519800e
+go: downloading github.com/PuerkitoBio/purell v1.1.1
+go: downloading golang.org/x/sys v0.0.0-20190710143415-6ec70d6a5542
+go: downloading github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578
+go: downloading golang.org/x/text v0.3.2
+```
+
+### package
+```
+peer lifecycle chaincode package ${CC_NAME}.tar.gz --path "${CC_SRC_PATH}" --lang ${CC_RUNTIME_LANGUAGE} --label ${CC_NAME}_${CC_VERSION}
+# peer lifecycle chaincode package basic.tar.gz --path ../asset-transfer-basic/chaincode-go --lang golang --label basic_1.0
+```
+
+### install
+install chaincode on peer0, peer1 of platform, customer, service1
+```
+. ./scripts/setPlatformPeer0.sh
+peer lifecycle chaincode install ${CC_NAME}.tar.gz
+
+. ./scripts/setPlatformPeer1.sh
+peer lifecycle chaincode install ${CC_NAME}.tar.gz
+
+. ./scripts/setCustomerPeer0.sh
+peer lifecycle chaincode install ${CC_NAME}.tar.gz
+
+. ./scripts/setCustomerPeer1.sh
+peer lifecycle chaincode install ${CC_NAME}.tar.gz
+
+. ./scripts/setService1Pee0.sh
+peer lifecycle chaincode install ${CC_NAME}.tar.gz
+
+. ./scripts/setService1Pee1.sh
+peer lifecycle chaincode install ${CC_NAME}.tar.gz
+```
+
+install 실행 로그
+```
+$ . ./scripts/setPlatformPeer0.sh
+$ peer lifecycle chaincode install ${CC_NAME}.tar.gz
+0001 INFO [cli.lifecycle.chaincode] submitInstallProposal -> Installed remotely: response:<status:200 payload:"\nJbasic_1.0:dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4\022\tbasic_1.0" >
+0002 INFO [cli.lifecycle.chaincode] submitInstallProposal -> Chaincode code package identifier: basic_1.0:dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4
+$ . ./scripts/setPlatformPeer1.sh
+$ peer lifecycle chaincode install ${CC_NAME}.tar.gz
+0001 INFO [cli.lifecycle.chaincode] submitInstallProposal -> Installed remotely: response:<status:200 payload:"\nJbasic_1.0:dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4\022\tbasic_1.0" >
+0002 INFO [cli.lifecycle.chaincode] submitInstallProposal -> Chaincode code package identifier: basic_1.0:dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4
+$ . ./scripts/setCustomerPeer0.sh
+$ peer lifecycle chaincode install ${CC_NAME}.tar.gz
+0001 INFO [cli.lifecycle.chaincode] submitInstallProposal -> Installed remotely: response:<status:200 payload:"\nJbasic_1.0:dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4\022\tbasic_1.0" >
+0002 INFO [cli.lifecycle.chaincode] submitInstallProposal -> Chaincode code package identifier: basic_1.0:dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4
+$ . ./scripts/setCustomerPeer1.sh
+$ peer lifecycle chaincode install ${CC_NAME}.tar.gz
+0001 INFO [cli.lifecycle.chaincode] submitInstallProposal -> Installed remotely: response:<status:200 payload:"\nJbasic_1.0:dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4\022\tbasic_1.0" >
+0002 INFO [cli.lifecycle.chaincode] submitInstallProposal -> Chaincode code package identifier: basic_1.0:dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4
+$ . ./scripts/setService1Pee0.sh
+$ peer lifecycle chaincode install ${CC_NAME}.tar.gz
+KST 0001 INFO [cli.lifecycle.chaincode] submitInstallProposal -> Installed remotely: response:<status:200 payload:"\nJbasic_1.0:dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4\022\tbasic_1.0" >
+0002 INFO [cli.lifecycle.chaincode] submitInstallProposal -> Chaincode code package identifier: basic_1.0:dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4
+$ . ./scripts/setService1Pee1.sh
+$ peer lifecycle chaincode install ${CC_NAME}.tar.gz
+0001 INFO [cli.lifecycle.chaincode] submitInstallProposal -> Installed remotely: response:<status:200 payload:"\nJbasic_1.0:dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4\022\tbasic_1.0" >
+0002 INFO [cli.lifecycle.chaincode] submitInstallProposal -> Chaincode code package identifier: basic_1.0:dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4
+```
+
+install 확인
+```
+. ./scripts/setPlatformPeer0.sh
+peer lifecycle chaincode queryinstalled
+
+. ./scripts/setPlatformPeer1.sh
+peer lifecycle chaincode queryinstalled
+
+. ./scripts/setCustomerPeer0.sh
+peer lifecycle chaincode queryinstalled
+
+. ./scripts/setCustomerPeer1.sh
+peer lifecycle chaincode queryinstalled
+
+. ./scripts/setService1Pee0.sh
+peer lifecycle chaincode queryinstalled
+
+. ./scripts/setService1Pee1.sh
+peer lifecycle chaincode queryinstalled
+```
+
+install 확인 결과
+```
+$ . ./scripts/setPlatformPeer0.sh
+$ peer lifecycle chaincode queryinstalled
+Installed chaincodes on peer:
+Package ID: basic_1.0:dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4, Label: basic_1.0
+
+$ . ./scripts/setPlatformPeer1.sh
+$ peer lifecycle chaincode queryinstalled
+Installed chaincodes on peer:
+Package ID: basic_1.0:dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4, Label: basic_1.0
+
+$ . ./scripts/setCustomerPeer0.sh
+$ peer lifecycle chaincode queryinstalled
+Installed chaincodes on peer:
+Package ID: basic_1.0:dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4, Label: basic_1.0
+
+$ . ./scripts/setCustomerPeer1.sh
+$ peer lifecycle chaincode queryinstalled
+Installed chaincodes on peer:
+Package ID: basic_1.0:dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4, Label: basic_1.0
+
+$ . ./scripts/setService1Pee0.sh
+$ peer lifecycle chaincode queryinstalled
+Installed chaincodes on peer:
+Package ID: basic_1.0:dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4, Label: basic_1.0
+
+$ . ./scripts/setService1Pee1.sh
+$ peer lifecycle chaincode queryinstalled
+Installed chaincodes on peer:
+Package ID: basic_1.0:dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4, Label: basic_1.0
+```
+
+### approve
+PACKAGE_ID 추출, platfrom 조직 approve 및 commit 준비상태 확인
+```
+peer lifecycle chaincode calculatepackageid ${CC_NAME}.tar.gz >&log.txt
+PACKAGE_ID=$(sed -n "1p" log.txt)
+echo $PACKAGE_ID
+
+. ./scripts/setPlatformPeer0.sh
+peer lifecycle chaincode approveformyorg -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" --channelID $CHANNEL_NAME --name ${CC_NAME} --version ${CC_VERSION} --package-id ${PACKAGE_ID} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} ${CC_END_POLICY} ${CC_COLL_CONFIG}
+
+peer lifecycle chaincode checkcommitreadiness --channelID $CHANNEL_NAME --name ${CC_NAME} --version ${CC_VERSION} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} ${CC_END_POLICY} ${CC_COLL_CONFIG} --output json >&log.txt
+cat log.txt
+```
+approveformyorg 결과
+```
+0001 INFO [chaincodeCmd] ClientWait -> txid [359b02f9e43305e195999a82370e0c279d163d06aae643d06d3899114b9a80b0] committed with status (VALID) at localhost:8060
+```
+checkcommitreadiness 결과
+```
+{
+        "approvals": {
+                "customerMSP": false,
+                "service1MSP": false,
+                "platformMSP": true
+        }
+}
+```
+
+customer, service1 조직도 approve
+```
+. ./scripts/setCustomerPeer0.sh
+peer lifecycle chaincode approveformyorg -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" --channelID $CHANNEL_NAME --name ${CC_NAME} --version ${CC_VERSION} --package-id ${PACKAGE_ID} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} ${CC_END_POLICY} ${CC_COLL_CONFIG}
+
+. ./scripts/setService1Pee0.sh
+peer lifecycle chaincode approveformyorg -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" --channelID $CHANNEL_NAME --name ${CC_NAME} --version ${CC_VERSION} --package-id ${PACKAGE_ID} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} ${CC_END_POLICY} ${CC_COLL_CONFIG}
+
+peer lifecycle chaincode checkcommitreadiness --channelID $CHANNEL_NAME --name ${CC_NAME} --version ${CC_VERSION} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} ${CC_END_POLICY} ${CC_COLL_CONFIG} --output json >&log.txt
+cat log.txt
+```
+approve 실행결과
+```
+# customer
+0001 INFO [chaincodeCmd] ClientWait -> txid [f60c6c56af2ff8b608065e5c6965f9655344c9f80b14ba8fc9978e3adb23b516] committed with status (VALID) at localhost:9060
+
+# service1
+ 0001 INFO [chaincodeCmd] ClientWait -> txid [05a02d18d065cb08b4392b1b9896db2a83279aca838c515a0150848a42f6ff52] committed with status (VALID) at localhost:10060
+
+# checkcommitreadiness
+{
+        "approvals": {
+                "customerMSP": true,
+                "service1MSP": true,
+                "platformMSP": true
+        }
+}
+```
+### commit
+commit chaincode
+```
+. ./scripts/setPlatformPeer0.sh
+
+PEER_CONN_PARAMS=(--peerAddresses localhost:8060 --tlsRootCertFiles "./organizations/peerOrganizations/platform.moss.com/tlsca/tlsca.platform.moss.com-cert.pem")
+PEER_CONN_PARAMS+=(--peerAddresses localhost:8061 --tlsRootCertFiles "./organizations/peerOrganizations/platform.moss.com/tlsca/tlsca.platform.moss.com-cert.pem")
+PEER_CONN_PARAMS+=(--peerAddresses localhost:9060 --tlsRootCertFiles "./organizations/peerOrganizations/customer.moss.com/tlsca/tlsca.customer.moss.com-cert.pem")
+PEER_CONN_PARAMS+=(--peerAddresses localhost:9061 --tlsRootCertFiles "./organizations/peerOrganizations/customer.moss.com/tlsca/tlsca.customer.moss.com-cert.pem")
+PEER_CONN_PARAMS+=(--peerAddresses localhost:10060 --tlsRootCertFiles "./organizations/peerOrganizations/service1.moss.com/tlsca/tlsca.service1.moss.com-cert.pem" )
+PEER_CONN_PARAMS+=(--peerAddresses localhost:10061 --tlsRootCertFiles "./organizations/peerOrganizations/service1.moss.com/tlsca/tlsca.service1.moss.com-cert.pem" )
+
+peer lifecycle chaincode commit -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" --channelID $CHANNEL_NAME --name ${CC_NAME} "${PEER_CONN_PARAMS[@]}" --version ${CC_VERSION} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} ${CC_END_POLICY} ${CC_COLL_CONFIG}
+```
+commit 실행 결과
+```
+0001 INFO [chaincodeCmd] ClientWait -> txid [ae2b6a3f3af4ef09995e36a27813c96744feada52d2ec941a74890dea375da78] committed with status (VALID) at localhost:8061
+0002 INFO [chaincodeCmd] ClientWait -> txid [ae2b6a3f3af4ef09995e36a27813c96744feada52d2ec941a74890dea375da78] committed with status (VALID) at localhost:10061
+0003 INFO [chaincodeCmd] ClientWait -> txid [ae2b6a3f3af4ef09995e36a27813c96744feada52d2ec941a74890dea375da78] committed with status (VALID) at localhost:9061
+0004 INFO [chaincodeCmd] ClientWait -> txid [ae2b6a3f3af4ef09995e36a27813c96744feada52d2ec941a74890dea375da78] committed with status (VALID) at localhost:10060
+0005 INFO [chaincodeCmd] ClientWait -> txid [ae2b6a3f3af4ef09995e36a27813c96744feada52d2ec941a74890dea375da78] committed with status (VALID) at localhost:9060
+0006 INFO [chaincodeCmd] ClientWait -> txid [ae2b6a3f3af4ef09995e36a27813c96744feada52d2ec941a74890dea375da78] committed with status (VALID) at localhost:8060
+```
+이후 container 를 확인할 수 있다.
+```
+$ docker container ls --format "table {{.ID}}\t{{.Names}}\t{{.Image}}"
+CONTAINER ID   NAMES                                                                                                       IMAGE
+82fa3623fc8f   dev-peer0.platform.moss.com-basicjs_1.0-97dffd8700929be889090b2aaea573459b27b34e7dc022a329fe1380b7052833      dev-peer0.platform.moss.com-basicjs_1.0-97dffd8700929be889090b2aaea573459b27b34e7dc022a329fe1380b7052833-196f9ea25bd7ea2edd39edf7504613e9a0041eba597a4a25e7e292ec4214d432
+b3db81d76a7a   dev-peer1.platform.moss.com-basic_1.0-dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4        dev-peer1.platform.moss.com-basic_1.0-dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4-6420a0e92a38760da890e1457989f14da904f0b25786900a2b2510a8b1266957
+1e33ad3ebe01   dev-peer0.customer.moss.com-basic_1.0-dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4        dev-peer0.customer.moss.com-basic_1.0-dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4-d06cc52a77db22da565b277c22a20f75533627b7cc009b3e60d29c8210201f57
+26973d073a09   dev-peer1.customer.moss.com-basic_1.0-dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4        dev-peer1.customer.moss.com-basic_1.0-dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4-433b327b8df2e933bde50a45f6ffef1ab9f97cfd80af46ce8becee33b891f7d9
+e1b4c5bea41e   dev-peer0.service1.moss.com-basic_1.0-dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4            dev-peer0.service1.moss.com-basic_1.0-dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4-12e5dce1e3d018ad670ceae167dd58cf612aadd98ed49621281b53ba17babbce
+1531ef71c355   dev-peer1.service1.moss.com-basic_1.0-dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4            dev-peer1.service1.moss.com-basic_1.0-dee2d612e15f5059478b9048fa4b3c9f792096554841d642b9b59099fa0e04a4-dfb61db5eadb3e6f3e2d16edb4cbfabbe6dd0824ef420bf1e94a870a45c79656
+```
+query committed
+```
+. ./scripts/setPlatformPeer0.sh
+peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME} >&log.txt
+cat log.txt
+query committed 결과
+
+Committed chaincode definition for chaincode 'basic' on channel 'service1':
+Version: 1.0, Sequence: 1, Endorsement Plugin: escc, Validation Plugin: vscc, Approvals: [customerMSP: true, service1MSP: true, platformMSP: true]
+모든 peer에서 확인
+
+. ./scripts/setPlatformPeer1.sh
+peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME}
+
+. ./scripts/setCustomerPeer0.sh
+peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME}
+
+. ./scripts/setCustomerPeer1.sh
+peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME}
+
+. ./scripts/setService1Pee0.sh
+peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME}
+
+. ./scripts/setService1Pee1.sh
+peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME}
+```
+모든 peer에서 확인 결과
+```
+$ . ./scripts/setPlatformPeer1.sh
+$ peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME}
+Committed chaincode definition for chaincode 'basic' on channel 'service1':
+Version: 1.0, Sequence: 1, Endorsement Plugin: escc, Validation Plugin: vscc, Approvals: [customerMSP: true, service1MSP: true, platformMSP: true]
+$ . ./scripts/setCustomerPeer0.sh
+$ peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME}
+Committed chaincode definition for chaincode 'basic' on channel 'service1':
+Version: 1.0, Sequence: 1, Endorsement Plugin: escc, Validation Plugin: vscc, Approvals: [customerMSP: true, service1MSP: true, platformMSP: true]
+$ . ./scripts/setCustomerPeer1.sh
+$ peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME}
+Committed chaincode definition for chaincode 'basic' on channel 'service1':
+Version: 1.0, Sequence: 1, Endorsement Plugin: escc, Validation Plugin: vscc, Approvals: [customerMSP: true, service1MSP: true, platformMSP: true]
+$ . ./scripts/setService1Pee0.sh
+$ peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME}
+Committed chaincode definition for chaincode 'basic' on channel 'service1':
+Version: 1.0, Sequence: 1, Endorsement Plugin: escc, Validation Plugin: vscc, Approvals: [customerMSP: true, service1MSP: true, platformMSP: true]
+$ . ./scripts/setService1Pee1.sh
+$ peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME}
+Committed chaincode definition for chaincode 'basic' on channel 'service1':
+Version: 1.0, Sequence: 1, Endorsement Plugin: escc, Validation Plugin: vscc, Approvals: [customerMSP: true, service1MSP: true, platformMSP: true]
+```
+### init & invoke & query
+
+chaincode InitLedger 호출
+```
+fcn_call='{"function":"'${CC_INIT_FCN}'","Args":[]}'
+
+. ./scripts/setPlatformPeer0.sh
+peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" --isInit  -c ${fcn_call} >&log.txt
+cat log.txt
+```
+InitLedger 호출 결과
+```
+0001 INFO [chaincodeCmd] chaincodeInvokeOrQuery -> Chaincode invoke successful. result: status:200
+```
+Asset 목록 조회
+```
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["GetAllAssets"]}'
+```
+Asset 목록 조회 결과
+```
+[
+  {"AppraisedValue":300,"Color":"blue","ID":"asset1","Owner":"Tomoko","Size":5},
+  {"AppraisedValue":400,"Color":"red","ID":"asset2","Owner":"Brad","Size":5},
+  {"AppraisedValue":500,"Color":"green","ID":"asset3","Owner":"Jin Soo","Size":10},
+  {"AppraisedValue":600,"Color":"yellow","ID":"asset4","Owner":"Max","Size":10},
+  {"AppraisedValue":700,"Color":"black","ID":"asset5","Owner":"Adriana","Size":15},
+  {"AppraisedValue":800,"Color":"white","ID":"asset6","Owner":"Michel","Size":15}
+]
+```
+Asset Transfer : assert6의 owner를 'Christopher'로 변경
+```
+peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"TransferAsset","Args":["asset6","Christopher"]}'
+```
+Asset Transfer 결과
+```
+0001 INFO [chaincodeCmd] chaincodeInvokeOrQuery -> Chaincode invoke successful. result: status:200 payload:"Michel"
+```
+Customer 조직에서 변경된 내용 조회
+```
+. ./scripts/setCustomerPeer0.sh
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["GetAllAssets"]}'
+```
+조회 결과
+```
+[
+  ...
+  {"AppraisedValue":800,"Color":"white","ID":"asset6","Owner":"Christopher","Size":15}
+]
+```
+## Node.js(javascript)
+스마트 컨트랙트: link:https://github.com/hyperledger/fabric-samples/blob/main/asset-transfer-basic/chaincode-javascript/lib/assetTransfer.js[assetTransfer.js]
+
+### 환경변수
+편의를 위해 체인코드 관련 환경변수를 선언한다.
+```
+cd "$FABRIC_NETWORK_HOME"
+
+export CC_NAME=basicjs
+export CC_SRC_PATH=${PWD}/../fabric-samples/asset-transfer-basic/chaincode-javascript
+export CC_RUNTIME_LANGUAGE=node
+export CC_VERSION=1.0
+export CC_SEQUENCE=1
+export CC_INIT_FCN=InitLedger
+export CC_END_POLICY=""
+export CC_COLL_CONFIG=""
+export INIT_REQUIRED="--init-required"
+```
+### npm install
+```
+cd "$CC_SRC_PATH"
+npm install
+cd "$FABRIC_NETWORK_HOME"
+```
+
+
+install 결과 - 버전 경고가 발생하나 샘플코드 실행에는 문제 없었음, 실제 javascript로 개발시에는
+```
+npm WARN EBADENGINE Unsupported engine {
+npm WARN EBADENGINE   package: 'fabric-contract-api@2.2.2',
+npm WARN EBADENGINE   required: { node: '^12.16.1', npm: '^6.4.1' },
+npm WARN EBADENGINE   current: { node: 'v16.14.0', npm: '8.3.1' }
+npm WARN EBADENGINE }
+npm WARN EBADENGINE Unsupported engine {
+npm WARN EBADENGINE   package: 'fabric-shim@2.2.2',
+npm WARN EBADENGINE   required: { node: '^12.16.1', npm: '^6.4.1' },
+npm WARN EBADENGINE   current: { node: 'v16.14.0', npm: '8.3.1' }
+npm WARN EBADENGINE }
+npm WARN EBADENGINE Unsupported engine {
+npm WARN EBADENGINE   package: 'fabric-shim-api@2.2.2',
+npm WARN EBADENGINE   required: { node: '^12.16.1', npm: '^6.4.1', eslint: '6.6.0' },
+npm WARN EBADENGINE   current: { node: 'v16.14.0', npm: '8.3.1' }
+npm WARN EBADENGINE }
+npm WARN deprecated circular-json@0.3.3: CircularJSON is in maintenance only, flatted is its successor.
+npm WARN deprecated uuid@3.4.0: Please upgrade  to version 7 or higher.  Older versions may use Math.random() in certain circumstances, which is known to be problematic.  See https://v8.dev/blog/math-random for details.
+
+added 440 packages, and audited 441 packages in 26s
+```
+
+배포된 체인코드 컨테이너 상 node 버전 확인
+```
+/ # node -v
+v12.16.1
+/ # npm -v
+6.13.4
+```
+
+### package ~ commit
+package 부터는 go와 동일하다.
+```
+# package
+peer lifecycle chaincode package ${CC_NAME}.tar.gz --path "${CC_SRC_PATH}" --lang ${CC_RUNTIME_LANGUAGE} --label ${CC_NAME}_${CC_VERSION}
+
+# install
+. ./scripts/setPlatformPeer0.sh
+peer lifecycle chaincode install ${CC_NAME}.tar.gz
+
+. ./scripts/setPlatformPeer1.sh
+peer lifecycle chaincode install ${CC_NAME}.tar.gz
+
+. ./scripts/setCustomerPeer0.sh
+peer lifecycle chaincode install ${CC_NAME}.tar.gz
+
+. ./scripts/setCustomerPeer1.sh
+peer lifecycle chaincode install ${CC_NAME}.tar.gz
+
+. ./scripts/setService1Pee0.sh
+peer lifecycle chaincode install ${CC_NAME}.tar.gz
+
+. ./scripts/setService1Pee1.sh
+peer lifecycle chaincode install ${CC_NAME}.tar.gz
+
+# packageId
+peer lifecycle chaincode calculatepackageid ${CC_NAME}.tar.gz >&log.txt
+PACKAGE_ID=$(sed -n "1p" log.txt)
+echo $PACKAGE_ID
+
+# approve
+. ./scripts/setPlatformPeer0.sh
+peer lifecycle chaincode approveformyorg -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" --channelID $CHANNEL_NAME --name ${CC_NAME} --version ${CC_VERSION} --package-id ${PACKAGE_ID} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} ${CC_END_POLICY} ${CC_COLL_CONFIG}
+
+. ./scripts/setCustomerPeer0.sh
+peer lifecycle chaincode approveformyorg -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" --channelID $CHANNEL_NAME --name ${CC_NAME} --version ${CC_VERSION} --package-id ${PACKAGE_ID} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} ${CC_END_POLICY} ${CC_COLL_CONFIG}
+
+. ./scripts/setService1Pee0.sh
+peer lifecycle chaincode approveformyorg -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" --channelID $CHANNEL_NAME --name ${CC_NAME} --version ${CC_VERSION} --package-id ${PACKAGE_ID} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} ${CC_END_POLICY} ${CC_COLL_CONFIG}
+
+# check approve
+peer lifecycle chaincode checkcommitreadiness --channelID $CHANNEL_NAME --name ${CC_NAME} --version ${CC_VERSION} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} ${CC_END_POLICY} ${CC_COLL_CONFIG} --output json >&log.txt
+cat log.txt
+
+# commit
+. ./scripts/setPlatformPeer0.sh
+
+PEER_CONN_PARAMS=(--peerAddresses localhost:8060 --tlsRootCertFiles "./organizations/peerOrganizations/platform.moss.com/tlsca/tlsca.platform.moss.com-cert.pem")
+PEER_CONN_PARAMS+=(--peerAddresses localhost:8061 --tlsRootCertFiles "./organizations/peerOrganizations/platform.moss.com/tlsca/tlsca.platform.moss.com-cert.pem")
+PEER_CONN_PARAMS+=(--peerAddresses localhost:9060 --tlsRootCertFiles "./organizations/peerOrganizations/customer.moss.com/tlsca/tlsca.customer.moss.com-cert.pem")
+PEER_CONN_PARAMS+=(--peerAddresses localhost:9061 --tlsRootCertFiles "./organizations/peerOrganizations/customer.moss.com/tlsca/tlsca.customer.moss.com-cert.pem")
+PEER_CONN_PARAMS+=(--peerAddresses localhost:10060 --tlsRootCertFiles "./organizations/peerOrganizations/service1.moss.com/tlsca/tlsca.service1.moss.com-cert.pem" )
+PEER_CONN_PARAMS+=(--peerAddresses localhost:10061 --tlsRootCertFiles "./organizations/peerOrganizations/service1.moss.com/tlsca/tlsca.service1.moss.com-cert.pem" )
+
+peer lifecycle chaincode commit -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" --channelID $CHANNEL_NAME --name ${CC_NAME} "${PEER_CONN_PARAMS[@]}" --version ${CC_VERSION} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} ${CC_END_POLICY} ${CC_COLL_CONFIG}
+
+# querycommitted
+. ./scripts/setPlatformPeer0.sh
+peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME}
+
+. ./scripts/setPlatformPeer1.sh
+peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME}
+
+. ./scripts/setCustomerPeer0.sh
+peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME}
+
+. ./scripts/setCustomerPeer1.sh
+peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME}
+
+. ./scripts/setService1Pee0.sh
+peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME}
+
+. ./scripts/setService1Pee1.sh
+peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME}
+```
+containers
+```
+$ docker container ls --format "table {{.ID}}\t{{.Names}}\t{{.Image}}"
+CONTAINER ID   NAMES                                                                                                       IMAGE
+82fa3623fc8f   dev-peer0.platform.moss.com-basicjs_1.0-97dffd8700929be889090b2aaea573459b27b34e7dc022a329fe1380b7052833      dev-peer0.platform.moss.com-basicjs_1.0-97dffd8700929be889090b2aaea573459b27b34e7dc022a329fe1380b7052833-196f9ea25bd7ea2edd39edf7504613e9a0041eba597a4a25e7e292ec4214d432
+c734fde26587   dev-peer1.platform.moss.com-basicjs_1.0-97dffd8700929be889090b2aaea573459b27b34e7dc022a329fe1380b7052833      dev-peer1.platform.moss.com-basicjs_1.0-97dffd8700929be889090b2aaea573459b27b34e7dc022a329fe1380b7052833-10a1032ae5f39e8fc3b172bc72e18a8cae9257792fc6f05ee26bf6bb581238b3
+df7c6664f25a   dev-peer0.service1.moss.com-basicjs_1.0-97dffd8700929be889090b2aaea573459b27b34e7dc022a329fe1380b7052833          dev-peer0.service1.moss.com-basicjs_1.0-97dffd8700929be889090b2aaea573459b27b34e7dc022a329fe1380b7052833-ef756a6241df0dfc91374676d1deaeb4cffcb3f05521faa0d6c7277e46542d4a
+b65c15532db0   dev-peer1.service1.moss.com-basicjs_1.0-97dffd8700929be889090b2aaea573459b27b34e7dc022a329fe1380b7052833          dev-peer1.service1.moss.com-basicjs_1.0-97dffd8700929be889090b2aaea573459b27b34e7dc022a329fe1380b7052833-faf5c8144de0f5b00902a9bb57cff4860caaa1c1342e6a6ae173420c3bc3fb1c
+dcc3413be826   dev-peer0.customer.moss.com-basicjs_1.0-97dffd8700929be889090b2aaea573459b27b34e7dc022a329fe1380b7052833      dev-peer0.customer.moss.com-basicjs_1.0-97dffd8700929be889090b2aaea573459b27b34e7dc022a329fe1380b7052833-f99ffaa7aff16562f93db009bfa255df966a50a19c9b0d5f384afbb3ad358c4a
+85ed302879e6   dev-peer1.customer.moss.com-basicjs_1.0-97dffd8700929be889090b2aaea573459b27b34e7dc022a329fe1380b7052833      dev-peer1.customer.moss.com-basicjs_1.0-97dffd8700929be889090b2aaea573459b27b34e7dc022a329fe1380b7052833-c0f59b91d9b3dd2603984e09a333b700ec8333baed1c71e519c52502a800af97
+```
+### init & invoke & query
+```
+fcn_call='{"function":"'${CC_INIT_FCN}'","Args":[]}'
+
+# InitLedger
+. ./scripts/setPlatformPeer0.sh
+peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" --isInit  -c ${fcn_call} >&log.txt
+cat log.txt
+
+# GetAllAssets
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["GetAllAssets"]}'
+
+# TransferAsset
+peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"TransferAsset","Args":["asset6","Christopher"]}'
+
+# GetAllAsserts from peer0.customer
+. ./scripts/setCustomerPeer0.sh
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["GetAllAssets"]}'
+```
+
+## Java
+스마트 컨트랙트: link:https://github.com/hyperledger/fabric-samples/blob/main/asset-transfer-basic/chaincode-java/src/main/java/org/hyperledger/fabric/samples/assettransfer/AssetTransfer.java[AssetTransfer.java]
+
+### settings.gradle 파일 정보 수정
+rootProject.name을 사용할 CC_NAME과 동일하게 수정합니다.
+```
+/*
+* SPDX-License-Identifier: Apache-2.0
+*/
+
+rootProject.name = 'basic-java'
+```
+
+### 환경변수
+편의를 위해 체인코드 관련 환경변수를 선언한다.
+```
+cd "$FABRIC_NETWORK_HOME"
+
+export CC_NAME=basic-java
+export CC_SRC_PATH=${PWD}/../fabric-samples/asset-transfer-basic/chaincode-java
+export CC_RUNTIME_LANGUAGE=java
+export CC_VERSION=1.0
+export CC_SEQUENCE=1
+export CC_INIT_FCN=InitLedger
+export CC_END_POLICY=""
+export CC_COLL_CONFIG=""
+export INIT_REQUIRED="--init-required"
+```
+### compile
+```
+rm -rf $CC_SRC_PATH/build/install/
+cd "$CC_SRC_PATH"
+./gradlew installDist
+cd "$FABRIC_NETWORK_HOME"
+```
+
+complie 결과
+```
+$ ./gradlew installDist
+Starting a Gradle Daemon (subsequent builds will be faster)
+
+BUILD SUCCESSFUL in 11s
+4 actionable tasks: 4 executed
+```
+
+java version: openjdk:11 link:https://github.com/hyperledger/fabric-samples/blob/main/asset-transfer-basic/chaincode-java/Dockerfile[참고]
+
+### package ~ commit
+package 부터는 go와 동일하다.
+```
+# package
+peer lifecycle chaincode package ${CC_NAME}.tar.gz --path "${CC_SRC_PATH}/build/install/${CC_NAME}" --lang ${CC_RUNTIME_LANGUAGE} --label ${CC_NAME}_${CC_VERSION}
+
+# install
+. ./scripts/setPlatformPeer0.sh
+peer lifecycle chaincode install ${CC_NAME}.tar.gz
+
+. ./scripts/setPlatformPeer1.sh
+peer lifecycle chaincode install ${CC_NAME}.tar.gz
+
+. ./scripts/setCustomerPeer0.sh
+peer lifecycle chaincode install ${CC_NAME}.tar.gz
+
+. ./scripts/setCustomerPeer1.sh
+peer lifecycle chaincode install ${CC_NAME}.tar.gz
+
+. ./scripts/setService1Pee0.sh
+peer lifecycle chaincode install ${CC_NAME}.tar.gz
+
+. ./scripts/setService1Pee1.sh
+peer lifecycle chaincode install ${CC_NAME}.tar.gz
+
+# packageId
+peer lifecycle chaincode calculatepackageid ${CC_NAME}.tar.gz >&log.txt
+PACKAGE_ID=$(sed -n "1p" log.txt)
+echo $PACKAGE_ID
+
+# approve
+. ./scripts/setPlatformPeer0.sh
+peer lifecycle chaincode approveformyorg -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" --channelID $CHANNEL_NAME --name ${CC_NAME} --version ${CC_VERSION} --package-id ${PACKAGE_ID} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} ${CC_END_POLICY} ${CC_COLL_CONFIG}
+
+. ./scripts/setCustomerPeer0.sh
+peer lifecycle chaincode approveformyorg -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" --channelID $CHANNEL_NAME --name ${CC_NAME} --version ${CC_VERSION} --package-id ${PACKAGE_ID} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} ${CC_END_POLICY} ${CC_COLL_CONFIG}
+
+. ./scripts/setService1Pee0.sh
+peer lifecycle chaincode approveformyorg -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" --channelID $CHANNEL_NAME --name ${CC_NAME} --version ${CC_VERSION} --package-id ${PACKAGE_ID} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} ${CC_END_POLICY} ${CC_COLL_CONFIG}
+
+# check approve
+peer lifecycle chaincode checkcommitreadiness --channelID $CHANNEL_NAME --name ${CC_NAME} --version ${CC_VERSION} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} ${CC_END_POLICY} ${CC_COLL_CONFIG} --output json >&log.txt
+cat log.txt
+
+# commit
+. ./scripts/setPlatformPeer0.sh
+
+PEER_CONN_PARAMS=(--peerAddresses localhost:8060 --tlsRootCertFiles "./organizations/peerOrganizations/platform.moss.com/tlsca/tlsca.platform.moss.com-cert.pem")
+PEER_CONN_PARAMS+=(--peerAddresses localhost:8061 --tlsRootCertFiles "./organizations/peerOrganizations/platform.moss.com/tlsca/tlsca.platform.moss.com-cert.pem")
+PEER_CONN_PARAMS+=(--peerAddresses localhost:9060 --tlsRootCertFiles "./organizations/peerOrganizations/customer.moss.com/tlsca/tlsca.customer.moss.com-cert.pem")
+PEER_CONN_PARAMS+=(--peerAddresses localhost:9061 --tlsRootCertFiles "./organizations/peerOrganizations/customer.moss.com/tlsca/tlsca.customer.moss.com-cert.pem")
+PEER_CONN_PARAMS+=(--peerAddresses localhost:10060 --tlsRootCertFiles "./organizations/peerOrganizations/service1.moss.com/tlsca/tlsca.service1.moss.com-cert.pem" )
+PEER_CONN_PARAMS+=(--peerAddresses localhost:10061 --tlsRootCertFiles "./organizations/peerOrganizations/service1.moss.com/tlsca/tlsca.service1.moss.com-cert.pem" )
+
+peer lifecycle chaincode commit -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" --channelID $CHANNEL_NAME --name ${CC_NAME} "${PEER_CONN_PARAMS[@]}" --version ${CC_VERSION} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} ${CC_END_POLICY} ${CC_COLL_CONFIG}
+
+# querycommitted
+. ./scripts/setPlatformPeer0.sh
+peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME}
+
+. ./scripts/setPlatformPeer1.sh
+peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME}
+
+. ./scripts/setCustomerPeer0.sh
+peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME}
+
+. ./scripts/setCustomerPeer1.sh
+peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME}
+
+. ./scripts/setService1Pee0.sh
+peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME}
+
+. ./scripts/setService1Pee1.sh
+peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME}
+```
+containers
+```
+$ docker container ls --format "table {{.ID}}\t{{.Names}}\t{{.Image}}"
+CONTAINER ID   NAMES                                                                                                       IMAGE
+ed28be4910e9   dev-peer0.platform.moss.com-basic-java_1.0-8e5fd44f9da499d111f79aa122ed76ec30258b048a1ac6fa30233b2acdcf8621   dev-peer0.platform.moss.com-basic-java_1.0-8e5fd44f9da499d111f79aa122ed76ec30258b048a1ac6fa30233b2acdcf8621-0b5160a4be6af5f63c835f1507efff5247d87e9ad3bfe8fa57c16e78a4c6c0a8
+bf8b7ffc86c2   dev-peer1.platform.moss.com-basic-java_1.0-8e5fd44f9da499d111f79aa122ed76ec30258b048a1ac6fa30233b2acdcf8621   dev-peer1.platform.moss.com-basic-java_1.0-8e5fd44f9da499d111f79aa122ed76ec30258b048a1ac6fa30233b2acdcf8621-2284ce8f1cfa6ed898df6e7688127a62f9304b855840f4d13cc615466254fa81
+2db0ce9b8ea6   dev-peer0.customer.moss.com-basic-java_1.0-8e5fd44f9da499d111f79aa122ed76ec30258b048a1ac6fa30233b2acdcf8621   dev-peer0.customer.moss.com-basic-java_1.0-8e5fd44f9da499d111f79aa122ed76ec30258b048a1ac6fa30233b2acdcf8621-0c58621ddba12695ee9a265f4d649589ae5b9e0f945747a26d6c543212e5f1ef
+9393d3114803   dev-peer1.customer.moss.com-basic-java_1.0-8e5fd44f9da499d111f79aa122ed76ec30258b048a1ac6fa30233b2acdcf8621   dev-peer1.customer.moss.com-basic-java_1.0-8e5fd44f9da499d111f79aa122ed76ec30258b048a1ac6fa30233b2acdcf8621-1c060c7aa291c48fb6c87c2d2d60777d1808417db15aa3fe7945bf277192642d
+0191d729eec8   dev-peer0.service1.moss.com-basic-java_1.0-8e5fd44f9da499d111f79aa122ed76ec30258b048a1ac6fa30233b2acdcf8621       dev-peer0.service1.moss.com-basic-java_1.0-8e5fd44f9da499d111f79aa122ed76ec30258b048a1ac6fa30233b2acdcf8621-b6f3ad6f827ac453b0a76de031421ea77c2e6fffe358cffb29dcfb65e1acbe7e
+2bc87aff1859   dev-peer1.service1.moss.com-basic-java_1.0-8e5fd44f9da499d111f79aa122ed76ec30258b048a1ac6fa30233b2acdcf8621       dev-peer1.service1.moss.com-basic-java_1.0-8e5fd44f9da499d111f79aa122ed76ec30258b048a1ac6fa30233b2acdcf8621-939e7f93ff166b8083e7d21886ba7b7fb70715ef7511a6c7e922a13c674d678d
+```
+
+### init & invoke & query
+```
+fcn_call='{"function":"'${CC_INIT_FCN}'","Args":[]}'
+
+# InitLedger
+. ./scripts/setPlatformPeer0.sh
+peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" --isInit  -c ${fcn_call} >&log.txt
+cat log.txt
+
+# GetAllAssets
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["GetAllAssets"]}'
+
+# TransferAsset
+peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"TransferAsset","Args":["asset6","Christopher"]}'
+
+# GetAllAsserts from peer0.customer
+. ./scripts/setCustomerPeer0.sh
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["GetAllAssets"]}'
+```
+
+```
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["get"]}'
+# initValue
+
+peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"set","Args":["newVault"]}'
+
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["get"]}'
+# newValue
+```

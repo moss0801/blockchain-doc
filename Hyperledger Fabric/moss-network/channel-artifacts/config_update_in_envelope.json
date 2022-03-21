@@ -2,13 +2,13 @@
   "payload": {
     "header": {
       "channel_header": {
-        "channel_id": "mosschannel3",
+        "channel_id": "service1",
         "type": 2
       }
     },
     "data": {
       "config_update": {
-        "channel_id": "mosschannel3",
+        "channel_id": "service1",
         "isolated_data": {},
         "read_set": {
           "groups": {

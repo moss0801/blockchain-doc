@@ -5,7 +5,7 @@ fabric-samples의 asset-transfer-basic 체인코드(chaincode, CC)를 배포하�
 fabric-samples의 asset-transfer-basic/chaincode-go를 moss-network/../asset-transfer-basic/chaincode-go에 복사한다. +
 link:https://github.com/hyperledger/fabric-samples/tree/main/asset-transfer-basic/chaincode-go[asset-transfer-basic/chaincode-go]
 
-link:https://github.com/hyperledger/fabric-shttps://github.com/hyperledger/fabric-samples/blob/main/test-network/scripts/deployCC.shamples/blob/main/test-network/scripts/deployCC.sh[deplyCC.sh] 
+link:https://github.com/hyperledger/fabric-shttps://github.com/hyperledger/fabric-samples/blob/main/test-network/scripts/deployCC.shamples/blob/main/test-network/scripts/deployCC.sh[deplyCC.sh]
 link:https://github.com/hyperledger/fabric-samples/blob/main/test-network/scripts/ccutils.sh[ccutils.sh]
 
 
@@ -324,7 +324,7 @@ cat log.txt
 
 query 결과
 ```
-Committed chaincode definition for chaincode 'basic' on channel 'mosschannel3':
+Committed chaincode definition for chaincode 'basic' on channel 'service1':
 Version: 1.0, Sequence: 1, Endorsement Plugin: escc, Validation Plugin: vscc, Approvals: [customerMSP: true, platformMSP: true, service1MSP: true, service2MSP: true]
 ```
 
@@ -356,31 +356,31 @@ peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NA
 ```
 $ . ./scripts/setPlatformPeer1.sh
 $ peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME}
-Committed chaincode definition for chaincode 'basic' on channel 'mosschannel3':
+Committed chaincode definition for chaincode 'basic' on channel 'service1':
 Version: 1.0, Sequence: 1, Endorsement Plugin: escc, Validation Plugin: vscc, Approvals: [customerMSP: true, platformMSP: true, service1MSP: true, service2MSP: true]
 $ . ./scripts/setCustomerPeer0.sh
 $ peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME}
-Committed chaincode definition for chaincode 'basic' on channel 'mosschannel3':
+Committed chaincode definition for chaincode 'basic' on channel 'service1':
 Version: 1.0, Sequence: 1, Endorsement Plugin: escc, Validation Plugin: vscc, Approvals: [customerMSP: true, platformMSP: true, service1MSP: true, service2MSP: true]
 $ . ./scripts/setCustomerPeer1.sh
 $ peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME}
-Committed chaincode definition for chaincode 'basic' on channel 'mosschannel3':
+Committed chaincode definition for chaincode 'basic' on channel 'service1':
 Version: 1.0, Sequence: 1, Endorsement Plugin: escc, Validation Plugin: vscc, Approvals: [customerMSP: true, platformMSP: true, service1MSP: true, service2MSP: true]
 $ . ./scripts/setService1Peer0.sh
 $ peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME}
-Committed chaincode definition for chaincode 'basic' on channel 'mosschannel3':
+Committed chaincode definition for chaincode 'basic' on channel 'service1':
 Version: 1.0, Sequence: 1, Endorsement Plugin: escc, Validation Plugin: vscc, Approvals: [customerMSP: true, platformMSP: true, service1MSP: true, service2MSP: true]
 $ . ./scripts/setService1Peer1.sh
 $ peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME}
-Committed chaincode definition for chaincode 'basic' on channel 'mosschannel3':
+Committed chaincode definition for chaincode 'basic' on channel 'service1':
 Version: 1.0, Sequence: 1, Endorsement Plugin: escc, Validation Plugin: vscc, Approvals: [customerMSP: true, platformMSP: true, service1MSP: true, service2MSP: true]
 $ . ./scripts/setService2Peer0.sh
 $ peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME}
-Committed chaincode definition for chaincode 'basic' on channel 'mosschannel3':
+Committed chaincode definition for chaincode 'basic' on channel 'service1':
 Version: 1.0, Sequence: 1, Endorsement Plugin: escc, Validation Plugin: vscc, Approvals: [customerMSP: true, platformMSP: true, service1MSP: true, service2MSP: true]
 $ . ./scripts/setService2Peer1.sh
 $ peer lifecycle chaincode querycommitted --channelID $CHANNEL_NAME --name ${CC_NAME}
-Committed chaincode definition for chaincode 'basic' on channel 'mosschannel3':
+Committed chaincode definition for chaincode 'basic' on channel 'service1':
 Version: 1.0, Sequence: 1, Endorsement Plugin: escc, Validation Plugin: vscc, Approvals: [customerMSP: true, platformMSP: true, service1MSP: true, service2MSP: true]
 ```
 

@@ -53,9 +53,9 @@ docker-compose -f compose-ca.yaml up -d 2>&1
 **참고: 2>&1** - link:https://reebok.tistory.com/56[/dev/null 2>&1 의 의미]
 
 n >&m: 표준출력과 표준에러를 서로 바꾸기. +
-0, 1, 2는 각각 표준입력, 표준출력, 그리고 표준에러를 의미합니다. 
+0, 1, 2는 각각 표준입력, 표준출력, 그리고 표준에러를 의미합니다.
 
-2>&1의 의미는 표준 출력의 전달되는 곳으로 표준에러를 전달하라라는 의미입니다. 
+2>&1의 의미는 표준 출력의 전달되는 곳으로 표준에러를 전달하라라는 의미입니다.
 
 ### 조직별 Identity 생성
 
@@ -114,7 +114,7 @@ docker container ls
 
 ### configtxgen을 이용하여 채널 genesis block 생성(Configuration Block) /w configtx.yaml
 
-. 채널명 환경변수 설정 : CHANNEL_NAME="mosschannel3"
+. 채널명 환경변수 설정 : CHANNEL_NAME="service1"
 . ./../config/configtx.yaml 채널 설정 파일을 작성한다. 참고: link:https://github.com/hyperledger/fabric-samples/blob/main/test-network/configtx/configtx.yaml[configtx.yaml]
 . 환경변수 설정 - FABRIC_CFG_PATH=${PWD}/configtx
 . block 생성 +
@@ -126,7 +126,7 @@ configtxgen -profile TwoOrgsApplicationGenesis -outputBlock ./channel-artifacts/
 
 . $FABRIC_CFG_PATH/orderer.yaml Orderer 설정파일 수정
 . osnadmin channel join 를 이용하여 채널 genesis block으로 채널 생성(존재하지 않으면 생성) 및 Orderer를 채널에 가입 +
-osnadmin channel join --channelID $CHANNEL_NAME --config-block ./channel-artifacts/${CHANNEL_NAME}.block -o localhost:7053 --ca-file "$ORDERER_CA" --client-cert "$ORDERER_ADMIN_TLS_SIGN_CERT" --client-key "$ORDERER_ADMIN_TLS_PRIVATE_KEY" + 
+osnadmin channel join --channelID $CHANNEL_NAME --config-block ./channel-artifacts/${CHANNEL_NAME}.block -o localhost:7053 --ca-file "$ORDERER_CA" --client-cert "$ORDERER_ADMIN_TLS_SIGN_CERT" --client-key "$ORDERER_ADMIN_TLS_PRIVATE_KEY" +
 osnadmin channel join --channelID mychannel --config-block ./channel-artifacts/mychannel.block -o localhost:7053 --ca-file ./ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem --client-cert ./organizations/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.crt --client-key ./organizations/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.key
 
 ### 각 조직의 Peer들을 채널에 가입(Join)
@@ -176,7 +176,7 @@ peer channel update -o orderer.example.com:7050 --ordererTLSHostnameOverride ord
 컨테이너 환경은 docker, docker-compose를 이용합니다.
 
 * domain: moss.com
-* channel : mosschannel3
+* channel : service1
 ** ordererOrganizations: oderer1
 ** peerOrganizations: platform, customer, service1, service2
 ** policy: test-network default policy
@@ -272,9 +272,9 @@ echo 'export PATH='$PWD'/bin:$PATH' | tee -a $HOME/.bashrc
 
 ### 조직별 CA 서버 설정 파일 작성
 
-link:https://hyperledger-fabric-ca.readthedocs.io/en/latest/users-guide.html[Fabric CA User’s Guide], 
-link:https://hyperledger-fabric-ca.readthedocs.io/en/latest/operations_guide.html[Fabric CA Operations Guide], 
-link:https://hyperledger-fabric-ca.readthedocs.io/en/latest/deployguide/ca-deploy-topology.html[Planning for a CA], 
+link:https://hyperledger-fabric-ca.readthedocs.io/en/latest/users-guide.html[Fabric CA User’s Guide],
+link:https://hyperledger-fabric-ca.readthedocs.io/en/latest/operations_guide.html[Fabric CA Operations Guide],
+link:https://hyperledger-fabric-ca.readthedocs.io/en/latest/deployguide/ca-deploy-topology.html[Planning for a CA],
 link:https://hyperledger-fabric-ca.readthedocs.io/en/latest/deployguide/cadeploy.html[CA Deployment steps]
 
 조직(Organization)별 두 개의 CA(organization CA[블록체인 인증], TLS CA[보안통신 인증]) 설정이 추천되나, 여기서는 하나의 CA가 2개의 CA 역할을 모두 하도록 설정합니다.
@@ -292,7 +292,7 @@ cd "$FABRIC_NETWORK_HOME"
 
 curl -L https://raw.githubusercontent.com/hyperledger/fabric-samples/main/test-network/organizations/fabric-ca/ordererOrg/fabric-ca-server-config.yaml -o fabric-ca-server-config.yaml
 
-mkdir -p organizations/fabric-ca/orderer1 
+mkdir -p organizations/fabric-ca/orderer1
 mkdir -p organizations/fabric-ca/platform
 mkdir -p organizations/fabric-ca/customer
 mkdir -p organizations/fabric-ca/service1
@@ -709,7 +709,7 @@ services:
     container_name: ca_service2
     networks:
       - moss
-  
+
 ```
 
 *docker-compose 실행 로그*
@@ -1181,7 +1181,7 @@ orderer TLS certificates 생성 및 파일 복사 결과
             │   │       ├── server.key
             │   │       ├── IssuerPublicKey
             │   │       ├── IssuerRevocationPublicKey
-            
+
             │   │       ├── cacerts
             │   │       ├── keystore
             │   │       │   └── ecda61559d7e8240c1a33d1b59003078a02f126de9cb4e4a723d3f873a4e8019_sk
@@ -1497,7 +1497,7 @@ peer TLS certificates 생성 및 파일 복사 결과
                         ├── tlscacerts
                         │   └── tls-localhost-8054-ca-platform-moss-com.pem
                         └── user
-            
+
 ```
 
 *customer, service1, service2 peer 조직*
@@ -1816,8 +1816,8 @@ peer의 port는 아래와 같이 사용합니다.
 
 tlsCACerts.pem은 각각 아래 파일을 참조 합니다.
 
-* peers.{peer}.tlsCACerts.pem : tlsca/tlsca.{organization}.nc.com-cert.pem
-* certificateAuthorities.{ca}.tlsCACerts:pem: ca/ca.{organization}.nc.com-cert.pem
+* peers.{peer}.tlsCACerts.pem : tlsca/tlsca.{organization}.moss.com-cert.pem
+* certificateAuthorities.{ca}.tlsCACerts:pem: ca/ca.{organization}.moss.com-cert.pem
 
 예) platform peer0
 
@@ -1889,7 +1889,7 @@ certificateAuthorities:
     url: https://localhost:8054
     caName: ca.platform.moss.com
     tlsCACerts:
-      pem: 
+      pem:
         - |
           -----BEGIN CERTIFICATE-----
 MIICAzCCAamgAwIBAgIUVzw5e+n07j1rIImI7wlENLD4Rs0wCgYIKoZIzj0EAwIw
@@ -1975,7 +1975,7 @@ certificateAuthorities:
     url: https://localhost:9054
     caName: ca.customer.moss.com
     tlsCACerts:
-      pem: 
+      pem:
         - |
           -----BEGIN CERTIFICATE-----
 MIICAzCCAamgAwIBAgIUUI50ijvhR1v86CrEzlk0DWTwbvYwCgYIKoZIzj0EAwIw
@@ -2062,7 +2062,7 @@ certificateAuthorities:
     url: https://localhost:10054
     caName: ca.service1.moss.com
     tlsCACerts:
-      pem: 
+      pem:
         - |
           -----BEGIN CERTIFICATE-----
 MIICAjCCAamgAwIBAgIUY01bq1JKNw9HraIfq6vnyLyzpRIwCgYIKoZIzj0EAwIw
@@ -2116,6 +2116,8 @@ volumes의 '${DOCKER_SOCK}:/host/var/run/docker.sock'는 'network.sh'를 참고�
 docker-compose 실행 결과
 
 ```
+$ cd "$FABRIC_NETWORK_HOME"
+
 $ docker-compose -f compose/compose-moss-net.yaml up -d 2>&1
 [+] Running 0/0
  ⠋ Volume "compose_osn2.orderer1.moss.com"  Creating    0.0s

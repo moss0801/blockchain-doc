@@ -1,0 +1,1187 @@
+## 개요
+SDK를 이용한 chaincode를 호출하는 애플리케이션 개발
+
+xref:chaincodeDevelopment.adoc[Chaincode 개발] 에서 개발 및 배포한 Counter를 호출하는 애플리케이션을 개발해 봅니다.
+
+## 트랜잭션 흐름
+
+link:TransctionFlow.adoc[Transaction Flow]
+
+### fabric-gateway SDK
+
+* https://hyperledger.github.io/fabric-gateway/
+* https://hyperledger.github.io/fabric-gateway/migration
+
+```
+// 0. Gateway 연결, Network 및 Contract 조회
+Gateway gateway = ...;
+Network network = gateway.getNetwork("channelName");
+Contract contract = network.getContract("chaincodeName");
+
+// 1~2. Proposal 생성 및 Endorsement
+Proposal proposal = contract.newProposal("tokenName").build();
+String txId = proposal.getTransactionId();
+byte[] digest = proposal.getDigest();
+Transaction transaction = proposal.endorse();
+
+// 3~6. Submit
+SubmittedTransaction submittedTransaction = transaction.submitAsync();
+
+// 7~8
+byte[] resultBytes = submittedTransaction.getResult();
+String result = new String(resultBytes, StandardCharsets.UTF_8);
+Status status = submittedTransaction.getStatus();
+boolean isSuccessful = status.isSuccessful();
+long blockNumber = status.getBlockNumber();
+TransactionPackage.TxValidationCode txValidationCode = status.getCode();
+```
+
+## Counter
+### Java
+fabic-gateway를 이용하여 counter 체인코드를 호출하는 Java 애플리케이션
+
+#### java project init
+gradle init 으로 Java Application 생성시 app 폴더가 생성되나 다중 프로젝트를 사용하지 않기에 제거 합니다.
+```
+gradle init --type java-application --dsl groovy --test-framework junit-jupiter
+mv app/* .
+rmdir app
+```
+
+```
+.
+├── gradle
+│   └── wrapper
+│       ├── gradle-wrapper.jar
+│       └── gradle-wrapper.properties
+├── gradlew
+├── gradlew.bat
+├── settings.gradle
+└── src
+├── main
+│   ├── java
+│   │   └── com
+│   │       └── moss
+│   │           └── platform
+│   │               └── fabric
+│   │                   └── application
+│   │                       └── counter
+│   │                           └── App.java
+│   └── resources
+└── test
+├── java
+│   └── com
+│       └── moss
+│           └── platform
+│               └── fabric
+│                   └── application
+│                       └── counter
+│                           └── AppTest.java
+└── resources
+```
+
+#### settings.gradle 수정
+```
+rootProject.name = 'counter-java'
+```
+
+#### build.gradle 수정
+```
+plugins {
+    id 'application'
+    id 'java'
+}
+ext {
+    javaMainClass = "com.moss.platform.fabric.application.counter.App"
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.hyperledger.fabric:fabric-gateway:1.0.1'
+    implementation 'io.grpc:grpc-netty-shaded:1.45.0'
+}
+
+application {
+    mainClass = 'com.moss.platform.fabric.application.counter.App'
+}
+```
+
+#### Identity 파일 복사
+Hyperledger Fabric 네트워크 호출을 위한 Identity 파일을 src/main/resources 하위로 복사해 옵니다.
+
+아래 정보로 체인코드를 호출한다고 가정합니다.
+
+* 채널: service1
+* 조직: platform
+* Gateway 피어: peer0.platform.moss.com
+* 유저: user1
+
+|===
+|내용|파일|기타
+
+|peer0.platform.moss.com TLS 인증서
+|./organizations/peerOrganizations/platform.moss.com/peers/peer0.platform.moss.com/tls/ca.crt
+|
+
+|User1@platform.moss.com CA 인증서
+|./organizations/peerOrganizations/platform.moss.com/users/User1@platform.moss.com/msp/keystore/c676ec3f2255542060705ec553467b0765c68a161148f736db3cf39687278e46_sk
+|개인키 파일이기에 파일명은 다를 수 있습니다.
+
+|User1@platform.moss.com CA 개인키
+|./organizations/peerOrganizations/platform.moss.com/users/User1@platform.moss.com/msp/signcerts/cert.pem
+|
+
+|===
+
+.파일 복사 결과
+```
+.
+...
+└── src
+    ...
+    └── main
+        ...
+         └── resources
+            └── organizations
+                └── peerOrganizations
+                    └── platform.moss.com
+                        ├── peers
+                        │   └── peer0.platform.moss.com
+                        │       └── tls
+                        │           └── ca.crt
+                        └── users
+                            └── User1@platform.moss.com
+                                └── msp
+                                    ├── keystore
+                                    │   └── c676ec3f2255542060705ec553467b0765c68a161148f736db3cf39687278e46_sk
+                                    └── signcerts
+                                        └── cert.pem
+```
+
+#### AppTest 파일 삭제
+미사용하는 AppTest 파일은 삭제 합니다.
+
+#### App.java 수정
+fabric-gateway를 이용하여 chaincode를 호출하는 애플리케이션을 작성합니다.
+
+. 변수설정
+. main함수 내 미사용 코드 삭제
+. 설정 출력
+. gRPC client 생성
+. gateway 생성
+. network 및 contract 조회
+. contract 호출 함수 작성
+. Evaluate(조회) 또는 Submit(수정) - 체인코드 호출
+
+
+#### 1/8 변수설정
+체인코드 호출을 위한 환경변수를 설정합니다.
+```
+package com.moss.platform.fabric.application.counter;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+public class App {
+private static final String mspId = "platformMSP";
+private static final String channelName = "service1";
+private static final String chaincodeName = "counter-java";
+
+    // Path to crypto materials.
+    private static final Path cryptoPath = Paths.get(System.getProperty("user.dir"), "src", "main", "resources", "organizations", "peerOrganizations", "platform.moss.com");
+    // Path to user certificate.
+    private static final Path certPath = cryptoPath.resolve(Paths.get("users", "User1@platform.moss.com", "msp", "signcerts", "cert.pem"));
+    // Path to user private key directory.
+    private static final Path keyDirectoryPath = cryptoPath.resolve(Paths.get("users", "User1@platform.moss.com", "msp", "keystore"));
+    // Path to peer tls certificate.
+    private static final Path tlsCertPath = cryptoPath.resolve(Paths.get("peers", "peer0.platform.moss.com", "tls", "ca.crt"));
+
+    // Gateway peer end point.
+    private static final String peerEndpoint = "localhost:8060";
+    private static final String peerHostAlias = "peer0.platform.moss.com";
+
+}
+```
+
+#### 2/8 main함수 내 미사용 코드 삭제
+기본으로 생성되어 있는 hello, World 코드를 삭제하고, 샘플 Application이기에 throws Exception을 추가하여 예외처리를 합니다.
+
+```
+package com.moss.platform.fabric.application.counter;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+public class App {
+    ...
+    public static void main(String[] args) throws Exception {
+
+    }
+}
+```
+
+#### 3/8 설정 출력
+설정을 출력하는 함수를 호출 합니다.
+```
+public class App {
+    ...
+    public static void main(String[] args) throws Exception {
+        displayInputParameters();
+    }
+
+    /**
+     * displayInputParameters() will print the global scope parameters used by the main driver routine.
+     */
+    private static void displayInputParameters() {
+        System.out.println("channelName: " + chaincodeName);
+        System.out.println("chaincodeName: " + chaincodeName);
+        System.out.println("mspId: " + mspId);
+        System.out.println("cryptoPath: " + cryptoPath);
+        System.out.println("keyDirectoryPath: " + keyDirectoryPath);
+        System.out.println("certPath: " + certPath);
+        System.out.println("tlsCertPath: " + tlsCertPath);
+        System.out.println("peerEndpoint: " + peerEndpoint);
+        System.out.println("peerHostAlias: " + peerHostAlias);
+    }
+}
+```
+
+#### 4/8 gRPC client 생성
+gRPC clinet를 생성합니다. 동일 endpoint를 사용하는 모든 gateway에서 공유되어야 합니다.
+```
+public class App {
+    // Path to peer tls certificate.
+    private static final Path tlsCertPath = cryptoPath.resolve(Paths.get("peers", "platform.moss.com", "tls", "ca.crt"));
+
+    // Gateway peer end point.
+    private static final String peerEndpoint = "localhost:8060";
+    private static final String peerHostAlias = "peer0.platform.moss.com";
+    ...
+    public static void main(String[] args) throws Exception {
+        displayInputParameters();
+
+        // gRPC client connection은 동일 endpoint를 사용하는 모든 Gateway 에서 공유되어야 합니다.
+        ManagedChannel channel = newGrpcConnection();
+    }
+
+    private static ManagedChannel newGrpcConnection() throws IOException, CertificateException {
+        Reader tlsCertReader = Files.newBufferedReader(tlsCertPath);
+        X509Certificate tlsCert = Identities.readX509Certificate(tlsCertReader);
+
+        return NettyChannelBuilder.forTarget(peerEndpoint)
+                .sslContext(GrpcSslContexts.forClient().trustManager(tlsCert).build()).overrideAuthority(peerHostAlias)
+                .build();
+    }
+}
+```
+
+#### 5/8 gateway 생성
+gateway connection을 생성합니다.
+
+* client: gRPC client
+* identity: user1의 mspId와 certifications로 생성한 Identity
+* signer: user1의 privateKey로 생성한 singer
+* evaluateOptions.dealine: evaluate timeout
+* endorseOptions.deadline: endorse timeout - peer들에게 proposal후 endorse가 완료될 때까지의 timeout으로 예상
+* submitOptions.deadline: submit timeout - endorse 완료된 트랜잭션들을 orderer에게 submit 호출 완료까지의 timeout으로 예상
+* commitStatusOptions: commitStatus - orderer에게 submit 이후, peer의 blockchain 및 World State에 반영까지의 timeout으로 예상
+
+```
+public class App {
+    private static final String mspId = "platformMSP";
+
+    // Path to user certificate.
+    private static final Path certPath = cryptoPath.resolve(Paths.get("users", "User1@platform.moss.com", "msp", "signcerts", "cert.pem"));
+    // Path to user private key directory.
+    private static final Path keyDirectoryPath = cryptoPath.resolve(Paths.get("users", "User1@platform.moss.com", "msp", "keystore"));
+    ...
+    public static void main(String[] args) throws Exception {
+        ...
+        // gateway 커넥션 생성
+        Gateway.Builder builder = Gateway.newInstance()
+                .connection(channel)  // gRPC channel
+                .identity(newIdentity())  // new X509Identity(mspId, userCertificate)
+                .signer(newSigner())  // Signers.newPrivateKeySigner(privateKey);
+                // Default timeouts for different gRPC calls
+                .evaluateOptions(CallOption.deadlineAfter(5, TimeUnit.SECONDS))
+                .endorseOptions(CallOption.deadlineAfter(15, TimeUnit.SECONDS))
+                .submitOptions(CallOption.deadlineAfter(5, TimeUnit.SECONDS))
+                .commitStatusOptions(CallOption.deadlineAfter(1, TimeUnit.MINUTES));
+
+        Gateway gateway = builder.connect();
+    }
+
+    private static Identity newIdentity() throws IOException, CertificateException {
+        Reader certReader = Files.newBufferedReader(certPath);
+        X509Certificate certificate = Identities.readX509Certificate(certReader);
+
+        return new X509Identity(mspId, certificate);
+    }
+
+    private static Signer newSigner() throws IOException, InvalidKeyException {
+        Path keyPath = Files.list(keyDirectoryPath)
+                .findFirst()
+                .orElseThrow();
+        Reader keyReader = Files.newBufferedReader(keyPath);
+        PrivateKey privateKey = Identities.readPrivateKey(keyReader);
+
+        return Signers.newPrivateKeySigner(privateKey);
+    }
+}
+```
+
+#### 6/8 network 및 contract 조회
+네트워크와 컨트랙트를 조회합니다.
+
+```
+public class App {
+    private static final String mspId = "platformMSP";
+
+    // Path to user certificate.
+    private static final Path certPath = cryptoPath.resolve(Paths.get("users", "User1@platform.moss.com", "msp", "signcerts", "cert.pem"));
+    // Path to user private key directory.
+    private static final Path keyDirectoryPath = cryptoPath.resolve(Paths.get("users", "User1@platform.moss.com", "msp", "keystore"));
+    ...
+    public static void main(String[] args) throws Exception {
+        ...
+        // 체인코드(스마트 컨트랙트) 호출
+        try {
+            // 체인코드가 배포된 채널이름으로 네트워크 조회
+            Network network = gateway.getNetwork(channelName);
+
+            // 스마트 컨트랙트 조회
+            Contract contract = network.getContract(chaincodeName);
+        ...
+    }
+}
+```
+
+#### 7/8 contract 호출 함수 작성
+contract 호출 함수 작성합니다. 아래 3개 함수를 작성합니다.
+
+* getCounterName
+* getNumberOfCounter
+* countUp
+
+```
+public class App {
+    /**
+     * Evaluate: 카운터 이름 조회
+     */
+    private static String getCounterName(Contract contract) throws GatewayException {
+        byte[] bytes = contract.evaluateTransaction("getCounterName");
+        return new String(bytes, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Evaluate: 카운트 조회
+     */
+    private static Integer getNumberOfCounter(Contract contract) throws GatewayException {
+        byte[] bytes = contract.evaluateTransaction("getNumberOfCounter");
+        return Integer.parseInt(new String(bytes, StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Submit: 카운트 증가
+     */
+    private static void countUp(Contract contract) throws CommitStatusException, EndorseException, CommitException, SubmitException {
+        contract.submitTransaction("countUp");
+    }
+}
+```
+
+#### 8/8 Evaluate(조회) 또는 Submit(수정) - 체인코드 호출
+```
+public class App {
+    public static void main(String[] args) throws Exception {
+        ...
+        // 체인코드(스마트 컨트랙트) 호출
+        try {
+            // 체인코드가 배포된 채널이름으로 네트워크 조회
+            Network network = gateway.getNetwork(channelName);
+
+            // 스마트 컨트랙트 조회
+            Contract contract = network.getContract(chaincodeName);
+
+            // 카운터이름 조회
+            String name = getCounterName(contract);
+            System.out.println("name: " + name);
+
+            // 카운트 조회
+            Integer count = getNumberOfCounter(contract);
+            System.out.println("count: " + count);
+
+            // 카운트 증가
+            countUp(contract);
+            System.out.println("countUp");
+
+            // 카운트 조회
+            Integer count2 = getNumberOfCounter(contract);
+            System.out.println("count2: " + count2);
+        } finally {
+            gateway.close();
+            channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
+        }
+    }
+}
+```
+
+#### 전체코드
+```
+package com.moss.platform.fabric.application.counter;
+
+import io.grpc.ManagedChannel;
+import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts;
+import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder;
+import org.hyperledger.fabric.client.*;
+import org.hyperledger.fabric.client.identity.*;
+
+import java.io.IOException;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.InvalidKeyException;
+import java.security.PrivateKey;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.util.concurrent.TimeUnit;
+
+public class App {
+    private static final String mspId = "platformMSP";
+    private static final String channelName = "service1";
+    private static final String chaincodeName = "counter-java";
+
+    // Path to crypto materials.
+    private static final Path cryptoPath = Paths.get(System.getProperty("user.dir"), "src", "main", "resources", "organizations", "peerOrganizations", "platform.moss.com");
+    // Path to user certificate.
+    private static final Path certPath = cryptoPath.resolve(Paths.get("users", "User1@platform.moss.com", "msp", "signcerts", "cert.pem"));
+    // Path to user private key directory.
+    private static final Path keyDirectoryPath = cryptoPath.resolve(Paths.get("users", "User1@platform.moss.com", "msp", "keystore"));
+    // Path to peer tls certificate.
+    private static final Path tlsCertPath = cryptoPath.resolve(Paths.get("peers", "peer0.platform.moss.com", "tls", "ca.crt"));
+
+    // Gateway peer end point.
+    private static final String peerEndpoint = "localhost:8060";
+    private static final String peerHostAlias = "peer0.platform.moss.com";
+
+
+    public static void main(String[] args) throws Exception {
+        displayInputParameters();
+
+        // gRPC client connection은 동일 endpoint를 사용하는 모든 Gateway 에서 공유되어야 합니다.
+        ManagedChannel channel = newGrpcConnection();
+
+        // gateway 커넥션 생성
+        Gateway.Builder builder = Gateway.newInstance()
+                .connection(channel)  // gRPC channel
+                .identity(newIdentity())  // new X509Identity(mspId, userCertificate)
+                .signer(newSigner())  // Signers.newPrivateKeySigner(privateKey);
+                // Default timeouts for different gRPC calls
+                .evaluateOptions(CallOption.deadlineAfter(5, TimeUnit.SECONDS))
+                .endorseOptions(CallOption.deadlineAfter(15, TimeUnit.SECONDS))
+                .submitOptions(CallOption.deadlineAfter(5, TimeUnit.SECONDS))
+                .commitStatusOptions(CallOption.deadlineAfter(1, TimeUnit.MINUTES));
+
+        Gateway gateway = builder.connect();
+
+        // 체인코드(스마트 컨트랙트) 호출
+        try {
+            // 체인코드가 배포된 채널이름으로 네트워크 조회
+            Network network = gateway.getNetwork(channelName);
+
+            // 스마트 컨트랙트 조회
+            Contract contract = network.getContract(chaincodeName);
+
+            // 카운터이름 조회
+            String name = getCounterName(contract);
+            System.out.println("name: " + name);
+
+            // 카운트 조회
+            Integer count = getNumberOfCounter(contract);
+            System.out.println("count: " + count);
+
+            // 카운트 증가
+            countUp(contract);
+            System.out.println("countUp");
+
+            // 카운트 조회
+            Integer count2 = getNumberOfCounter(contract);
+            System.out.println("count2: " + count2);
+        } finally {
+            gateway.close();
+            channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
+        }
+    }
+
+    private static ManagedChannel newGrpcConnection() throws IOException, CertificateException {
+        Reader tlsCertReader = Files.newBufferedReader(tlsCertPath);
+        X509Certificate tlsCert = Identities.readX509Certificate(tlsCertReader);
+
+        return NettyChannelBuilder.forTarget(peerEndpoint)
+                .sslContext(GrpcSslContexts.forClient().trustManager(tlsCert).build()).overrideAuthority(peerHostAlias)
+                .build();
+    }
+
+    private static Identity newIdentity() throws IOException, CertificateException {
+        Reader certReader = Files.newBufferedReader(certPath);
+        X509Certificate certificate = Identities.readX509Certificate(certReader);
+
+        return new X509Identity(mspId, certificate);
+    }
+
+    private static Signer newSigner() throws IOException, InvalidKeyException {
+        Path keyPath = Files.list(keyDirectoryPath)
+                .findFirst()
+                .orElseThrow();
+        Reader keyReader = Files.newBufferedReader(keyPath);
+        PrivateKey privateKey = Identities.readPrivateKey(keyReader);
+
+        return Signers.newPrivateKeySigner(privateKey);
+    }
+
+    /**
+     * Evaluate: 카운터 이름 조회
+     */
+    private static String getCounterName(Contract contract) throws GatewayException {
+        byte[] bytes = contract.evaluateTransaction("getCounterName");
+        return new String(bytes, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Evaluate: 카운트 조회
+     */
+    private static Integer getNumberOfCounter(Contract contract) throws GatewayException {
+        byte[] bytes = contract.evaluateTransaction("getNumberOfCounter");
+        return Integer.parseInt(new String(bytes, StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Submit: 카운트 증가
+     */
+    private static void countUp(Contract contract) throws CommitStatusException, EndorseException, CommitException, SubmitException {
+        contract.submitTransaction("countUp");
+    }
+
+    /**
+     * displayInputParameters() will print the global scope parameters used by the main driver routine.
+     */
+    private static void displayInputParameters() {
+        System.out.println("channelName: " + chaincodeName);
+        System.out.println("chaincodeName: " + chaincodeName);
+        System.out.println("mspId: " + mspId);
+        System.out.println("cryptoPath: " + cryptoPath);
+        System.out.println("keyDirectoryPath: " + keyDirectoryPath);
+        System.out.println("certPath: " + certPath);
+        System.out.println("tlsCertPath: " + tlsCertPath);
+        System.out.println("peerEndpoint: " + peerEndpoint);
+        System.out.println("peerHostAlias: " + peerHostAlias);
+    }
+}
+```
+
+#### 실행
+gradlew run으로 실행합니다.
+```
+$ ./gradlew run
+```
+
+**실행 결과**
+```
+$ ./gradlew run
+
+> Task :run
+channelName: counter-java
+chaincodeName: counter-java
+mspId: platformMSP
+cryptoPath: /mnt/d/git/fabric-chaincode-counter/application-gateway-java/src/main/resources/organizations/peerOrganizations/platform.moss.com
+keyDirectoryPath: /mnt/d/git/fabric-chaincode-counter/application-gateway-java/src/main/resources/organizations/peerOrganizations/platform.moss.com/users/User1@platform.moss.com/msp/keystore
+certPath: /mnt/d/git/fabric-chaincode-counter/application-gateway-java/src/main/resources/organizations/peerOrganizations/platform.moss.com/users/User1@platform.moss.com/msp/signcerts/cert.pem
+tlsCertPath: /mnt/d/git/fabric-chaincode-counter/application-gateway-java/src/main/resources/organizations/peerOrganizations/platform.moss.com/peers/peer0.platform.moss.com/tls/ca.crt
+peerEndpoint: localhost:8060
+peerHostAlias: peer0.platform.moss.com
+name: counter1
+count: 5
+countUp
+count2: 6
+
+BUILD SUCCESSFUL in 10s
+3 actionable tasks: 3 executed
+```
+
+## typescript
+fabric-gateway를 이용하여 counter 체인코드를 호출하는 typescript 애플리케이션
+
+### mkdir & pakcage.json & tsconfig.json
+프로젝트 폴더를 생성하고 package.json 및 tsconfig.json 파일을 아래와 같이 생성합니다.
+
+```
+// package.json
+{
+  "name": "counter-typescript",
+  "version": "1.0.0",
+  "description": "counter-typescript",
+  "main": "dist/index.js",
+  "typings": "dsit/index.d.ts",
+  "engines": {
+    "node": ">=14"
+  },
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc -w",
+    "start": "node dist/app.js"
+  },
+  "engineStrict": true,
+  "dependencies": {
+    "@hyperledger/fabric-gateway": "1.0.1",
+    "@grpc/grpc-js": "1.5.7"
+  },
+  "devDependencies": {
+    "typescript": "4.6.2"
+  }
+}
+```
+
+```
+// tsconfig.json
+{
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "outDir": "dist",
+    "target": "es2017",
+    "moduleResolution": "node",
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "declaration": true,
+    "sourceMap": true
+  },
+  "include": [
+    "./src/**/*"
+  ],
+  "exclude": [
+    "./src/**/*.spec.ts"
+  ]
+}
+```
+
+작업 결과
+```
+./
+├── package.json
+└── tsconfig.json
+```
+
+### npm install
+'npm install'를 이용해서 필요한 라이브러리를 설치합니다.
+```
+npm install
+```
+
+### Identity 파일 복사
+Hyperledger Fabric 네트워크 호출을 위한 Identity 파일을 복사해 옵니다.
+
+아래 정보로 체인코드를 호출한다고 가정합니다.
+
+* 채널: service1
+* 조직: platform
+* Gateway 피어: peer0.platform.moss.com
+* 유저: user1
+
+|===
+|내용|파일|기타
+
+|peer0.platform.moss.com TLS 인증서
+|./organizations/peerOrganizations/platform.moss.com/peers/peer0.platform.moss.com/tls/ca.crt
+|
+
+|User1@platform.moss.com CA 인증서
+|./organizations/peerOrganizations/platform.moss.com/users/User1@platform.moss.com/msp/keystore/c676ec3f2255542060705ec553467b0765c68a161148f736db3cf39687278e46_sk
+|개인키 파일이기에 파일명은 다를 수 있습니다.
+
+|User1@platform.moss.com CA 개인키
+|./organizations/peerOrganizations/platform.moss.com/users/User1@platform.moss.com/msp/signcerts/cert.pem
+|
+
+|===
+
+```
+.
+└── organizations
+└── peerOrganizations
+└── platform.moss.com
+├── peers
+│   └── peer0.platform.moss.com
+│       └── tls
+│           └── ca.crt
+└── users
+└── User1@platform.moss.com
+└── msp
+├── keystore
+│   └── c676ec3f2255542060705ec553467b0765c68a161148f736db3cf39687278e46_sk
+└── signcerts
+└── cert.pem
+```
+
+### src/app.ts
+fabric-gateway를 이용하여 chaincode를 호출하는 애플리케이션을 작성합니다.
+
+. import, 변수설정 및 decoder 정의
+. main함수 정의
+. 설정 출력
+. gRPC client 생성
+. gateway 생성
+. network 및 contract 조회
+. contract 호출 함수 작성
+. Evaluate(조회) 또는 Submit(수정) - 체인코드 호출
+. main() 함수 호출
+
+#### 1/9 import, 변수설정 및 decoder 정의
+app.ts 파일을 생성하고 아래와 같이 import , 변수 설정 및 반환 결과를 decode 하기위한 TextDecoder를 정의합니다.
+```
+import * as grpc from '@grpc/grpc-js';
+import { connect, Contract, Identity, Signer, signers } from '@hyperledger/fabric-gateway';
+import * as crypto from 'crypto';
+import { promises as fs } from 'fs';
+import * as path from 'path';
+import { TextDecoder } from 'util';
+
+const channelName = envOrDefault('CHANNEL_NAME', 'service1');
+const chaincodeName = envOrDefault('CHAINCODE_NAME', 'counter-typescript');
+const mspId = envOrDefault('MSP_ID', 'platformMSP');
+
+// Path to crypto materials.
+const cryptoPath = envOrDefault('CRYPTO_PATH', path.resolve(__dirname, '..', 'organizations', 'peerOrganizations', 'platform.moss.com'));
+
+// Path to user private key directory.
+const keyDirectoryPath = envOrDefault('KEY_DIRECTORY_PATH', path.resolve(cryptoPath, 'users', 'User1@platform.moss.com', 'msp', 'keystore'));
+
+// Path to user certificate.
+const certPath = envOrDefault('CERT_PATH', path.resolve(cryptoPath, 'users', 'User1@platform.moss.com', 'msp', 'signcerts', 'cert.pem'));
+
+// Path to peer tls certificate.
+const tlsCertPath = envOrDefault('TLS_CERT_PATH', path.resolve(cryptoPath, 'peers', 'peer0.platform.moss.com', 'tls', 'ca.crt'));
+
+// Gateway peer endpoint.
+const peerEndpoint = envOrDefault('PEER_ENDPOINT', 'localhost:8060');
+
+// Gateway peer SSL host name override.
+const peerHostAlias = envOrDefault('PEER_HOST_ALIAS', 'peer0.platform.moss.com');
+
+const utf8Decoder = new TextDecoder();
+```
+#### 2/9 main함수 정의
+main함수를 정의합니다.
+```
+async function main(): Promise<void> {
+
+}
+```
+#### 3/9 설정 출력
+설정을 출력하는 함수를 호출합니다.
+```
+async function main(): Promise<void> {
+    await displayInputParameters();
+}
+
+/**
+ * displayInputParameters() will print the global scope parameters used by the main driver routine.
+ */
+async function displayInputParameters(): Promise<void> {
+    console.log(`channelName:       ${channelName}`);
+    console.log(`chaincodeName:     ${chaincodeName}`);
+    console.log(`mspId:             ${mspId}`);
+    console.log(`cryptoPath:        ${cryptoPath}`);
+    console.log(`keyDirectoryPath:  ${keyDirectoryPath}`);
+    console.log(`certPath:          ${certPath}`);
+    console.log(`tlsCertPath:       ${tlsCertPath}`);
+    console.log(`peerEndpoint:      ${peerEndpoint}`);
+    console.log(`peerHostAlias:     ${peerHostAlias}`);
+}
+```
+#### 4/9 gRPC client 생성
+gRPC clinet를 생성합니다. gRPC connection 비용이 크기 때문에 동일 endpoint를 사용하는 모든 gateway에서 공유되어야 합니다.
+```
+// Path to peer tls certificate.
+const tlsCertPath = envOrDefault('TLS_CERT_PATH', path.resolve(cryptoPath, 'peers', 'peer0.platform.moss.com', 'tls', 'ca.crt'));
+
+// Gateway peer endpoint.
+const peerEndpoint = envOrDefault('PEER_ENDPOINT', 'localhost:8060');
+
+// Gateway peer SSL host name override.
+const peerHostAlias = envOrDefault('PEER_HOST_ALIAS', 'peer0.platform.moss.com');
+
+async function main(): Promise<void> {
+    await displayInputParameters();
+
+    // gRPC client connection은 동일 endpoint를 사용하는 모든 Gateway 에서 공유되어야 합니다.
+    const client = await newGrpcConnection();
+}
+
+async function newGrpcConnection(): Promise<grpc.Client> {
+    const tlsRootCert = await fs.readFile(tlsCertPath);
+    const tlsCredentials = grpc.credentials.createSsl(tlsRootCert);
+    return new grpc.Client(peerEndpoint, tlsCredentials, {
+        'grpc.ssl_target_name_override': peerHostAlias,
+    });
+}
+```
+##### 5/9 gateway 생성
+gateway connection을 생성합니다.
+
+* client: gRPC client
+* identity: user1의 mspId와 certifications로 생성한 Identity
+* signer: user1의 privateKey로 생성한 singer
+* evaluateOptions.dealine: evaluate timeout
+* endorseOptions.deadline: endorse timeout - peer들에게 proposal후 endorse가 완료될 때까지의 timeout으로 예상
+* submitOptions.deadline: submit timeout - endorse 완료된 트랜잭션들을 orderer에게 submit 호출 완료까지의 timeout으로 예상
+* commitStatusOptions: commitStatus - orderer에게 submit 이후, peer의 blockchain 및 World State에 반영까지의 timeout으로 예상
+
+```
+const mspId = envOrDefault('MSP_ID', 'platformMSP');
+
+// Path to user private key directory.
+const keyDirectoryPath = envOrDefault('KEY_DIRECTORY_PATH', path.resolve(cryptoPath, 'users', 'User1@platform.moss.com', 'msp', 'keystore'));
+
+// Path to user certificate.
+const certPath = envOrDefault('CERT_PATH', path.resolve(cryptoPath, 'users', 'User1@platform.moss.com', 'msp', 'signcerts', 'cert.pem'));
+
+async function main(): Promise<void> {
+    ...
+    // gateway 커넥션 생성
+    const gateway = connect({
+        client,  // gRPC client
+        identity: await newIdentity(),  // {mspId, userCertificates}
+        signer: await newSigner(),  // signers.newPrivateKeySigner(privateKey)
+        // Default timeouts for different gRPC calls
+        evaluateOptions: () => {
+            return { deadline: Date.now() + 5000 }; // 5 seconds
+        },
+        endorseOptions: () => {
+            return { deadline: Date.now() + 15000 }; // 15 seconds
+        },
+        submitOptions: () => {
+            return { deadline: Date.now() + 5000 }; // 5 seconds
+        },
+        commitStatusOptions: () => {
+            return { deadline: Date.now() + 60000 }; // 1 minute
+        },
+    });
+}
+
+async function newIdentity(): Promise<Identity> {
+    const credentials = await fs.readFile(certPath);
+    return { mspId, credentials };
+}
+
+async function newSigner(): Promise<Signer> {
+    const files = await fs.readdir(keyDirectoryPath);
+    const keyPath = path.resolve(keyDirectoryPath, files[0]);
+    const privateKeyPem = await fs.readFile(keyPath);
+    const privateKey = crypto.createPrivateKey(privateKeyPem);
+    return signers.newPrivateKeySigner(privateKey);
+}
+```
+#### 6/9 network 및 contract 조회
+네트워크와 컨트랙트를 조회합니다.
+```
+const channelName = envOrDefault('CHANNEL_NAME', 'service1');
+const chaincodeName = envOrDefault('CHAINCODE_NAME', 'counter-typescript');
+
+async function main(): Promise<void> {
+    ...
+    try {
+        // 체인코드가 배포된 채널이름으로 네트워크 조회
+        const network = gateway.getNetwork(channelName);
+
+        // 스마트 컨트랙트 조회
+        const contract = network.getContract(chaincodeName);
+    ...
+}
+```
+
+#### 7/9 contract 호출 함수 작성
+contract 호출 함수 작성합니다. 아래 3개 함수를 작성합니다.
+
+* getCounterName
+* getNumberOfCounter
+* countUp
+
+```
+/**
+ * Evaluate: 카운터 이름 조회
+ */
+async function getCounterName(contract: Contract): Promise<string> {
+    const resultBytes = await contract.evaluateTransaction('getCounterName');
+    const name = utf8Decoder.decode(resultBytes);
+    return new Promise<string>((resolve => resolve(name)));
+}
+
+/**
+ * Evaluate: 카운트 조회
+ */
+async function getNumberOfCounter(contract: Contract): Promise<number> {
+    const resultBytes = await contract.evaluateTransaction('getNumberOfCounter');
+    const count = Number(utf8Decoder.decode(resultBytes));
+    return new Promise<number>((resolve => resolve(count)));
+}
+
+/**
+ * Submit: 카운트 증가
+ */
+async function countUp(contract: Contract): Promise<void> {
+    await contract.submitTransaction('countUp');
+}
+```
+
+#### 8/9 Evaluate(조회) 또는 Submit(수정) - 체인코드 호출
+```
+async function main(): Promise<void> {
+    ...
+    // 체인코드(스마트 컨트랙트) 호출
+    try {
+        // 체인코드가 배포된 채널이름으로 네트워크 조회
+        const network = gateway.getNetwork(channelName);
+
+        // 스마트 컨트랙트 조회
+        const contract = network.getContract(chaincodeName);
+
+
+        // 카운터이름 조회
+        const name = await getCounterName(contract);
+        console.log(`name: ${name}`);
+
+        // 카운트 조회
+        const count = await getNumberOfCounter(contract);
+        console.log(`count: ${count}`);
+
+        // 카운트 증가
+        await countUp(contract);
+        console.log('countUp');
+
+        // 카운트 조회
+        const count2 = await getNumberOfCounter(contract);
+        console.log(`count: ${count2}`);
+    } finally {
+        gateway.close();
+        client.close();
+    }
+}
+```
+
+#### 9/9 main 함수 호출
+```
+main().catch(error => {
+    console.error('******** FAILED to run the application:', error);
+    process.exitCode = 1;
+});
+```
+
+#### src/app.ts 전체코드
+
+```
+import * as grpc from '@grpc/grpc-js';
+import { connect, Contract, Identity, Signer, signers } from '@hyperledger/fabric-gateway';
+import * as crypto from 'crypto';
+import { promises as fs } from 'fs';
+import * as path from 'path';
+import { TextDecoder } from 'util';
+
+const channelName = envOrDefault('CHANNEL_NAME', 'service1');
+const chaincodeName = envOrDefault('CHAINCODE_NAME', 'counter-typescript');
+const mspId = envOrDefault('MSP_ID', 'platformMSP');
+
+// Path to crypto materials.
+const cryptoPath = envOrDefault('CRYPTO_PATH', path.resolve(__dirname, '..', 'organizations', 'peerOrganizations', 'platform.moss.com'));
+
+// Path to user private key directory.
+const keyDirectoryPath = envOrDefault('KEY_DIRECTORY_PATH', path.resolve(cryptoPath, 'users', 'User1@platform.moss.com', 'msp', 'keystore'));
+
+// Path to user certificate.
+const certPath = envOrDefault('CERT_PATH', path.resolve(cryptoPath, 'users', 'User1@platform.moss.com', 'msp', 'signcerts', 'cert.pem'));
+
+// Path to peer tls certificate.
+const tlsCertPath = envOrDefault('TLS_CERT_PATH', path.resolve(cryptoPath, 'peers', 'peer0.platform.moss.com', 'tls', 'ca.crt'));
+
+// Gateway peer endpoint.
+const peerEndpoint = envOrDefault('PEER_ENDPOINT', 'localhost:8060');
+
+// Gateway peer SSL host name override.
+const peerHostAlias = envOrDefault('PEER_HOST_ALIAS', 'peer0.platform.moss.com');
+
+const utf8Decoder = new TextDecoder();
+
+async function main(): Promise<void> {
+    await displayInputParameters();
+
+    // gRPC client connection은 동일 endpoint를 사용하는 모든 Gateway 에서 공유되어야 합니다.
+    const client = await newGrpcConnection();
+
+    // gateway 커넥션 생성
+    const gateway = connect({
+        client,  // gRPC client
+        identity: await newIdentity(),  // {mspId, userCertificates}
+        signer: await newSigner(),  // signers.newPrivateKeySigner(privateKey)
+        // Default timeouts for different gRPC calls
+        evaluateOptions: () => {
+            return { deadline: Date.now() + 5000 }; // 5 seconds
+        },
+        endorseOptions: () => {
+            return { deadline: Date.now() + 15000 }; // 15 seconds
+        },
+        submitOptions: () => {
+            return { deadline: Date.now() + 5000 }; // 5 seconds
+        },
+        commitStatusOptions: () => {
+            return { deadline: Date.now() + 60000 }; // 1 minute
+        },
+    });
+
+    // 체인코드(스마트 컨트랙트) 호출
+    try {
+        // 체인코드가 배포된 채널이름으로 네트워크 조회
+        const network = gateway.getNetwork(channelName);
+
+        // 스마트 컨트랙트 조회
+        const contract = network.getContract(chaincodeName);
+
+
+        // 카운터이름 조회
+        const name = await getCounterName(contract);
+        console.log(`name: ${name}`);
+
+        // 카운트 조회
+        const count = await getNumberOfCounter(contract);
+        console.log(`count: ${count}`);
+
+        // 카운트 증가
+        await countUp(contract);
+        console.log('countUp');
+
+        // 카운트 조회
+        const count2 = await getNumberOfCounter(contract);
+        console.log(`count: ${count2}`);
+    } finally {
+        gateway.close();
+        client.close();
+    }
+}
+
+main().catch(error => {
+    console.error('******** FAILED to run the application:', error);
+    process.exitCode = 1;
+});
+
+async function newGrpcConnection(): Promise<grpc.Client> {
+    const tlsRootCert = await fs.readFile(tlsCertPath);
+    const tlsCredentials = grpc.credentials.createSsl(tlsRootCert);
+    return new grpc.Client(peerEndpoint, tlsCredentials, {
+        'grpc.ssl_target_name_override': peerHostAlias,
+    });
+}
+
+async function newIdentity(): Promise<Identity> {
+    const credentials = await fs.readFile(certPath);
+    return { mspId, credentials };
+}
+
+async function newSigner(): Promise<Signer> {
+    const files = await fs.readdir(keyDirectoryPath);
+    const keyPath = path.resolve(keyDirectoryPath, files[0]);
+    const privateKeyPem = await fs.readFile(keyPath);
+    const privateKey = crypto.createPrivateKey(privateKeyPem);
+    return signers.newPrivateKeySigner(privateKey);
+}
+
+/**
+ * Evaluate: 카운터 이름 조회
+ */
+async function getCounterName(contract: Contract): Promise<string> {
+    const resultBytes = await contract.evaluateTransaction('getCounterName');
+    const name = utf8Decoder.decode(resultBytes);
+    return new Promise<string>((resolve => resolve(name)));
+}
+
+/**
+ * Evaluate: 카운트 조회
+ */
+async function getNumberOfCounter(contract: Contract): Promise<number> {
+    const resultBytes = await contract.evaluateTransaction('getNumberOfCounter');
+    const count = Number(utf8Decoder.decode(resultBytes));
+    return new Promise<number>((resolve => resolve(count)));
+}
+
+/**
+ * Submit: 카운트 증가
+ */
+async function countUp(contract: Contract): Promise<void> {
+    await contract.submitTransaction('countUp');
+}
+
+/**
+ * envOrDefault() will return the value of an environment variable, or a default value if the variable is undefined.
+ */
+function envOrDefault(key: string, defaultValue: string): string {
+    return process.env[key] || defaultValue;
+}
+
+/**
+ * displayInputParameters() will print the global scope parameters used by the main driver routine.
+ */
+async function displayInputParameters(): Promise<void> {
+    console.log(`channelName:       ${channelName}`);
+    console.log(`chaincodeName:     ${chaincodeName}`);
+    console.log(`mspId:             ${mspId}`);
+    console.log(`cryptoPath:        ${cryptoPath}`);
+    console.log(`keyDirectoryPath:  ${keyDirectoryPath}`);
+    console.log(`certPath:          ${certPath}`);
+    console.log(`tlsCertPath:       ${tlsCertPath}`);
+    console.log(`peerEndpoint:      ${peerEndpoint}`);
+    console.log(`peerHostAlias:     ${peerHostAlias}`);
+}
+```
+
+#### 빌드
+npm run build 명령어로 빌드 합니다.
+```
+npm run build
+```
+
+#### 빌드 결과
+```
+$ npm run build
+
+> counter-typescript@1.0.0 build
+> tsc
+```
+
+#### 실행
+npm start로 실행합니다.
+```
+npm start
+```
+#### 실행 결과
+```
+$ npm start
+
+> counter-typescript@1.0.0 start
+> node dist/app.js
+
+channelName:       service1
+chaincodeName:     counter-typescript
+mspId:             platformMSP
+cryptoPath:        /mnt/d/git/fabric-chaincode-counter/application-gateway-typescript/organizations/peerOrganizations/platform.moss.com
+keyDirectoryPath:  /mnt/d/git/fabric-chaincode-counter/application-gateway-typescript/organizations/peerOrganizations/platform.moss.com/users/User1@platform.moss.com/msp/keystore
+certPath:          /mnt/d/git/fabric-chaincode-counter/application-gateway-typescript/organizations/peerOrganizations/platform.moss.com/users/User1@platform.moss.com/msp/signcerts/cert.pem
+tlsCertPath:       /mnt/d/git/fabric-chaincode-counter/application-gateway-typescript/organizations/peerOrganizations/platform.moss.com/peers/peer0.platform.moss.com/tls/ca.crt
+peerEndpoint:      localhost:8060
+peerHostAlias:     peer0.platform.moss.com
+name: counter3
+count: 4
+countUp
+count: 5
+```

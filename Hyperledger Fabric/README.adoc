@@ -1,0 +1,46 @@
+
+## 소개
+
+xref:Introduction.adoc[Hyperledger Fabric 소개]
+
+## 실습
+### 네트워크 & 채널 구성
+
+* xref:v2.4 Network Configuration-1.adoc[Network Configuration 1]
+* xref:v2.4 Network Configuration-2.adoc[Network Configuration 2]
+* xref:v2.4 Network Configuration-3.adoc[Network Configuration 3]
+* 참고
+** [공식문서] link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/getting_started.html[Install]
+** [공식문서] link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/test_network.html[Using the Fabric test network]
+** [공식문서] link:https://hyperledger-fabric-ca.readthedocs.io/en/latest/operations_guide.html[Fabric CA Operations Guide]
+** xref:What's new in v2.x.adoc[What's new in v2.x]
+** xref:WorkflowOfNetworkFormation.adoc[네트워크 형성과저(Workflow of Network Formation)]
+** xref:v2.4 test-network install.adoc[test-network 설치]
+** xref:v2.4 test-network analysis.adoc[test-network 분석]
+
+### 체인코드
+* xref:sampleChaincodeTest.adoc[샘플 asset-transfer-basic 체인코드 테스트]
+* xref:chaincodeDevelopment.adoc[Chaincode 개발 및 배포]
+* 참고
+** [공식문서] link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/chaincode_lifecycle.html[Fabric chaincode lifecycle]
+** [공식샘플] link:https://github.com/hyperledger/fabric-samples/tree/main/asset-transfer-basic[asset-transfer-basic], link:https://github.com/hyperledger/fabric-samples/tree/main/asset-transfer-events[asset-transfer-events]
+** [공식문서] link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/txflow.html[Transaction Flow], xref:TransctionFlow.adoc[Transaction Flow 번역]
+** SDK: link:https://github.com/hyperledger/fabric-chaincode-java[Java], link:https://github.com/hyperledger/fabric-chaincode-node[node(javascript)], link:https://github.com/hyperledger/fabric-chaincode-go[go]
+
+### 애플리케이션
+* xref:applicationDeveloptment.adoc[Application 개발]
+* 참고
+** [공식문서] link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/write_first_app.html[Running a Fabric Application]
+** [공식샘플] link:https://github.com/hyperledger/fabric-samples/tree/main/asset-transfer-basic[asset-transfer-basic], link:https://github.com/hyperledger/fabric-samples/tree/main/asset-transfer-events[asset-transfer-events]
+** xref:sampleApplicationTest.adoc[asset-transfer-basic 샘플 애플리케이션 테스트]
+** SDK: link:https://github.com/hyperledger/fabric-gateway[Java, Node(javascript), go]
+
+### ERC20
+* 참고
+** [공식샘플] link:https://github.com/hyperledger/fabric-samples/tree/main/token-erc-20[token-erc-20],
+link:https://github.com/hyperledger/fabric-samples/tree/main/token-erc-721[token-erc-721],
+link:https://github.com/hyperledger/fabric-samples/tree/main/token-erc-1155[token-erc-1155]
+** xref:erc20SampleAnalysis.adoc[token-erc-20 샘플 체인코드 분석]
+
+
+

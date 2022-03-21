@@ -1,0 +1,352 @@
+## 개요
+Hyperledger Fabric ERC20 샘플과 이더리움 ERC20 구현 비교
+
+소스코드: https://github.com/hyperledger/fabric-samples/tree/main/token-erc-20
+
+## 사전준비
+이더리움 ERC20 스펙을 이해한다고 가정합니다.
+
+## 이더리움 ERC20
+```
+# Methods
+function name() public view returns (string)
+function symbol() public view returns (string)
+function decimals() public view returns (uint8)
+function totalSupply() public view returns (uint256)
+function balanceOf(address _owner) public view returns (uint256 balance)
+function transfer(address _to, uint256 _value) public returns (bool success)
+function transferFrom(address _from, address _to, uint256 _value) public returns (bool success)
+function approve(address _spender, uint256 _value) public returns (bool success)
+function allowance(address _owner, address _spender) public view returns (uint256 remaining)
+
+# Events
+event Transfer(address indexed _from, address indexed _to, uint256 _value)
+event Approval(address indexed _owner, address indexed _spender, uint256 _value)
+
+# Openzeppelin
+function mint(address to, uint256 amount) public
+function burn(uint256 amount) public virtual
+function burnFrom(address account, uint256 amount) public virtual
+```
+
+## Fabric ERC20
+link:https://github.com/hyperledger/fabric-samples/blob/main/token-erc-20/chaincode-javascript/lib/tokenERC20.js[tokenERC20.js]
+```
+// Methods
+TokenName(ctx) : String
+Symbol(ctx) : String
+Decimals(ctx) : Number
+TotalSupply(ctx) : Number
+BalanceOf(ctx, owner) : Number
+Transfer(ctx, to, value) : Boolean - event Transfer
+TransferFrom(ctx, from, to, value) : Boolean - event Transfer
+Approve(ctx, spender, value) : Boolean - event Approval
+Allowance(ctx, owner, spender) : Number
+
+// Extended Functions
+SetOption(ctx, name, symbol, decimals) : void
+Mint(ctx, amount) : Boolean - event Transfer
+Burn(ctx, amount) : Boolean - event Transfer
+ClientAccountBalance(ctx) : Number
+ClientAccountID(ctx) : String
+```
+
+## 차이점
+openzeppelin link:https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/ERC20.sol[ERC20], link:https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/extensions/ERC20Burnable.sol[ERC20Burnable] 구현 기준 정리
+
+|===
+|이더리움 ERC20|Fabric ERC20|내용
+
+|name()
+|TokenName(ctx)
+|함수 이름이 다름. +
+Fabric Contract의 name parameter와 충돌하여서 대신 TokenName을 사용
+
+|SetOption(ctx, name, symbol, decimals)	name, symbol, decimals 수정
+|mint(address to, unit256 amount)	Mint(ctx, amount)
+|openzeppelin 구현은 mint 대상을 지정하지만, +
+fabric 구현은 호출자에게 mint한다.
+
+|brunFrom(address account, uint256 amount)
+|
+|
+
+|
+|ClientAccountBalance(ctx)
+|호출자의 balance를 반환
+
+|
+|ClientAccountID(ctx)
+|호출자의 ID를 반환
+
+|===
+
+
+* 권한 체크기준이 이더리움은 address 이지만, Fabric은 clientIdentiy의 MSPID 이다.
+** 샘플 코드에는 하드코딩 되어 있기에 권한 처리를 위한 구현 필요.
+* Fabric은 단순한 key/value 저장 구조를 가지기에 복잡한 구조의 상태 저장은 CompositeKey로 처리한다.
+** solidity의 mapping(address => uint256) private _balances; 의 fabric key는 stub.createCompositeKey('balances', id) 로 생성한다.
+** ctx.stub.createCompositeKey 문서 ChaincodeStub
+*** Format: NAMESPACE + objectType + DELIMITER + (attribute + DELIMITER)*
+**** MIN_CODE_POINT = 0x000000
+**** DELIMITER = MIN_CODE_POINT
+**** NAMESPACE = DELIMITER
+*** 코드: Java , Node.js, golang
+* 이더리움은 소유권이 address 기준이고, Fabric은 clientIdentitiy.getID() 이다.
+** ID 예)
+*** x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com
+*** x509::/C=US/ST=North Carolina/O=Hyperledger/OU=client/CN=user1::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com
+*** x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.customer.moss.com
+*** x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=service1Admin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.service1.moss.com
+* ID의 유효성 체크는 어떻게 하는가?
+
+## 고려사항
+* Fabric ERC20을 이더리움 ERC20과 통일화
+** 함수명 Convention을 UpperCamel에서 lowerCamel로 수정 (예) Symbol -> symbol)
+** SetOption 은 삭제해야 하는가?
+* Token 소유자 식별 : clientIdentity.getID()
+** 샘플처럼 값을 그대로 사용할 것인가? Convert 할 것인가?
+** 체인코드 호출 시, ID를 parameter로 지정해야 하는데 쉬워보이지 않는다.
+* 권한 처리 구현 필요
+** 샘플처럼 MSPID 기준으로 처리할 것인가? ID 또는 다른 기준으로 처리할 것인가?
+*** Fabric에서는 트랜잭션 call 권한은 CA client 기준으로 관리해야 할 것 같다.
+** openzepplin AccessControl 같은 Generel 하게 사용할 수 있는 구현체가 필요할 것으로 생각
+
+## 수정필요 사항
+* TotalSupply 초기화가 필요하다. : Mint 없이 TotalSupply 호출 시, NaN 반환
+* BalanceOf: 값이 존재하지 않는 경우 에러 발생, 0을 반환하도록 수정 필요
+** 반복적으로 사용되기에 공용함수 생성 필요
+* Allowance: 값이 없는경우 에러 발생, 0을 반환하도록 수정 필요
+** 반복적으로 사용되기에 공용함수 생성 필요
+* balance와 연관된 숫자는 BigInteger를 사용하도록 수정하고, 반환값도 문자열로 반환되도록 수정 필요
+** ERC20이 Decimals 18을 사용할 경우 값의 손실을 막기 위함.
+* 저장 키는 이더리움을 정책을 참고하여 변경
+** publicKey → hash → 오른쪽 160bits 의 Hex값
+** Hash 알고리즘은 keccak256 대신 Fabric이 사용하는 Sha256 사용
+** 중요: PublicKey에서 address를 추출하기 때문에, 발급된 인증서가 만료되면 안된다. client의 인증서의 만료일은 사실상 무한대여야 한다. 예) 9999년 12월 31일
+* BigInteger가 기존 처리 Type(TypeSchema) 에 존재하지 않아서 String으로 받아서 처리 필요
+* Return Type이 BIgInteger인 경우 에러 발생
+** primitive number가 아닌 경우 JsonObject로 처리하려하나 이 때 에러가 발생
+** Custom Type 반환하는 방법을 찾아야 하나, 로직상 Custom 가능한 부분이 보이지는 않음
+** 우선 어쩔수 없이 String으로 처리해야 할듯
+
+## 샘플 코드 배포 및 테스트
+### 권한체크 코드 수정
+fabric-samples/token-erc-20/chaincode-javascript 를 복사 후, 권한 체크 코드를 수정합니다.
+
+lib/tokenERC20.js 내 'Org1'를 모두 'platform'으로 변경합니다.
+
+MSPID 체크는 Mint, Burn 호출 시 이루어 집니다.
+
+### javascript 버전 배포
+```
+# fabric-samples/token-erc-20/chaincode-javascript 폴더로 이동
+npm install
+export CC_SRC_PATH=${PWD}
+
+cd "$FABRIC_NETWORK_HOME"
+
+export CC_NAME=erc20
+export CC_RUNTIME_LANGUAGE=node
+export CC_VERSION=1.0
+export CC_SEQUENCE=1
+export CC_INIT_FCN=SetOption
+export CC_END_POLICY=""
+export CC_COLL_CONFIG=""
+export INIT_REQUIRED="--init-required"
+
+peer lifecycle chaincode package ${CC_NAME}.tar.gz --path "${CC_SRC_PATH}" --lang ${CC_RUNTIME_LANGUAGE} --label ${CC_NAME}_${CC_VERSION}
+
+. ./scripts/setPlatformPeer0.sh
+peer lifecycle chaincode install ${CC_NAME}.tar.gz
+
+. ./scripts/setCustomerPeer0.sh
+peer lifecycle chaincode install ${CC_NAME}.tar.gz
+
+. ./scripts/setService1Peer0.sh
+peer lifecycle chaincode install ${CC_NAME}.tar.gz
+
+peer lifecycle chaincode queryinstalled >&log.txt
+PACKAGE_ID=$(sed -n "/${CC_NAME}_${CC_VERSION}/{s/^Package ID: //; s/, Label:.*$//; p;}" log.txt)
+echo $PACKAGE_ID
+
+. ./scripts/setPlatformPeer0.sh
+peer lifecycle chaincode approveformyorg -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" --channelID $CHANNEL_NAME --name ${CC_NAME} --version ${CC_VERSION} --package-id ${PACKAGE_ID} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} ${CC_END_POLICY} ${CC_COLL_CONFIG}
+
+. ./scripts/setCustomerPeer0.sh
+peer lifecycle chaincode approveformyorg -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" --channelID $CHANNEL_NAME --name ${CC_NAME} --version ${CC_VERSION} --package-id ${PACKAGE_ID} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} ${CC_END_POLICY} ${CC_COLL_CONFIG}
+
+. ./scripts/setService1Peer0.sh
+peer lifecycle chaincode approveformyorg -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" --channelID $CHANNEL_NAME --name ${CC_NAME} --version ${CC_VERSION} --package-id ${PACKAGE_ID} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} ${CC_END_POLICY} ${CC_COLL_CONFIG}
+
+# check approve
+peer lifecycle chaincode checkcommitreadiness --channelID $CHANNEL_NAME --name ${CC_NAME} --version ${CC_VERSION} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} ${CC_END_POLICY} ${CC_COLL_CONFIG} --output json >&log.txt
+cat log.txt
+
+# commit
+. ./scripts/setPlatformPeer0.sh
+
+PEER_CONN_PARAMS=(--peerAddresses localhost:8060 --tlsRootCertFiles "./organizations/peerOrganizations/platform.moss.com/tlsca/tlsca.platform.moss.com-cert.pem")
+PEER_CONN_PARAMS+=(--peerAddresses localhost:9060 --tlsRootCertFiles "./organizations/peerOrganizations/customer.moss.com/tlsca/tlsca.customer.moss.com-cert.pem")
+PEER_CONN_PARAMS+=(--peerAddresses localhost:10060 --tlsRootCertFiles "./organizations/peerOrganizations/service1.moss.com/tlsca/tlsca.service1.moss.com-cert.pem" )
+
+peer lifecycle chaincode commit -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" --channelID $CHANNEL_NAME --name ${CC_NAME} "${PEER_CONN_PARAMS[@]}" --version ${CC_VERSION} --sequence ${CC_SEQUENCE} ${INIT_REQUIRED} ${CC_END_POLICY} ${CC_COLL_CONFIG}
+
+fcn_call='{"function":"'${CC_INIT_FCN}'","Args":["TestToken","TT","18"]}'
+
+
+# InitLedger
+. ./scripts/setPlatformPeer0.sh
+peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" --isInit  -c ${fcn_call} >&log.txt
+cat log.txt
+```
+
+## ERC20 호출
+```
+# TokenName
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["TokenName"]}'
+
+# Symbol
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["Symbol"]}'
+
+# Decimals
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["Decimals"]}'
+
+# TotalSupply
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["TotalSupply"]}'
+
+# ClientAccountID
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["ClientAccountID"]}'
+
+# ClientAccountBalance
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["ClientAccountBalance"]}'
+
+# Mint
+peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"Mint","Args":["1000000000"]}'
+
+# ClientAccountBalance
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["ClientAccountBalance"]}'
+
+# TotalSupply
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["TotalSupply"]}'
+
+# BalanceOf
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["BalanceOf", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com"]}'
+
+# Transfer
+peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"Transfer","Args":["x509::/C=US/ST=North Carolina/O=Hyperledger/OU=client/CN=user1::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com", "100000000"]}'
+
+# BalanceOf
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["BalanceOf", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com"]}'
+
+# BalanceOf
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["BalanceOf", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=client/CN=user1::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com"]}'
+
+# Transfer platformAdmin -> customerAdmin: 300000000
+peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"Transfer","Args":["x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.customer.moss.com", "300000000"]}'
+
+# Approve customerAdmin -> platformAdmin: 200000000
+. ./scripts/setCustomerPeer0.sh
+peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"Approve","Args":["x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com", "200000000"]}'
+
+# Allowance
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["Allowance", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.customer.moss.com", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com"]}'
+
+# TransferFrom platformAdmin, customerAdmin -> service1Admin: 200000000
+. ./scripts/setPlatformPeer0.sh
+peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"TransferFrom","Args":["x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.customer.moss.com", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=service1Admin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.service1.moss.com", "200000000"]}'
+
+# BalanceOf customerAdmin
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["BalanceOf", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.customer.moss.com"]}'
+
+# BalanceOf service1Admin
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["BalanceOf", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=service1Admin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.service1.moss.com"]}'
+
+# Allowance customerAdmin -> platformAdmin
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["Allowance", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.customer.moss.com", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com"]}'
+
+# Burn
+. ./scripts/setPlatformPeer0.sh
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["ClientAccountBalance"]}'
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["TotalSupply"]}'
+
+peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"Burn","Args":["500000000"]}'
+
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["ClientAccountBalance"]}'
+peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["TotalSupply"]}'
+```
+
+## ERC20 호출 결과
+```
+$ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["TokenName"]}'
+TestToken
+
+$ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["Symbol"]}'
+TT
+
+$ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["Decimals"]}'
+18
+
+$ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["TotalSupply"]}'
+NaN
+
+$ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["ClientAccountID"]}'
+x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com
+
+$ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["ClientAccountBalance"]}'
+Error: endorsement failure during query. response: status:500 message:"error in simulation: transaction returned with failure: Error: the account x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com does not exist
+
+$ peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"Mint","Args":["1000000000"]}'
+2022-03-11 18:17:26.362 KST 0001 INFO [chaincodeCmd] chaincodeInvokeOrQuery -> Chaincode invoke successful. result: status:200 payload:"true"
+
+$ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["ClientAccountBalance"]}'
+1000000000
+
+$ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["TotalSupply"]}'
+1000000000
+
+$ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["BalanceOf", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com"]}'
+1000000000
+
+$ peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} $ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"Transfer","Args":["x509::/C=US/ST=North Carolina/O=Hyperledger/OU=client/CN=user1::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com", "100000000"]}'
+0001 INFO [chaincodeCmd] chaincodeInvokeOrQuery -> Chaincode invoke successful. result: status:200 payload:"true"
+
+$ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["BalanceOf", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com"]}'
+900000000
+
+$ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["BalanceOf", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=client/CN=user1::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com"]}'
+100000000
+
+$ peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"Transfer","Args":["x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.customer.moss.com", "300000000"]}'
+0001 INFO [chaincodeCmd] chaincodeInvokeOrQuery -> Chaincode invoke successful. result: status:200 payload:"true"
+
+$ . ./scripts/setCustomerPeer0.sh
+$ peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"Approve","Args":["x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com", "200000000"]}'
+0001 INFO [chaincodeCmd] chaincodeInvokeOrQuery -> Chaincode invoke successful. result: status:200 payload:"true"
+
+$ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["Allowance", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.customer.moss.com", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com"]}'
+200000000
+
+$ peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"TransferFrom","Args":["x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.customer.moss.com", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=service1Admin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.service1.moss.com", "200000000"]}'
+2022-03-11 18:53:48.628 KST 0001 INFO [chaincodeCmd] chaincodeInvokeOrQuery -> Chaincode invoke successful. result: status:200 payload:"true"
+
+$ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["BalanceOf", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.customer.moss.com"]}'
+100000000
+
+${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["BalanceOf", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=service1Admin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.service1.moss.com"]}'
+200000000
+
+${CC_NAME} -c '{"Args":["Allowance", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=customerAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.customer.moss.com", "x509::/C=US/ST=North Carolina/O=Hyperledger/OU=admin/CN=platformAdmin::/C=KR/ST=Gyeonggi-Do/L=Seongnam-si/O=NCSOFT Corporation/CN=ca.platform.moss.com"]}'
+0
+
+$ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["ClientAccountBalance"]}'
+600000000
+$ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["TotalSupply"]}'
+1000000000
+$ peer chaincode invoke -o ${ORDERER_ADDRESS} --ordererTLSHostnameOverride ${ORDERER_DOMAIN} --tls --cafile "$ORDERER_CA" -C $CHANNEL_NAME -n ${CC_NAME} "${PEER_CONN_PARAMS[@]}" -c '{"function":"Burn","Args":["500000000"]}'
+2022-03-11 19:04:44.628 KST 0001 INFO [chaincodeCmd] chaincodeInvokeOrQuery -> Chaincode invoke successful. result: status:200 payload:"true"
+$ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["ClientAccountBalance"]}'
+100000000
+$ peer chaincode query -C ${CHANNEL_NAME} -n ${CC_NAME} -c '{"Args":["TotalSupply"]}'
+500000000
+```

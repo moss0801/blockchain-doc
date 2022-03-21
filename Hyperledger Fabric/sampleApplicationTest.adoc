@@ -1,0 +1,539 @@
+## 개요
+fabric-samples의 샘플 애플리케이션을 이용해서 구성한 네트워크를 호출해 본다.
+
+## 사전준비
+* 네트워크 구성 : xref:v2.4 Network Configuration-1.adoc[네트워크 구성]
+* asset-transfer-basic 체인코드 배포 : xref:sampleChaincodeTest.adoc[샘플 체인코드 테스트]
+
+## Java
+
+소스코드: https://github.com/hyperledger/fabric-samples/tree/main/asset-transfer-basic/application-gateway-java
+
+### Identity 파일 복사
+
+tls 및 ca 인증에 필요한 파일을 복사해 온다.
+총 3개의 파일이 필요하다.
+
+
+여기서는 platfrom.moss.com 조직의 peer0.platform.moss.com 피어의 Gateway를 통해서 User1@platform.moss.com Identity로 통신한다고 가정한다.
+
+|===
+|내용|파일|기타
+
+|peer0.platform.moss.com TLS 인증서
+|./organizations/peerOrganizations/platform.moss.com/peers/peer0.platform.moss.com/tls/ca.crt
+|
+
+|User1@platform.moss.com CA 인증서
+|./organizations/peerOrganizations/platform.moss.com/users/User1@platform.moss.com/msp/keystore/c676ec3f2255542060705ec553467b0765c68a161148f736db3cf39687278e46_sk
+|개인키 파일이기에 파일명은 다를 수 있습니다.
+
+|User1@platform.moss.com CA 개인키
+|./organizations/peerOrganizations/platform.moss.com/users/User1@platform.moss.com/msp/signcerts/cert.pem
+|
+
+|===
+
+```
+.
+└── organizations
+└── peerOrganizations
+└── platform.moss.com
+├── peers
+│   └── peer0.platform.moss.com
+│       └── tls
+│           └── ca.crt
+└── users
+└── User1@platform.moss.com
+└── msp
+├── keystore
+│   └── 4d41f6f10b6cfa35b3c430c6a218d0e851ce409c938c8706802c13d3f88da848_sk
+└── signcerts
+└── cert.pem
+```
+
+### 소스코드 수정
+
+구성한 네트워크가 test-network가 아니기 때문에 새롭게 구성한 네트워크에 맞춰서 설정을 변경한다.
+
+cryptoPath의 경우는 application-gateway-java 폴더 기준 상대경로로 지정한다.
+```
+...
+public final class App {
+    private static final String mspID = "platformMSP";
+    private static final String channelName = "service1";
+    private static final String chaincodeName = "basic";
+
+    // Path to crypto materials.
+    private static final Path cryptoPath = Paths.get("..", "nc-network", "organizations", "peerOrganizations", "platform.moss.com");
+    // Path to user certificate.
+    private static final Path certPath = cryptoPath.resolve(Paths.get("users", "User1@platform.moss.com", "msp", "signcerts", "cert.pem"));
+    // Path to user private key directory.
+    private static final Path keyDirPath = cryptoPath.resolve(Paths.get("users", "User1@platform.moss.com", "msp", "keystore"));
+    // Path to peer tls certificate.
+    private static final Path tlsCertPath = cryptoPath.resolve(Paths.get("peers", "peer0.platform.moss.com", "tls", "ca.crt"));
+
+    // Gateway peer end point.
+    private static final String peerEndpoint = "172.19.215.165:8060";
+    private static final String overrideAuth = "peer0.platform.moss.com";
+    ...
+}
+```
+
+### 실행
+```
+./gradlew run
+```
+
+[TIP]
+====
+**wsl2 ^M 에러 발생시** +
+wsl2에서 아래와 같이 '^M' 캐릭터로 실행시 에러가 발생하는 경우가 있다.
+
+-bash: ./gradlew: /bin/sh^M: bad interpreter: No such file or directory
+
+dos2unix 를 설치하고 file을 수정한다.
+
+sudo apt install dos2unix +
+dos2unix gradlew
+====
+
+### 실행결과
+```
+$ ./gradlew run
+Downloading https://services.gradle.org/distributions/gradle-7.3-bin.zip
+...........10%...........20%...........30%...........40%...........50%...........60%...........70%...........80%...........90%...........100%
+
+Welcome to Gradle 7.3!
+
+Here are the highlights of this release:
+ - Easily declare new test suites in Java projects
+ - Support for Java 17
+ - Support for Scala 3
+
+For more details see https://docs.gradle.org/7.3/release-notes.html
+
+Starting a Gradle Daemon (subsequent builds will be faster)
+
+> Task :run
+
+--> Submit Transaction: InitLedger, function creates the initial set of assets on the ledger
+*** Transaction committed successfully
+
+--> Evaluate Transaction: GetAllAssets, function returns all the current assets on the ledger
+*** Result: [
+  {
+    "AppraisedValue": 300,
+    "Color": "blue",
+    "ID": "asset1",
+    "Owner": "Tomoko",
+    "Size": 5
+  },
+  {
+    "AppraisedValue": 1300,
+    "Color": "yellow",
+    "ID": "asset1646644072411",
+    "Owner": "Saptha",
+    "Size": 5
+  },
+  {
+    "AppraisedValue": 400,
+    "Color": "red",
+    "ID": "asset2",
+    "Owner": "Brad",
+    "Size": 5
+  },
+  {
+    "AppraisedValue": 500,
+    "Color": "green",
+    "ID": "asset3",
+    "Owner": "Jin Soo",
+    "Size": 10
+  },
+  {
+    "AppraisedValue": 600,
+    "Color": "yellow",
+    "ID": "asset4",
+    "Owner": "Max",
+    "Size": 10
+  },
+  {
+    "AppraisedValue": 700,
+    "Color": "black",
+    "ID": "asset5",
+    "Owner": "Adriana",
+    "Size": 15
+  },
+  {
+    "AppraisedValue": 800,
+    "Color": "white",
+    "ID": "asset6",
+    "Owner": "Michel",
+    "Size": 15
+  }
+]
+
+--> Submit Transaction: CreateAsset, creates new asset with ID, Color, Size, Owner and AppraisedValue arguments
+*** Transaction committed successfully
+
+--> Async Submit Transaction: TransferAsset, updates existing asset owner
+*** Successfully submitted transaction to transfer ownership from Tom to Saptha
+*** Waiting for transaction commit
+*** Transaction committed successfully
+
+--> Evaluate Transaction: ReadAsset, function returns asset attributes
+*** Result:{
+  "AppraisedValue": 1300,
+  "Color": "yellow",
+  "ID": "asset1646652762795",
+  "Owner": "Saptha",
+  "Size": 5
+}
+
+--> Submit Transaction: UpdateAsset asset70, asset70 does not exist and should return an error
+*** Successfully caught the error:
+org.hyperledger.fabric.client.EndorseException: io.grpc.StatusRuntimeException: ABORTED: failed to endorse transaction, see attached details for more info
+        at org.hyperledger.fabric.client.GatewayClient.endorse(GatewayClient.java:57)
+        at org.hyperledger.fabric.client.ProposalImpl.endorse(ProposalImpl.java:71)
+        at org.hyperledger.fabric.client.ContractImpl.submitTransaction(ContractImpl.java:47)
+        at App.updateNonExistentAsset(App.java:232)
+        at App.run(App.java:139)
+        at App.main(App.java:81)
+Caused by: io.grpc.StatusRuntimeException: ABORTED: failed to endorse transaction, see attached details for more info
+        at io.grpc.stub.ClientCalls.toStatusRuntimeException(ClientCalls.java:262)
+        at io.grpc.stub.ClientCalls.getUnchecked(ClientCalls.java:243)
+        at io.grpc.stub.ClientCalls.blockingUnaryCall(ClientCalls.java:156)
+        at org.hyperledger.fabric.protos.gateway.GatewayGrpc$GatewayBlockingStub.endorse(GatewayGrpc.java:472)
+        at org.hyperledger.fabric.client.GatewayClient.endorse(GatewayClient.java:55)
+        ... 5 more
+Transaction ID: 656d83f28d8d614fea81a9a8d7389ad506c17e25fce7db9f459dca527542a998
+Error Details:
+- address: peer0.platform.moss.com:8060, mspId: platformMSP, message: chaincode response 500, the asset asset70 does not exist
+- address: peer1.platform.moss.com:8061, mspId: platformMSP, message: chaincode response 500, the asset asset70 does not exist
+
+BUILD SUCCESSFUL in 28s
+2 actionable tasks: 2 executed
+```
+
+## Typescript
+소스코드: https://github.com/hyperledger/fabric-samples/tree/main/asset-transfer-basic/application-gateway-typescript
+
+소스코드를 적당한 곳에 복사한다.
+
+### Identity 파일 복사
+
+Java와 동일하다
+
+
+### 소스코드 수정
+
+구성한 네트워크가 test-network가 아니기 때문에 새롭게 구성한 네트워크에 맞춰서 설정을 변경한다.
+
+cryptoPath의 경우는 src 폴더 기준 상대경로로 수정한다.
+
+```
+...
+// application-gateway-typescript/src/app.ts
+const channelName = envOrDefault('CHANNEL_NAME', 'service1');
+const chaincodeName = envOrDefault('CHAINCODE_NAME', 'basic');
+const mspId = envOrDefault('MSP_ID', 'platformMSP');
+
+// Path to crypto materials.
+const cryptoPath = envOrDefault('CRYPTO_PATH', path.resolve(__dirname, '..', '..', 'nc-network', 'organizations', 'peerOrganizations', 'platform.moss.com'));
+
+// Path to user private key directory.
+const keyDirectoryPath = envOrDefault('KEY_DIRECTORY_PATH', path.resolve(cryptoPath, 'users', 'User1@platform.moss.com', 'msp', 'keystore'));
+
+// Path to user certificate.
+const certPath = envOrDefault('CERT_PATH', path.resolve(cryptoPath, 'users', 'User1@platform.moss.com', 'msp', 'signcerts', 'cert.pem'));
+
+// Path to peer tls certificate.
+const tlsCertPath = envOrDefault('TLS_CERT_PATH', path.resolve(cryptoPath, 'peers', 'peer0.platform.moss.com', 'tls', 'ca.crt'));
+
+// Gateway peer endpoint.
+const peerEndpoint = envOrDefault('PEER_ENDPOINT', '172.19.215.165:8060');
+
+// Gateway peer SSL host name override.
+const peerHostAlias = envOrDefault('PEER_HOST_ALIAS', 'peer0.platform.moss.com');
+...
+```
+
+### 실행
+```
+npm install
+npm start
+```
+
+
+### 실행 결과
+```
+$ npm install
+
+> asset-transfer-basic@1.0.0 prepare
+> npm run build
+
+
+> asset-transfer-basic@1.0.0 build
+> tsc
+
+
+up to date, audited 164 packages in 4s
+
+26 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+
+$ npm start
+
+> asset-transfer-basic@1.0.0 start
+> node dist/app.js
+
+channelName:       service1
+chaincodeName:     basic
+mspId:             platformMSP
+cryptoPath:        /nc-network/organizations/peerOrganizations/platform.moss.com
+keyDirectoryPath:  /nc-network/organizations/peerOrganizations/platform.moss.com/users/User1@platform.moss.com/msp/keystore
+certPath:          /nc-network/organizations/peerOrganizations/platform.moss.com/users/User1@platform.moss.com/msp/signcerts/cert.pem
+tlsCertPath:       /nc-network/organizations/peerOrganizations/platform.moss.com/peers/peer0.platform.moss.com/tls/ca.crt
+peerEndpoint:      172.19.215.165:8060
+peerHostAlias:     peer0.platform.moss.com
+
+--> Submit Transaction: InitLedger, function creates the initial set of assets on the ledger
+*** Transaction committed successfully
+
+--> Evaluate Transaction: GetAllAssets, function returns all the current assets on the ledger
+*** Result: [
+  {
+    AppraisedValue: 300,
+    Color: 'blue',
+    ID: 'asset1',
+    Owner: 'Tomoko',
+    Size: 5
+  },
+  {
+    AppraisedValue: 400,
+    Color: 'red',
+    ID: 'asset2',
+    Owner: 'Brad',
+    Size: 5
+  },
+  {
+    AppraisedValue: 500,
+    Color: 'green',
+    ID: 'asset3',
+    Owner: 'Jin Soo',
+    Size: 10
+  },
+  {
+    AppraisedValue: 600,
+    Color: 'yellow',
+    ID: 'asset4',
+    Owner: 'Max',
+    Size: 10
+  },
+  {
+    AppraisedValue: 700,
+    Color: 'black',
+    ID: 'asset5',
+    Owner: 'Adriana',
+    Size: 15
+  },
+  {
+    AppraisedValue: 800,
+    Color: 'white',
+    ID: 'asset6',
+    Owner: 'Michel',
+    Size: 15
+  }
+]
+
+--> Submit Transaction: CreateAsset, creates new asset with ID, Color, Size, Owner and AppraisedValue arguments
+*** Transaction committed successfully
+
+--> Async Submit Transaction: TransferAsset, updates existing asset owner
+*** Successfully submitted transaction to transfer ownership from Tom to Saptha
+*** Waiting for transaction commit
+*** Transaction committed successfully
+
+--> Evaluate Transaction: ReadAsset, function returns asset attributes
+*** Result: {
+  AppraisedValue: 1300,
+  Color: 'yellow',
+  ID: 'asset1646644072411',
+  Owner: 'Saptha',
+  Size: 5
+}
+
+--> Submit Transaction: UpdateAsset asset70, asset70 does not exist and should return an error
+*** Successfully caught the error:
+ EndorseError: 10 ABORTED: failed to endorse transaction, see attached details for more info
+    at /mnt/d/github/test-fabric/node_modules/@hyperledger/fabric-gateway/dist/client.js:45:347
+    at Object.callback (/mnt/d/github/test-fabric/node_modules/@hyperledger/fabric-gateway/dist/client.js:81:27)
+    at Object.onReceiveStatus (/mnt/d/github/test-fabric/node_modules/@grpc/grpc-js/build/src/client.js:180:36)
+    at Object.onReceiveStatus (/mnt/d/github/test-fabric/node_modules/@grpc/grpc-js/build/src/client-interceptors.js:365:141)
+    ... 2 lines matching cause stack trace ...
+    at processTicksAndRejections (node:internal/process/task_queues:78:11) {
+  code: 10,
+  details: [
+    {
+      address: 'peer1.platform.moss.com:8061',
+      message: 'chaincode response 500, the asset asset70 does not exist',
+      mspId: 'platformMSP'
+    },
+    {
+      address: 'peer0.platform.moss.com:8060',
+      message: 'chaincode response 500, the asset asset70 does not exist',
+      mspId: 'platformMSP'
+    }
+  ],
+  cause: Error: 10 ABORTED: failed to endorse transaction, see attached details for more info
+      at Object.callErrorFromStatus (/mnt/d/github/test-fabric/node_modules/@grpc/grpc-js/build/src/call.js:31:26)
+      at Object.onReceiveStatus (/mnt/d/github/test-fabric/node_modules/@grpc/grpc-js/build/src/client.js:180:52)
+      at Object.onReceiveStatus (/mnt/d/github/test-fabric/node_modules/@grpc/grpc-js/build/src/client-interceptors.js:365:141)
+      at Object.onReceiveStatus (/mnt/d/github/test-fabric/node_modules/@grpc/grpc-js/build/src/client-interceptors.js:328:181)
+      at /mnt/d/github/test-fabric/node_modules/@grpc/grpc-js/build/src/call-stream.js:182:78
+      at processTicksAndRejections (node:internal/process/task_queues:78:11) {
+    code: 10,
+    details: 'failed to endorse transaction, see attached details for more info',
+    metadata: Metadata { internalRepr: [Map], options: {} }
+  },
+```
+
+## Go
+소스코드: https://github.com/hyperledger/fabric-samples/tree/main/asset-transfer-basic/application-gateway-go
+
+### Identity 파일 복사
+
+Java와 동일하다
+
+### 소스코드 수정
+
+구성한 네트워크가 test-network가 아니기 때문에 새롭게 구성한 네트워크에 맞춰서 설정을 변경한다.
+
+cryptoPath의 경우는 application-gateway-go 폴더 기준 상대경로로 지정한다.
+
+.assetTransfer.go
+```
+...
+const (
+    mspID         = "platformMSP"
+    cryptoPath    = "../nc-network/organizations/peerOrganizations/platform.moss.com"
+    certPath      = cryptoPath + "/users/User1@platform.moss.com/msp/signcerts/cert.pem"
+    keyPath       = cryptoPath + "/users/User1@platform.moss.com/msp/keystore/"
+    tlsCertPath   = cryptoPath + "/peers/peer0.platform.moss.com/tls/ca.crt"
+    peerEndpoint  = "172.19.215.165:8060"
+    gatewayPeer   = "peer0.platform.moss.com"
+    channelName   = "service1"
+    chaincodeName = "basic"
+)
+...
+```
+
+### 실행
+```
+go run .
+```
+
+### 실행결과
+```
+$ go run .
+go: downloading github.com/hyperledger/fabric-gateway v1.0.0
+go: downloading github.com/hyperledger/fabric-protos-go v0.0.0-20211118165945-23d738fc3553
+go: downloading google.golang.org/grpc v1.42.0
+go: downloading google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
+go: downloading github.com/golang/protobuf v1.5.2
+go: downloading golang.org/x/net v0.0.0-20211015210444-4f30a5c0130f
+go: downloading golang.org/x/sys v0.0.0-20211110154304-99a53858aa08
+go: downloading google.golang.org/protobuf v1.27.1
+go: downloading github.com/hyperledger/fabric v2.1.1+incompatible
+go: downloading golang.org/x/text v0.3.7
+go: downloading github.com/pkg/errors v0.9.1
+2022/03/07 21:04:53 ============ application-golang starts ============
+initLedger:
+Submit Transaction: InitLedger, function creates the initial set of assets on the ledger
+*** Transaction committed successfully
+getAllAssets:
+Evaluate Transaction: GetAllAssets, function returns all the current assets on the ledger
+*** Result:[
+ {
+ "AppraisedValue": 300,
+ "Color": "blue",
+ "ID": "asset1",
+ "Owner": "Tomoko",
+ "Size": 5
+ },
+ {
+ "AppraisedValue": 1300,
+ "Color": "yellow",
+ "ID": "asset1646644072411",
+ "Owner": "Saptha",
+ "Size": 5
+ },
+ {
+ "AppraisedValue": 1300,
+ "Color": "yellow",
+ "ID": "asset1646652762795",
+ "Owner": "Saptha",
+ "Size": 5
+ },
+ {
+ "AppraisedValue": 400,
+ "Color": "red",
+ "ID": "asset2",
+ "Owner": "Brad",
+ "Size": 5
+ },
+ {
+ "AppraisedValue": 500,
+ "Color": "green",
+ "ID": "asset3",
+ "Owner": "Jin Soo",
+ "Size": 10
+ },
+ {
+ "AppraisedValue": 600,
+ "Color": "yellow",
+ "ID": "asset4",
+ "Owner": "Max",
+ "Size": 10
+ },
+ {
+ "AppraisedValue": 700,
+ "Color": "black",
+ "ID": "asset5",
+ "Owner": "Adriana",
+ "Size": 15
+ },
+ {
+ "AppraisedValue": 800,
+ "Color": "white",
+ "ID": "asset6",
+ "Owner": "Michel",
+ "Size": 15
+ }
+ ]
+createAsset:
+Submit Transaction: CreateAsset, creates new asset with ID, Color, Size, Owner and AppraisedValue arguments
+*** Transaction committed successfully
+readAssetByID:
+Evaluate Transaction: ReadAsset, function returns asset attributes
+*** Result:{
+ "AppraisedValue": 1300,
+ "Color": "yellow",
+ "ID": "asset1646654693326",
+ "Owner": "Tom",
+ "Size": 5
+ }
+transferAssetAsync:
+Async Submit Transaction: TransferAsset, updates existing asset owner'
+Successfully submitted transaction to transfer ownership from Tom to Mark.
+Waiting for transaction commit.
+*** Transaction committed successfully
+exampleErrorHandling:
+Submit Transaction: UpdateAsset asset70, asset70 does not exist and should return an error
+Endorse error with gRPC status Aborted: rpc error: code = Aborted desc = failed to endorse transaction, see attached details for more info
+Error from endpoint: peer0.platform.moss.com:8060, mspId: platformMSP, message: chaincode response 500, Incorrect number of params. Expected 5, received 0
+Error from endpoint: peer1.platform.moss.com:8061, mspId: platformMSP, message: chaincode response 500, Incorrect number of params. Expected 5, received 0
+2022/03/07 21:04:59 ============ application-golang ends ============
+```

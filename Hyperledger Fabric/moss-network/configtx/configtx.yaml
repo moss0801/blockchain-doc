@@ -356,7 +356,7 @@ Channel: &ChannelDefaults
 #
 ################################################################################
 Profiles:
-    MossApplicationGenesis:
+    Service1ApplicationGenesis:
         <<: *ChannelDefaults
         Orderer:
             <<: *OrdererDefaults

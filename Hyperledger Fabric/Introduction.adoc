@@ -23,7 +23,8 @@ Building enterprise blockchain ecosystems through global, open source collaborat
 
 ### Projects
 
-image::./imgs/greenhouse.png[]
+link:https://www.hyperledger.org/home_aug17-2[Hyperledger Greenhouse]
+image:./imgs/hyperledger-greehouse.png[]
 
 image::./imgs/projects.png[]
 
@@ -209,7 +210,7 @@ image::https://hyperledger-fabric.readthedocs.io/en/release-2.4/_images/network.
 
 
 * 구성 블록이 존재할 때, 채널이 논리적으로 존재한다고 말할 수 있습니다.
-* 구성 블록에는 컴포넌트를 가입 시킬수 있고, 채널과 상호 작용할 수 있는 조직 정보 및 의 사 결정 및 특정 결과에 도달하는 방법에 대한 구조를 정의하는 정책(policies)을 포함합니다. 
+* 구성 블록에는 컴포넌트를 가입 시킬수 있고, 채널과 상호 작용할 수 있는 조직 정보 및 의 사 결정 및 특정 결과에 도달하는 방법에 대한 구조를 정의하는 정책(policies)을 포함합니다.
 * 피어(peer)와 응용프로그램(application)은 네트워크의 중요한 행위자(actor)이기에, 동작방식은 다른 요소보다 채널 구성 정책에 의해 더 많이 결정됩니다.
 * 조직 정의와 조직 관리자의 identity들은 각 조직과 연관된 CA(Certificate Authority)에 의해서 생성되어야 합니다.
 * 이 예에서 조직 R0, R1, R2는 각각 CA0, CA1, CA2에 의해 생성된 인증 및 조직 정의를 가집니다.
@@ -269,7 +270,7 @@ image::https://hyperledger-fabric.readthedocs.io/en/release-2.4/_images/network.
 * 이 예제에서 체인코드 S5는 모든 피어에 설치됩니다.
 * 정렬 서비스에는 트랜잭션을 제안(propose)하지 않기에 체인코드가 설치되지 않습니다.
 체인코드의 설치, 승인 및 커밋 과정은 link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/chaincode_lifecycle.html[Fabric 체인코드 생명주기(Fabric chaincode lifecycle)]로 불립니다.
-* 체인코드 정의에서 제공되는 정보중 가장 중요한 것은 link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/glossary.html#endorsement-policy[보증 정책(endorsement policy)]입니다. 
+* 체인코드 정의에서 제공되는 정보중 가장 중요한 것은 link:https://hyperledger-fabric.readthedocs.io/en/release-2.4/glossary.html#endorsement-policy[보증 정책(endorsement policy)]입니다.
 * 보증 정책은 다른 조직이 원장의 사본에 트랜잭션을 승인하기 전에, 어떤 조직이 반드시 트랜잭션을 보증해야 하는지 설명합니다. 보증 정책은 채널내 멤버들의 어떤 조합으로도 가능합니다. 만약 설정되지 않으면 채널 구성에 정의된 기본 보증 정책을 상속받습니다.
 * 이제 피어 CLI를 사용하여 트랜잭션을 구동(drive)할 수 있지만, 모범 사례는 응용프로그램을 만들고, 이를 사용하여 체인코드에서 트랙잭션을 발동(invoke)시키는 것입니다.
 
@@ -375,7 +376,7 @@ image::https://hyperledger-fabric.readthedocs.io/en/release-2.4/_images/step0.pn
 ### 가정 (Assumptions)
 * 채널은 설정 및 운영중입니다.
 * 응용프로그램 사용자는 조직의 CA에 등록(register and enroll)되어 있고, 네트워크 인증에 필요한 암호학적 요소들을 가지고 있습니다.
-** link:https://english.stackexchange.com/questions/224632/difference-between-registration-and-enrollment[regiser and enroll]
+** link:https://english.stackexchange.com/questions/224632/difference-between-registration-and-enrollment[regitser and enroll]
 ** Registration is the process of establishing your identity with an institution. For instance accepting your offer of a place.
 ** Enrolment is when you provide your details and select your courses. Sometimes this can take place at the same time as registration though it may take place as a part of orientation (certainly did in my own experience!)
 * 무 마켓의 초기 상태를 표현하는 키-값 쌍을 포함하는 체인코드는 피어에 설치 및 채널에 배포되어 있습니다.
