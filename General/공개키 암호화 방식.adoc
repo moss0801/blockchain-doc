@@ -48,9 +48,9 @@ stem:[t]가 주어지면 쉽게 stem:[x]를 계산할 수 있습니다.
 
 1. 앨리스가 소수 stem:[p], 그리고 stem:[1]부터 stem:[p-1]까지의 정수 stem:[g]를 선택하여 사전에 밥과 공유한다.
 2. 앨리스가 정수 a를 선택한다. 이 정수는 외부에 공개되지 않으며, 밥 또한 알 수 없다.
-3. 앨리스가 stem:[A = g^a mod p], 즉 stem:[g^a]fmf stem:[p]로 나눈 나머지를 계산한다.
+3. 앨리스가 stem:[A = g^a mod p], 즉 stem:[g^a]를 stem:[p]로 나눈 나머지를 계산한다.
 4. 밥이 마찬가지로 정수 b를 선택하여 stem:[B = g^b mod p]를 계산한다.
-5. 앨리스와 밥이 서로에게 stem:[A]dhk stem:[B]를 전송한다.
+5. 앨리스와 밥이 서로에게 stem:[A]와 stem:[B]를 전송한다.
 6. 앨리스가 stem:[B^a mod p]를, 밥이 stem:[A^b mod p]를 계산한다.
 
 마지막 단계에서 stem:[B^a mod p = (g^b)^a mod p = g^(ab) mod p], stem:[A^b mod p = (g^a)^b mod p = g^(ab) mod p]이며 따라서 앨리스와 밥은 stem:[g^(ab) mod p]라는 공통의 비밀 키를 공유하게 된다.
@@ -96,6 +96,7 @@ RSA의 키 사이즈를 말할 때 주로 N의 사이즈를 의미하며 사이�
 
 #### 키생성 (위키백과)
 p와 q라고 하는 두 개의 서로 다른 stem:[p != q] 소수를 고른다.
+
 1. 두 수를 곱하여 stem:[N = pq] 을 찾는다.
 2. stem:[φ(N) = (p-1)(q-1)] 를 구한다.
 3. stem:[φ(N)] 보단 작고, stem:[φ(N)]와 서로소인 정수 stem:[e]를 찾는다.
@@ -125,7 +126,7 @@ p와 q라고 하는 두 개의 서로 다른 stem:[p != q] 소수를 고른다.
 .NIST Recommended Key Sizes
 [cols="1,1,1"]
 |===
-|Symeetric Key Size(bits)|RAS and Diffie-Hellman Key Size(bits)|Elliptic Curve Key Size(bits)
+|Symeetric Key Size(bits)|RSA and Diffie-Hellman Key Size(bits)|Elliptic Curve Key Size(bits)
 
 |80|1024|160
 |112|2048|224
